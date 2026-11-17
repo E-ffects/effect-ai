@@ -5,6 +5,9 @@
 
 Each return is analysed at its analysis start (QA triage done, intake label available); the predictor only
 sees data known at that time through AsOfStore. Ground truth comes from truth.GroundTruth.
+
+Scope: only returns whose cause was already approved somewhere before the analysis start (known causes).
+Returns with a cause never seen before are out of scope and are not scored.
 """
 import argparse
 import json
@@ -33,17 +36,27 @@ def queries(conn, start, end=None, limit=None):
     return ids[:limit] if limit else ids
 
 
-def run(conn, predictor, rma_ids, library, truth):
-    records = []
+def known_queries(conn, rma_ids, truth):
+    """Keep returns in scope (known cause at analysis start). Returns (in_scope [(rma_id, as_of, group)], excluded)."""
+    in_scope, excluded = [], 0
     for rma_id in rma_ids:
         as_of = analysis_start(conn, rma_id)
+        group = truth.group(rma_id, as_of)
+        if group == "unknown":
+            excluded += 1
+        else:
+            in_scope.append((rma_id, as_of, group))
+    return in_scope, excluded
+
+
+def run(conn, predictor, in_scope, library, truth):
+    records = []
+    for rma_id, as_of, group in in_scope:
         store = AsOfStore(conn, as_of, library)
         claim = store.claim(rma_id)
         pred = predictor.predict(store, claim)
-        ans = truth.answer(rma_id)
-        records.append({"rma_id": rma_id, "as_of": as_of, "label": claim["intake_label"],
-                        "group": truth.group(rma_id, as_of), "truth": ans,
-                        "pred": {k: getattr(pred, attr)[:5] for k, attr in FIELDS}, "handoff": pred.handoff})
+        records.append({"rma_id": rma_id, "as_of": as_of, "label": claim["intake_label"], "group": group,
+                        "truth": truth.answer(rma_id), "pred": {k: getattr(pred, attr)[:5] for k, attr in FIELDS}})
     return records
 
 
@@ -55,11 +68,11 @@ def hit_rate(records, field, k):
     return hits / len(pool), len(pool)
 
 
-def summarize(records):
-    known = [r for r in records if r["group"] != "unknown"]
+def summarize(records, excluded):
+    known = records
     groups = {"all_known": known, "same_incident": [r for r in known if r["group"] == "same_incident"],
               "other_incident": [r for r in known if r["group"] == "other_incident"]}
-    out = {"n_queries": len(records), "n_known": len(known), "n_unknown": len(records) - len(known), "groups": {}}
+    out = {"n_known": len(known), "n_excluded_unknown": excluded, "groups": {}}
     for gname, pool in groups.items():
         out["groups"][gname] = {"n": len(pool)}
         for field, _ in FIELDS:
@@ -67,9 +80,6 @@ def summarize(records):
                 rate, n = hit_rate(pool, field, k)
                 out["groups"][gname][f"{field}@{k}"] = rate
                 out["groups"][gname][f"{field}_n"] = n
-    unknown = [r for r in records if r["group"] == "unknown"]
-    out["handoff_unknown"] = sum(r["handoff"] for r in unknown) / len(unknown) if unknown else None
-    out["handoff_known"] = sum(r["handoff"] for r in known) / len(known) if known else None
     by_label = defaultdict(list)
     for r in known:
         by_label[r["label"]].append(r)
@@ -90,17 +100,16 @@ def report(results, args, elapsed):
              f"- 분석 시점: 접수별 분석 시작 시각(QA 판정 + 접수 소분류 확보). 그 시각 이전 데이터만 사용",
              f"- 소요 시간: {elapsed:.0f}초", ""]
     first = next(iter(results.values()))["summary"]
-    lines += [f"질문 {first['n_queries']}건 = 알려진 원인 {first['n_known']}건 "
-              f"(같은 사건 후속 {first['groups']['same_incident']['n']}, 다른 사건 같은 원인 {first['groups']['other_incident']['n']})"
-              f" + 처음 보는 원인 {first['n_unknown']}건", "",
+    lines += [f"평가 대상: 알려진 원인 {first['n_known']}건 "
+              f"(같은 사건 후속 {first['groups']['same_incident']['n']}, 다른 사건 같은 원인 {first['groups']['other_incident']['n']}). "
+              f"처음 보는 원인 {first['n_excluded_unknown']}건은 범위 밖이라 제외", "",
               "## 비교 (알려진 원인 전체)", "",
-              "| 예측기 | 원인@1 | 원인@3 | 공정@1 | 공정@3 | 장비@1 | 장비@3 | 처음 보는 원인 → QA | 알려진 원인 잘못 넘김 |",
-              "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+              "| 예측기 | 원인@1 | 원인@3 | 공정@1 | 공정@3 | 장비@1 | 장비@3 |",
+              "|---|---:|---:|---:|---:|---:|---:|"]
     for name, res in results.items():
         g = res["summary"]["groups"]["all_known"]
-        s = res["summary"]
         lines.append(f"| {name} | {pct(g['cause@1'])} | {pct(g['cause@3'])} | {pct(g['process@1'])} | {pct(g['process@3'])} | "
-                     f"{pct(g['equipment@1'])} | {pct(g['equipment@3'])} | {pct(s['handoff_unknown'])} | {pct(s['handoff_known'])} |")
+                     f"{pct(g['equipment@1'])} | {pct(g['equipment@3'])} |")
     lines += ["", f"장비는 정답 장비가 있는 {first['groups']['all_known']['equipment_n']}건 기준이다.", ""]
     for name, res in results.items():
         s = res["summary"]
@@ -129,12 +138,13 @@ def main(argv=None):
     t0 = time.time()
     conn = connect(args.db)
     library, truth = CaseLibrary(conn), GroundTruth(conn)
-    ids = queries(conn, args.start, args.end, args.limit)
+    in_scope, excluded = known_queries(conn, queries(conn, args.start, args.end, args.limit), truth)
     results = {}
     for key in args.predictors:
         predictor = PREDICTORS[key]()
-        records = run(conn, predictor, ids, library, truth)
-        results[predictor.name] = {"description": predictor.description, "summary": summarize(records), "records": records}
+        records = run(conn, predictor, in_scope, library, truth)
+        results[predictor.name] = {"description": predictor.description,
+                                   "summary": summarize(records, excluded), "records": records}
     text = report(results, args, time.time() - t0)
     print(text)
     if not args.no_save:
