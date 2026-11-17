@@ -1,0 +1,219 @@
+"""Time-bounded data access.
+
+Every query an agent makes goes through AsOfStore, which only returns what was known at `as_of`.
+Timestamps are ISO-8601 strings in the same +09:00 offset, so string comparison is time comparison.
+
+Which column decides "known at":
+  rma_claim            opened_at
+  process_run          ended_at
+  process_observation  measured_at
+  equipment_event      recorded_at   (not occurred_at: an event is known once it is recorded)
+  test_run             ended_at
+  material_usage       issued_at     (material IQC result only after iqc_at)
+  similar_cases        searched_at
+  past cases           claim_cause.decided_at and cause_assessment.approved_at
+Reference tables (process_master, equipment_master, cause_master, ...) have no time and are always available.
+"""
+import bisect
+import json
+from collections import defaultdict
+from dataclasses import dataclass
+
+
+class FutureDataError(RuntimeError):
+    """Raised when a query would expose data recorded after as_of."""
+
+
+def analysis_start(conn, rma_id):
+    """When cause analysis can start: QA triage done and the intake label available."""
+    row = conn.execute("""
+        select max(t.decided_at, s.created_at) from qa_triage t join rma_item i using(rma_id)
+        join symptom_assessment s using(rma_item_id) where t.rma_id=?""", (rma_id,)).fetchone()
+    if row is None or row[0] is None:
+        raise KeyError(rma_id)
+    return row[0]
+
+
+def process_token(process_id, category):
+    """Answer key for 'which process': material causes map to MATERIAL, undetermined ones to NONE."""
+    if process_id:
+        return process_id
+    return "MATERIAL" if category == "MATERIAL" else "NONE"
+
+
+@dataclass(frozen=True)
+class Case:
+    """One past return whose cause was approved and applied: the unit of the case library."""
+    rma_id: str
+    applied_at: str
+    approved_at: str
+    opened_at: str
+    customer_id: str
+    detection_stage: str
+    raw_text: str
+    intake_label: str
+    primary_label: str
+    spec_id: str
+    lot_id: str
+    cause_code: str
+    cause_category: str
+    process: str
+    equipment_id: str | None
+    material_lot_ids: tuple
+    investigation_id: str
+    certainty: str
+
+
+class CaseLibrary:
+    """All applied cases loaded once, sliced by time on demand (overall and per intake label)."""
+
+    def __init__(self, conn):
+        rows = conn.execute("""
+            select r.rma_id, max(cc.decided_at, a.approved_at) known_at, a.approved_at, r.opened_at, r.customer_id,
+                   r.detection_stage, r.raw_text, s.intake_label, s.primary_label, l.spec_id, i.lot_id,
+                   a.cause_code, a.cause_category, a.process_id, a.equipment_id, a.material_lot_ids_json,
+                   a.investigation_id, a.certainty_status
+            from claim_cause cc join cause_assessment a using(cause_assessment_id)
+            join rma_item i using(rma_item_id) join rma_claim r using(rma_id)
+            join symptom_assessment s using(rma_item_id) left join production_lot l on l.lot_id=i.lot_id
+            where cc.decided_at is not null and a.approved_at is not null""").fetchall()
+        self._cases = sorted((Case(
+            rma_id=r["rma_id"], applied_at=r["known_at"], approved_at=r["approved_at"], opened_at=r["opened_at"],
+            customer_id=r["customer_id"], detection_stage=r["detection_stage"], raw_text=r["raw_text"],
+            intake_label=r["intake_label"], primary_label=r["primary_label"], spec_id=r["spec_id"], lot_id=r["lot_id"],
+            cause_code=r["cause_code"], cause_category=r["cause_category"],
+            process=process_token(r["process_id"], r["cause_category"]), equipment_id=r["equipment_id"],
+            material_lot_ids=tuple(json.loads(r["material_lot_ids_json"] or "[]")),
+            investigation_id=r["investigation_id"], certainty=r["certainty_status"]) for r in rows),
+            key=lambda c: c.applied_at)
+        self._times = [c.applied_at for c in self._cases]
+        self._by_label = defaultdict(list)
+        for case in self._cases:
+            self._by_label[case.intake_label].append(case)
+        self._label_times = {k: [c.applied_at for c in v] for k, v in self._by_label.items()}
+        self._by_rma = {c.rma_id: c for c in self._cases}
+
+    def as_of(self, as_of, intake_label=None):
+        if intake_label is None:
+            return self._cases[:bisect.bisect_right(self._times, as_of)]
+        cases = self._by_label.get(intake_label, [])
+        return cases[:bisect.bisect_right(self._label_times.get(intake_label, []), as_of)]
+
+    def get(self, rma_id, as_of):
+        case = self._by_rma.get(rma_id)
+        return case if case and case.applied_at <= as_of else None
+
+
+class AsOfStore:
+    """The only door agents use to read data. Everything returned was known at as_of."""
+
+    def __init__(self, conn, as_of, library=None):
+        self.conn = conn
+        self.as_of = as_of
+        self.library = library or CaseLibrary(conn)
+
+    # ---------- internal
+    def _rows(self, sql, params, time_column):
+        rows = [dict(r) for r in self.conn.execute(sql, params).fetchall()]
+        for row in rows:
+            if row[time_column] is not None and row[time_column] > self.as_of:
+                raise FutureDataError(f"{time_column}={row[time_column]} > as_of={self.as_of}")
+        return rows
+
+    # ---------- the claim being analysed
+    def claim(self, rma_id):
+        row = self.conn.execute("""
+            select r.rma_id, r.customer_id, cu.industry, r.opened_at, r.raw_text, r.reported_part_no,
+                   r.reported_lot_no, r.reported_date_code, r.detection_stage, i.rma_item_id, i.lot_id,
+                   i.input_qty, i.claimed_defect_qty, l.spec_id, s.intake_label, s.created_at label_at,
+                   t.severity, t.analysis_level, t.decided_at triage_at
+            from rma_claim r join customer cu using(customer_id) join rma_item i using(rma_id)
+            join symptom_assessment s using(rma_item_id) join qa_triage t using(rma_id)
+            left join production_lot l on l.lot_id=i.lot_id where r.rma_id=?""", (rma_id,)).fetchone()
+        if row is None:
+            raise KeyError(rma_id)
+        claim = dict(row)
+        if claim["opened_at"] > self.as_of:
+            raise FutureDataError(f"{rma_id} opened after as_of")
+        if claim.pop("label_at") > self.as_of:
+            claim["intake_label"] = None
+        if claim.pop("triage_at") > self.as_of:
+            claim["severity"] = claim["analysis_level"] = None
+        return claim
+
+    # ---------- past cases (the case library)
+    def past_cases(self, intake_label=None):
+        return self.library.as_of(self.as_of, intake_label)
+
+    def past_case(self, rma_id):
+        return self.library.get(rma_id, self.as_of)
+
+    def similar_cases(self, rma_id):
+        """Baseline text-similarity results stored in the data (searched at QA triage)."""
+        return self._rows("""select query_rma_id, reference_rma_id, similarity_score, searched_at
+                             from similar_cases where query_rma_id=? and searched_at<=?
+                             order by similarity_score desc""", (rma_id, self.as_of), "searched_at")
+
+    # ---------- production history of a lot
+    def lot_process_history(self, lot_id):
+        return self._rows("""select r.process_run_id, r.process_id, p.sequence_no, r.equipment_id, r.load_no,
+                                    r.panel_seq_from, r.panel_seq_to, r.recipe_version, r.started_at, r.ended_at, r.shift
+                             from process_run r join process_master p using(process_id)
+                             where r.lot_id=? and r.ended_at<=? order by p.sequence_no, r.started_at""",
+                          (lot_id, self.as_of), "ended_at")
+
+    def lot_observations(self, lot_id, process_id=None):
+        sql = """select o.observation_id, r.process_id, r.equipment_id, r.load_no, o.item_code, o.value, o.unit,
+                        o.target, o.lower_limit, o.upper_limit, o.spc_flag, o.measured_at
+                 from process_observation o join process_run r using(process_run_id)
+                 where r.lot_id=? and o.measured_at<=?"""
+        params = [lot_id, self.as_of]
+        if process_id:
+            sql += " and r.process_id=?"
+            params.append(process_id)
+        return self._rows(sql + " order by o.measured_at", params, "measured_at")
+
+    def equipment_events(self, equipment_ids, since=None):
+        ids = list(equipment_ids)
+        if not ids:
+            return []
+        sql = f"""select event_id, equipment_id, event_type, occurred_at, recorded_at, metric_name, metric_value,
+                         metric_unit, description, result
+                  from equipment_event where equipment_id in ({','.join('?' * len(ids))}) and recorded_at<=?"""
+        params = [*ids, self.as_of]
+        if since:
+            sql += " and occurred_at>=?"
+            params.append(since)
+        return self._rows(sql + " order by occurred_at", params, "recorded_at")
+
+    def lot_tests(self, lot_id, phases=None):
+        sql = """select test_run_id, phase, subject_type, equipment_id, plan_id, sample_origin, origin_verified,
+                        overall_result, started_at, ended_at
+                 from test_run where lot_id=? and ended_at<=?"""
+        params = [lot_id, self.as_of]
+        if phases:
+            sql += f" and phase in ({','.join('?' * len(phases))})"
+            params += list(phases)
+        return self._rows(sql + " order by ended_at", params, "ended_at")
+
+    def test_measurements(self, test_run_ids):
+        ids = list(test_run_ids)
+        if not ids:
+            return []
+        rows = self._rows(f"""select m.test_run_id, m.test_spec_id, m.trial_index, m.raw_value, m.unit, m.condition_json,
+                                     m.result, t.ended_at
+                              from test_measurement m join test_run t using(test_run_id)
+                              where m.test_run_id in ({','.join('?' * len(ids))}) and t.ended_at<=?""",
+                          (*ids, self.as_of), "ended_at")
+        return rows
+
+    def material_usage(self, lot_id):
+        rows = self._rows("""select u.material_lot_id, u.material_type, u.issued_at, m.supplier_id, m.grade,
+                                    m.coa_json, m.iqc_method, m.iqc_result, m.iqc_at
+                             from material_usage u join material_lot m using(material_lot_id)
+                             where u.lot_id=? and u.issued_at<=? order by u.issued_at""",
+                          (lot_id, self.as_of), "issued_at")
+        for row in rows:
+            if row["iqc_at"] and row["iqc_at"] > self.as_of:
+                row["iqc_result"] = None
+        return rows

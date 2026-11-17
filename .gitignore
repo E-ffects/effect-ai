@@ -1,0 +1,28 @@
+# data: never commit datasets (shared on Drive)
+data/*
+!data/README.md
+*.sqlite
+*.sqlite3
+*.db
+*.zip
+
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
