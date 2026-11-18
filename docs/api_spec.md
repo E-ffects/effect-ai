@@ -1,4 +1,4 @@
-# AI 서비스 입출력 명세 v0.1
+# AI 서비스 입출력 명세 v0.2
 
 - 작성: 2026-11-18 (AI/DATA 유희범)
 - 대상: 백엔드(Spring Boot), 프론트(Vue), 인프라
@@ -9,6 +9,7 @@
 - AI 서비스는 **FastAPI 하나**다. Spring만 호출하고, 화면(Vue)은 AI를 직접 부르지 않는다.
 - API는 4개다: **분류**(바로 응답), **원인분석**(등록 → 상태 조회), **유사 사례**(바로 응답), **사례 반영**(승인 후 알림).
 - AI는 DB를 **읽기만** 한다. 업무 상태, 승인, AI 결과 저장은 **Spring**이 한다.
+- 에이전트는 **5개**(CS, 오케스트레이터, 공정·검사, 원인분석, QA)다. CS가 앞단에서 접수·분류하고, 공정·검사는 Lot 하나를 따라 함께 보며, 원인분석 결과는 QA가 검토해 승인을 요청한다.
 - 에이전트 구성은 A안(자율형)과 B안(혼합형) 두 가지를 정리했다. **어느 쪽이든 이 API는 같다.** 그래서 백·프론트는 지금 바로 개발을 시작해도 된다.
 - 오늘 중 같은 형식의 **목업 API**를 띄운다. 실제 AI는 나중에 목업 자리에 그대로 들어간다.
 
@@ -21,33 +22,33 @@
 |---|---|---|---|---|
 | **CS** (앞단) | **접수 창구.** 원문 → 대·소분류, 근거 구절, 정보 부족 판단(재질의). 분류가 끝난 케이스를 오케스트레이터에 넘긴다. 분석이 끝나면 고객 회신 초안을 쓴다 | 원문, 검출 단계, P/N | 분류 결과, 재질의 문구, 회신 초안 | symptom_definition, 과거 접수 문장 |
 | **오케스트레이터** | CS가 넘긴 케이스로 분석 시작. 케이스 상태 관리, 다음 에이전트 호출, **기준 시각(as_of) 고정**, 실패 시 대체 경로 | 분류된 케이스 | 최종 결과, 실행 기록 | — |
-| **QA** | 심각도·특별특성·분석 수준(L1~L3) 판정, 승인 필요 여부와 사유 | 분류 결과, 고객 | 분석 수준, 승인 사유 | qa_triage 규칙, special_characteristic |
-| **공정** | 반품 Lot이 지난 공정·장비, 조건 이탈(규격 이탈, 평소 대비 σ), 설비 이상 이벤트 | Lot | 공정 단계별 신호와 근거 | process_run, process_observation, equipment_event, material_usage |
-| **검사** | 반품 Lot이 지난 검사 장비와 검출률, 자재 IQC, 유출 원인 후보 | Lot | 검사 단계별 신호, 유출 원인 후보 | test_run, test_measurement, material_lot, escape_master |
-| **원인분석** | 과거 확정 사례 + 공정·검사 근거로 **원인 후보 순위**(원인·공정·장비)와 설명, 개선안 초안 | 위 결과 전부 | 원인 후보, 유출 원인 후보, 유사 사례, 초안 | cause_assessment(승인분), cause_master, corrective_action |
+| **공정·검사** | **반품 Lot 하나를 따라가며** 공정과 검사를 함께 본다. 지난 공정·장비, 조건 이탈(규격 이탈, 평소 대비 σ), 설비 이상 이벤트, 검사 장비별 검출률, 자재 Lot·IQC | Lot | Lot 경로와 단계별 신호·근거, 유출 원인 후보 | process_run, process_observation, equipment_event, test_run, test_measurement, material_usage, material_lot, escape_master |
+| **원인분석** | 과거 확정 사례 + 공정·검사 근거로 **원인 후보 순위**(원인·공정·장비)와 설명, 개선안 초안 | 분류, 공정·검사 결과 | 원인 후보, 유출 원인 후보, 유사 사례, 개선안 초안 | cause_assessment(승인분), cause_master, corrective_action |
+| **QA** | **원인분석 결과를 검토**한다. 후보마다 근거가 충분한지(원인별 필요 근거 규칙), 분석 수준(L1~L3), 승인 필요 여부와 사유를 정하고 **승인을 요청**한다 | 원인 후보, 분류, 고객 | 검토 결과(근거 충분·부족), 분석 수준, 승인 사유 | qa_causal_requirement, qa_triage 규칙, special_characteristic |
 
-**사람 승인**은 에이전트가 아니라 **화면(Spring)** 이 담당한다. L3 건만 승인 대기로 간다.
+에이전트는 **5개**다: CS, 오케스트레이터, 공정·검사, 원인분석, QA. **사람 승인**은 에이전트가 아니라 **화면(Spring)** 이 담당한다. L3 건만 승인 대기로 간다.
 
 ### 1-2. B안: 혼합형 (기본안)
 ```
-[접수] /classify                      [분석] /analyses
-고객 통보 ─▶ CS ─(분류된 케이스)─▶ 오케스트레이터 ─▶ QA ─┬▶ 공정 ─┐
-             │                                            └▶ 검사 ─┴▶ 원인분석 ─┐
-             │                                                                   │
-             └◀──────────────── 회신 초안 요청 (원인 후보 전달) ◀────────────────┘
+[접수] /classify                     [분석] /analyses
+고객 통보 ─▶ CS ─(분류된 케이스)─▶ 오케스트레이터 ─▶ 공정·검사 ─▶ 원인분석 ─▶ QA ─┐
+             ▲                                        (Lot 추적)                (검토·승인 요청)│
+             └─────────────── 회신 초안 요청 (QA가 검토한 원인 후보 전달) ◀──────────────────┘
+                                                                     QA ─▶ (L3) 사람 승인 화면
 ```
 - **CS는 오케스트레이터 앞단**이다. 접수 때 `/classify`로 먼저 실행돼 분류를 끝내고, 분류된 케이스를 오케스트레이터에 넘긴다. 정보 부족이면 재질의로 끝나고, 고객 회신 후 다시 분류한다.
 - 오케스트레이터는 `/analyses`로 시작하며 **CS의 분류 결과를 입력으로 받는다**(다시 분류하지 않음).
-- 원인분석이 끝나면 오케스트레이터가 CS에 **회신 초안**을 요청한다. 구조도의 "CS: 접수·분류·회신"과 같다.
-- 흐름은 **고정**이다. 공정과 검사는 **동시에** 실행한다.
-- 각 에이전트는 정해진 도구(SQL 함수)를 실행하고, **LLM은 해석·설명·초안에만** 쓴다.
+- **공정·검사는 하나의 에이전트**다. 같은 반품 Lot의 이력을 따라가므로 한 번에 조회한다.
+- **원인분석 결과는 QA로 간다.** QA가 근거를 검토하고 분석 수준과 승인 필요 여부를 정한다. 구조도의 "QA: 판단·승인 요청"과 같다.
+- QA 검토가 끝나면 오케스트레이터가 CS에 **회신 초안**을 요청한다. 구조도의 "CS: 접수·분류·회신"과 같다.
+- 흐름은 **고정**이다. 각 에이전트는 정해진 도구(SQL 함수)를 실행하고, **LLM은 해석·설명·초안에만** 쓴다.
 
 | 에이전트 | LLM 사용 |
 |---|---|
 | CS | 원문 해석, 정보 부족 판단, 회신 초안 |
-| QA | 판정 사유 문장 |
-| 공정 · 검사 | 도구 결과를 근거 문장으로 정리 |
+| 공정·검사 | 도구 결과를 근거 문장으로 정리 |
 | 원인분석 | 후보 순위의 설명, 개선안 초안 (순위 자체는 점수식) |
+| QA | 검토 의견과 승인 사유 문장 (근거 충분 여부와 분석 수준은 규칙) |
 | 오케스트레이터 | 사용 안 함 |
 
 - 같은 입력이면 항상 같은 순위가 나온다. 문장 표현만 조금 다를 수 있다.
@@ -56,6 +57,7 @@
 ### 1-3. A안: 원인분석 자율형 (확장안)
 - 흐름은 B안과 같다. **원인분석 에이전트만** LLM이 도구를 스스로 골라 여러 번 호출한다.
   - 도구 예: "이 Lot의 OL_ETCH 장비 조건", "ET-02 검출률", "과거 같은 원인 사례"
+- **QA가 "근거 부족"으로 판정하면 원인분석을 한 번 더 실행**한다(부족한 근거를 찾아보도록 요청). 두 번째에도 부족하면 그대로 표시하고 넘어간다.
 - 최대 호출 횟수(예: 8회)와 시간 제한(60초)을 둔다. 넘으면 B안 결과로 대체한다.
 - 순위가 LLM 판단을 거치므로 실행마다 조금씩 다를 수 있다.
 
@@ -213,7 +215,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
   "analysis_id": "ana-20251120-08743-01",
   "rma_id": "RMA-08743",
   "status": "RUNNING",
-  "progress": {"current_agent": "PROCESS", "steps_done": 2, "steps_total": 6},
+  "progress": {"current_agent": "PROCESS_INSPECTION", "steps_done": 1, "steps_total": 5},
   "result": null
 }
 ```
@@ -228,12 +230,22 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
   "status": "SUCCEEDED",
   "result": {
     "classification": {"major_code": "ELEC", "minor_code": "ELEC02", "minor_name": "쇼트", "evidence_spans": ["미세 패턴 사이 브리지 형태의 쇼트가 보입니다"]},
-    "triage": {
+    "qa_review": {
       "severity": 8,
       "characteristic_symbol": null,
       "analysis_level": "L3",
       "needs_approval": true,
-      "approval_reasons": ["차량 고객 + 심각도 8 이상", "동일 고객·불량 형태 30일 내 3건 이상 반복"]
+      "approval_reasons": ["차량 고객 + 심각도 8 이상", "동일 고객·불량 형태 30일 내 3건 이상 반복"],
+      "candidate_checks": [
+        {"rank": 1, "cause_code": "OL_ETCH_RESIDUE", "evidence_status": "PARTIAL",
+         "satisfied": ["생산 기록 근거 (OLE-02 조건 이탈, 노즐 막힘 기록)", "같은 원인 확정 사례"],
+         "missing": ["출처 확인된 반송품 시험 (시료 4pcs 회수 예정)"]},
+        {"rank": 2, "cause_code": "ET_RETEST_MISJUDGE", "evidence_status": "INSUFFICIENT",
+         "satisfied": ["같은 소분류 과거 사례"], "missing": ["이 Lot의 재검 통과 기록"]},
+        {"rank": 3, "cause_code": "FOREIGN_MATERIAL", "evidence_status": "INSUFFICIENT",
+         "satisfied": ["같은 소분류 과거 사례"], "missing": ["PSR 공정 이상 기록"]}
+      ],
+      "review_note": "1순위 후보는 생산 기록과 확정 사례 근거가 있으나, 반송품 시험 결과가 아직 없어 확정 전 시료 분석이 필요합니다. 차량 고객 L3 건으로 승인을 요청합니다."
     },
     "trace_summary": {"lot_id": "LT-01603", "spec_id": "AUTO-ECU6", "part_no": "PCB-ECU6-A1"},
     "cause_candidates": [
@@ -316,11 +328,10 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
   },
   "trace": [
     {"step": 1, "agent": "ORCHESTRATOR", "action": "as_of 고정, CS 분류 결과(ELEC02) 수신", "llm_used": false, "elapsed_ms": 40},
-    {"step": 2, "agent": "QA", "action": "분석 수준 판정 L3", "llm_used": true, "elapsed_ms": 600},
-    {"step": 3, "agent": "PROCESS", "action": "Lot 공정 경로·조건 이탈·설비 이벤트 조회", "tools": ["lot_process_history", "process_signals", "equipment_events"], "llm_used": true, "elapsed_ms": 1200},
-    {"step": 4, "agent": "INSPECTION", "action": "검사 장비·검출률·자재 조회", "tools": ["lot_tests", "detection_rate", "material_usage"], "llm_used": true, "elapsed_ms": 1100},
-    {"step": 5, "agent": "CAUSE_ANALYSIS", "action": "유사 사례 검색, 후보 순위·설명·개선안 초안", "tools": ["past_cases", "similar_cases"], "llm_used": true, "elapsed_ms": 4200},
-    {"step": 6, "agent": "CS", "action": "고객 회신 초안 작성", "llm_used": true, "elapsed_ms": 900}
+    {"step": 2, "agent": "PROCESS_INSPECTION", "action": "Lot LT-01603 추적: 공정 경로·조건 이탈·설비 이벤트, 검사 장비·검출률, 자재", "tools": ["lot_process_history", "process_signals", "equipment_events", "lot_tests", "detection_rate", "material_usage"], "llm_used": true, "elapsed_ms": 1800},
+    {"step": 3, "agent": "CAUSE_ANALYSIS", "action": "유사 사례 검색, 후보 순위·설명·개선안 초안", "tools": ["past_cases", "similar_cases"], "llm_used": true, "elapsed_ms": 4200},
+    {"step": 4, "agent": "QA", "action": "후보별 근거 검토, 분석 수준 L3, 승인 요청", "tools": ["causal_requirements", "triage_rules"], "llm_used": true, "elapsed_ms": 700},
+    {"step": 5, "agent": "CS", "action": "QA 검토 결과로 고객 회신 초안 작성", "llm_used": true, "elapsed_ms": 900}
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
@@ -331,6 +342,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 
 **필드 메모**
 - `cause_candidates[].score`: 0~1. 같은 응답 안의 순위 비교용이며, 확률이 아니다.
+- `qa_review`: QA 에이전트가 원인분석 결과를 검토한 결과. `candidate_checks[].evidence_status`는 `SUFFICIENT`(확정에 필요한 근거 충분), `PARTIAL`(일부 있음, 예: 반송품 시험 대기), `INSUFFICIENT`(근거 부족). 기준은 원인별 필요 근거 규칙(`qa_causal_requirement`)이다.
 - `evidence[].type`: `SIMILAR_CASE`, `PROCESS_SIGNAL`, `EQUIPMENT_EVENT`, `INSPECTION`, `MATERIAL`
 - `evidence[].ref_table` / `ref_id`: 화면에서 근거를 눌렀을 때 이동할 원천 레코드
 - 장비는 **이 Lot이 실제로 지난 장비**를 준다. 과거 사례의 장비와 다를 수 있다. 예: P01R은 과거 사례가 DRL-03이지만 답은 DRL-01이다.
@@ -411,7 +423,7 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 | API | 같음 | 같음 |
 | 원인분석 완료 시간 | 5~15초 | 15~60초 |
 | 같은 입력 → 같은 순위 | 예 | 실행마다 다를 수 있음 |
-| `trace` 단계 수 | 항상 6단계 (분석 시작 → QA → 공정 → 검사 → 원인분석 → CS 회신) | 원인분석 안에서 도구 호출이 4~8회 추가 |
+| `trace` 단계 수 | 항상 5단계 (분석 시작 → 공정·검사 → 원인분석 → QA 검토 → CS 회신) | 원인분석 안에서 도구 호출이 4~8회 추가 |
 | 시간 초과 | 30초 | 90초 |
 | LLM 호출 비용 (1건) | 약 5회 | 약 10~15회 |
 | 화면 처리 | 진행 상태 표시 | 진행 상태 + 오래 걸릴 때 안내 문구 |
@@ -421,14 +433,38 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 
 ---
 
-## 7. 화면별 사용
-| 화면 | 호출 | 쓰는 필드 |
+## 7. 화면별 적용
+
+### 7-1. AI가 실행되는 화면은 두 곳
+- **RMA 접수:** CS 에이전트 (`/classify`)
+- **RMA 상세:** 오케스트레이터 → 공정·검사 → 원인분석 → QA → CS 회신 (`/analyses`)
+
+나머지 화면은 **저장된 분석 결과나 Spring 집계**를 보여 준다. 그래서 대시보드·패턴·알림·보고서 화면은 AI 완성과 상관없이 지금 만들 수 있다.
+
+| 화면 · 사용자 | 사용자가 하는 일 → 호출 | 움직이는 에이전트 | 화면에 나오는 것 (필드) |
+|---|---|---|---|
+| **RMA 접수** · CS 담당 | 통보 원문 붙여넣기 → 등록 · `/classify` | CS | 대·소분류, 근거 구절. 정보 부족이면 재질의 문구 (`follow_up_questions`) |
+| **RMA 조회 → 상세** · 품질관리자 | 상세 열기 또는 "AI 분석" · `/analyses` → 1초 조회 | 오케스트레이터, 공정·검사, 원인분석, QA, CS | 원인 후보 표 (`cause_candidates`), 검토 근거 (`evidence`), 유출 원인 (`escape_candidates`), 유사 사례, QA 검토 (`qa_review`), 회신·개선안 초안 (`drafts`), 진행 단계 (`progress`, `trace`) |
+| **승인** · 품질관리자 (L3) | 원인 후보 채택·기각, 의견 → Spring 저장 → `/cases/refresh` | 없음 (사람 판단) | `qa_review.approval_reasons`, `candidate_checks`, `review_note`. 채택된 후보가 확정 원인이 되어 다음 반품 분석에 재사용됨 |
+| **대시보드** · 품질관리자 | 열기 · Spring 집계 | 없음 | 승인 대기 수, 원인 공정·장비 TOP(채택 기준), 손실 금액(`loss_ledger`) |
+| **불량 패턴 분석** · 품질관리자 | 패턴(조사) 선택 · Spring 집계 + `/claims/{id}/similar` | 원인분석 결과 재사용 | 패턴별 확정 원인·공정·장비, 관련 반품, 손실 합계(`loss_by_investigation`) |
+| **알림 및 재발 관리** · 품질관리자 | 알림 확인 · 저장된 분석 결과 | 원인분석 결과 재사용 | 새 반품의 1순위가 과거 확정 원인과 같으면 재발 의심 알림 (예: P01 → P01R) |
+| **AI 보고서** · 품질관리자 | 보고서 생성 · 저장된 분석 결과 | 원인분석·QA·CS 결과 재사용 | 원인 후보와 검토 근거, QA 검토 의견, 개선안·회신 초안 |
+| **AI 어시스턴트** · 전체 (2차) | 질문 · `/chat` | 유사 사례 근거 | 현재 RMA 맥락의 답변과 근거 사례 |
+
+### 7-2. RMA 상세 화면의 영역 배치 (제안)
+| 영역 | 에이전트 | 필드 |
 |---|---|---|
-| 접수 등록 | `/classify` (CS, 오케스트레이터 앞단) | 분류, 근거 구절, 정보 부족 시 재질의 문구 |
-| RMA 상세 | `/analyses` → 조회, `/claims/{id}/similar` | 원인 후보 표(순위·원인·공정·장비·점수·상태), 근거 목록, 유사 사례, 실행 기록 |
-| 승인 대기 (L3) | Spring 목록 | `triage.approval_reasons`, 1순위 후보, 근거, 회신·개선안 초안 |
-| 대시보드 | Spring 집계 | "원인 공정·장비 TOP"은 채택된 원인 기준, 손실 금액은 `loss_ledger` 기준 (AI 호출 없음) |
-| 챗봇 (2차) | `/chat` | 답변, 근거 사례 |
+| 접수 분류 | CS | `classification` |
+| 원인 후보 표 (순위·원인·공정·장비·점수·상태) | 원인분석 | `cause_candidates` |
+| 검토 근거 (공정 조건 이탈, 설비 이벤트, 검출률) | 공정·검사 | `cause_candidates[].evidence`, `escape_candidates` |
+| 유사 사례 | 원인분석 | `similar_cases` |
+| QA 검토 · 승인 사유 · 채택/기각 버튼 | QA → 사람 | `qa_review` |
+| 회신 초안 | CS | `drafts.customer_reply` |
+| 개선안 초안 | 원인분석 | `drafts.improvement` |
+| 진행 단계 | 오케스트레이터 | `progress`, `trace` |
+
+발표에서도 이 화면 하나로 "에이전트가 각각 무엇을 했는지"를 보여 줄 수 있다.
 
 **용어** (화면·발표): 원인 후보(제시·채택·기각), 확정 원인, 추정 원인, 검토 근거
 
