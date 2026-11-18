@@ -404,7 +404,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 - `drafts.improvement`: 제조 에이전트가 1순위 원인 후보(공정 개선)와 유출 원인 후보(검사 기준 개선)에 맞춰 쓴 초안.
 - `cause_candidates[].score`: 0~1. 같은 응답 안의 순위 비교용이며, 확률이 아니다.
 - `qa_review`: QA 에이전트의 판정(분석 전: 분석 수준·승인 필요 여부)과 검토(원인분석 후: 후보별 근거) 결과. `candidate_checks[].evidence_status`는 `SUFFICIENT`(확정에 필요한 근거 충분), `PARTIAL`(일부 있음, 예: 반송품 시험 대기), `INSUFFICIENT`(근거 부족). 기준은 원인별 필요 근거 규칙(`qa_causal_requirement`)이다.
-- `evidence[].type`: `SIMILAR_CASE`, `PROCESS_SIGNAL`, `EQUIPMENT_EVENT`, `INSPECTION`, `MATERIAL`
+- `evidence[].type`: `SIMILAR_CASE`, `PROCESS_SIGNAL`, `EQUIPMENT_EVENT`, `INSPECTION`, `MATERIAL`, `SUPPLIER`
+  - `SUPPLIER`: 이 Lot의 자재가 과거 확정 사례의 문제 자재와 같은 공급사·같은 종류의 다른 Lot이다. 참고 정보이며 점수와 QA 생산 근거에는 쓰지 않는다.
 - `evidence[].ref_table` / `ref_id`: 화면에서 근거를 눌렀을 때 이동할 원천 레코드
 - 장비는 **이 Lot이 실제로 지난 장비**를 준다. 과거 사례의 장비와 다를 수 있다. 예: P01R은 과거 사례가 DRL-03이지만 답은 DRL-01이다.
 - 단발 불량처럼 장비를 특정할 수 없으면 `equipment_id`는 `null`이다. 화면에는 "특정 불가(단발)"로 표시한다.

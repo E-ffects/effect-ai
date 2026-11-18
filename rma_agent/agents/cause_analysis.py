@@ -5,6 +5,8 @@ Score of a cause code (0~1, for ranking within one answer, not a probability):
   0.35 x recent  same product (spec) cases with this cause in the last RECENT_DAYS (relative to the most frequent)
   0.25 x signal  the lot's own record at the cause's process: strong 1.0 / medium 0.5,
                  or for material causes a material lot shared with past cases of this cause
+Systemic causes the lot shows no trace of are discounted: x0.5 when it used the same machine (process causes),
+x0.2 otherwise (material causes: x0.2 unless a problem lot is shared; same-supplier lots are shown, not scored).
 Equipment is the one this lot actually went through (the step with the strongest signal when the lot passed the
 process on several machines; the others are listed in other_equipment), given only when the lot shows a signal there or the
 cause usually has a specific equipment in past cases (otherwise null = sporadic, not attributable).
@@ -121,7 +123,23 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
                 sentences.append(f"이 Lot에 쓰인 자재 Lot {', '.join(shared)}이(가) 과거 확정 사례와 같습니다.")
             elif past_lots and sum(1 for c in group if c.material_lot_ids) / len(group) >= SYSTEMIC_SHARE:
                 fit = 1 - PENALTY_NO_MATCH  # past cases name problem material lots; this lot used none of them
-                sentences.append("과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았습니다.")
+                # Same supplier and material type, other lot: shown for QA (a supplier problem can spread over its
+                # lots) but not scored. Scoring it at x0.5 did not help on 2025-07~09 (results/v5_material_supplier.md).
+                past_sources = set(store.material_lot_sources(past_lots).values())
+                same_source = [m for m, row in lot_materials.items()
+                               if (row["supplier_id"], row["material_type"]) in past_sources]
+                for m in same_source:
+                    row = lot_materials[m]
+                    evidence.append({"type": "SUPPLIER",
+                                     "summary": f"자재 Lot {m} ({row['material_type']}): 과거 {cause_name} 확정 사례와 "
+                                                f"같은 공급사({row['supplier_id']})의 다른 Lot",
+                                     "ref_table": "material_lot", "ref_id": m, "occurred_at": row["issued_at"]})
+                if same_source:
+                    suppliers = ", ".join(sorted({lot_materials[m]["supplier_id"] for m in same_source}))
+                    sentences.append(f"과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았지만, 자재 Lot {', '.join(same_source)}은(는) "
+                                     f"같은 공급사({suppliers})의 다른 Lot입니다.")
+                else:
+                    sentences.append("과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았습니다.")
         elif category == "INSPECTION" and process_id:
             tested = tested_at(lot_trace, process_id, masters["equipment_process"])
             if tested and with_equipment >= 0.5:

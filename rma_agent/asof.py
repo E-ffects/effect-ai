@@ -229,6 +229,16 @@ class AsOfStore:
                 row["iqc_result"] = None
         return rows
 
+    def material_lot_sources(self, material_lot_ids):
+        """Supplier and material type of material lots received by as_of: {material_lot_id: (supplier_id, material_type)}."""
+        ids = sorted(set(material_lot_ids))
+        if not ids:
+            return {}
+        rows = self._rows(f"""select material_lot_id, supplier_id, material_type, received_at from material_lot
+                              where material_lot_id in ({','.join('?' * len(ids))}) and received_at<=?""",
+                          (*ids, self.as_of), "received_at")
+        return {r["material_lot_id"]: (r["supplier_id"], r["material_type"]) for r in rows}
+
     # ---------- QA, inspection and past investigations
     def triage(self, rma_id):
         rows = self._rows("""select severity, characteristic_id, characteristic_symbol, customer_industry, repeat_signal,
