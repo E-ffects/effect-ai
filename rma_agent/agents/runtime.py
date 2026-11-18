@@ -29,8 +29,8 @@ class Runtime:
         self.library = CaseLibrary(self.conn)
         self.baseline = ProcessBaseline(self.conn)
 
-    def store(self, as_of):
-        return AsOfStore(self.conn, as_of, self.library)
+    def store(self, as_of, subject=None):
+        return AsOfStore(self.conn, as_of, self.library, subject)
 
     def refresh(self):
         self.library = CaseLibrary(self.conn)

@@ -31,8 +31,9 @@ def test_past_cases_known_before_as_of(conn, library):
 
 def test_claim_itself_not_in_past_cases_before_its_cause_is_applied(conn, library):
     for rma_id in sample_claims(conn):
-        store = AsOfStore(conn, analysis_start(conn, rma_id), library)
+        store = AsOfStore(conn, analysis_start(conn, rma_id), library, subject=rma_id)
         assert rma_id not in {c.rma_id for c in store.past_cases()}
+        assert store.past_case(rma_id) is None
 
 
 def test_first_p13_claim_sees_no_p13_cause(conn, library):
@@ -82,3 +83,15 @@ def test_returned_sample_tests_hidden_until_finished(conn, library):
         store = AsOfStore(conn, analysis_start(conn, row["rma_id"]), library)
         visible = {t["test_run_id"] for t in store.lot_tests(row["lot_id"], phases=["RMA_LAB"])}
         assert row["test_run_id"] not in visible
+
+
+def test_return_with_cause_applied_at_intake_is_not_its_own_case(conn, library):
+    """Returns that join an already-approved incident get its cause at intake, before triage (v4: 117, v5: 209)."""
+    rows = conn.execute("""select r.rma_id from rma_claim r join rma_item i using(rma_id) join qa_triage t using(rma_id)
+                           join symptom_assessment s using(rma_item_id) join claim_cause cc using(rma_item_id)
+                           join cause_assessment a using(cause_assessment_id)
+                           where max(cc.decided_at, a.approved_at) <= max(t.decided_at, s.created_at) limit 30""").fetchall()
+    assert rows
+    for (rma_id,) in rows:
+        store = AsOfStore(conn, analysis_start(conn, rma_id), library, subject=rma_id)
+        assert rma_id not in {c.rma_id for c in store.past_cases()}

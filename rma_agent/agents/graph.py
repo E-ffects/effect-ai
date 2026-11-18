@@ -57,7 +57,7 @@ def _agent(order, agent):
             conf = config["configurable"]
             rt = conf["runtime"]
             started = time.perf_counter()
-            update, action, tools, *used = fn(state, rt, rt.store(state["as_of"]), conf["llm"])
+            update, action, tools, *used = fn(state, rt, rt.store(state["as_of"], state["rma_id"]), conf["llm"])
             entry = {"order": order, "agent": agent, "action": action, "tools": tools, "llm_used": bool(used and used[0]),
                      "elapsed_ms": round((time.perf_counter() - started) * 1000)}
             progress = conf.get("progress")
@@ -259,7 +259,7 @@ def similar_cases(rma_id, as_of=None, limit=5):
         raise InvalidInput(f"limit는 1~20입니다: {limit!r}")
     rt = _runtime()
     as_of = _resolve(rt, rma_id, as_of)
-    store = rt.store(as_of)
+    store = rt.store(as_of, rma_id)
     claim = store.claim(rma_id)
     return {"rma_id": rma_id, "as_of": as_of,
             "items": cause_analysis.similar_case_items(rt.masters, store, claim, limit)}

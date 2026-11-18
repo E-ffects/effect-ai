@@ -110,10 +110,11 @@ class CaseLibrary:
 class AsOfStore:
     """The only door agents use to read data. Everything returned was known at as_of."""
 
-    def __init__(self, conn, as_of, library=None):
+    def __init__(self, conn, as_of, library=None, subject=None):
         self.conn = conn
         self.as_of = as_of
         self.library = library or CaseLibrary(conn)
+        self.subject = subject  # the return being analysed: never one of its own past cases
 
     # ---------- internal
     def _rows(self, sql, params, time_column):
@@ -136,6 +137,7 @@ class AsOfStore:
         if row is None:
             raise KeyError(rma_id)
         claim = dict(row)
+        self.subject = rma_id
         if claim["opened_at"] > self.as_of:
             raise FutureDataError(f"{rma_id} opened after as_of")
         if claim.pop("label_at") > self.as_of:
@@ -146,10 +148,16 @@ class AsOfStore:
 
     # ---------- past cases (the case library)
     def past_cases(self, intake_label=None):
-        return self.library.as_of(self.as_of, intake_label)
+        """Approved cases known at as_of, without the return being analysed.
+
+        A return that arrives after its incident's cause was approved gets that cause at intake, before QA
+        triage. It must not appear as a past case of itself (that would be its own answer).
+        """
+        cases = self.library.as_of(self.as_of, intake_label)
+        return [c for c in cases if c.rma_id != self.subject] if self.subject else cases
 
     def past_case(self, rma_id):
-        return self.library.get(rma_id, self.as_of)
+        return None if rma_id == self.subject else self.library.get(rma_id, self.as_of)
 
     def similar_cases(self, rma_id):
         """Baseline text-similarity results stored in the data (searched at QA triage)."""

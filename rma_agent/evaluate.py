@@ -52,7 +52,7 @@ def known_queries(conn, rma_ids, truth):
 def run(conn, predictor, in_scope, library, truth):
     records = []
     for rma_id, as_of, group in in_scope:
-        store = AsOfStore(conn, as_of, library)
+        store = AsOfStore(conn, as_of, library, subject=rma_id)
         claim = store.claim(rma_id)
         pred = predictor.predict(store, claim)
         records.append({"rma_id": rma_id, "as_of": as_of, "label": claim["intake_label"], "group": group,
