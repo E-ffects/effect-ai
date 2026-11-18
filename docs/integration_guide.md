@@ -34,12 +34,13 @@ FastAPI는 `rma_agent`의 함수 4개만 부른다. 에이전트 내부가 바�
 
 | 함수 | API | 반환 | 시간 |
 |---|---|---|---|
-| `classify(raw_text, detection_stage=None, part_no=None, customer_id=None, as_of=None)` | `POST /classify` | 3-1 응답 dict (`request_id`, `elapsed_ms`는 FastAPI가 채움) | 1~3초 |
+| `classify(raw_text, detection_stage=None, part_no=None, customer_id=None, as_of=None)` | `POST /classify` | 3-1 응답 dict (`request_id`는 FastAPI가 채움) | LLM 켜면 약 1.3초 |
 | `run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None)` | `POST /analyses` 작업 안에서 | 3-3 응답 dict (`analysis_id`는 FastAPI가 채움) | LLM 켜면 약 10초 |
 | `similar_cases(rma_id, as_of=None, limit=5)` | `GET /claims/{id}/similar` | 3-4 응답 dict | 0.1초 |
 | `refresh_cases()` | `POST /cases/refresh` | 사례 수(int) | 0.3초 |
 
-> `classify`는 오늘(11/18) 구현 중이다. 그 전까지는 `NotImplementedError`를 낸다.
+- `classify`는 과거 접수 검색(약 0.03초) 뒤 LLM이 소분류를 고른다(LLM 켜면 약 1.3초). LLM이 없거나 실패하면 검색 결과로 답한다. 처음 호출 때 접수 색인을 만든다(약 0.6초).
+- `as_of`를 주면 그 시각 이전에 분류된 접수만 예시로 쓴다. 생략하면 전체를 쓴다.
 
 ### `run_analysis` 쓰는 법
 - **동기 함수다.** 요청 스레드에서 기다리지 말고 작업으로 돌린다(스레드 풀 또는 BackgroundTasks). 여러 건을 동시에 돌려도 된다(DB는 읽기 전용, 연결은 스레드 공유 가능).
@@ -54,7 +55,7 @@ FastAPI는 `rma_agent`의 함수 4개만 부른다. 에이전트 내부가 바�
 
 | 예외 | `code` | HTTP | 언제 |
 |---|---|---|---|
-| `InvalidInput` | `INVALID_INPUT` | 400 | `rma_id` 비어 있음, `mode`가 A/B가 아님, `top_k`·`limit` 범위 밖 |
+| `InvalidInput` | `INVALID_INPUT` | 400 | `raw_text`·`rma_id` 비어 있음, `mode`가 A/B가 아님, `top_k`·`limit` 범위 밖 |
 | `ClaimNotFound` | `CLAIM_NOT_FOUND` | 404 | 없는 접수, `as_of`보다 늦게 접수된 건 |
 | `AsOfInvalid` | `AS_OF_INVALID` | 422 | `as_of` 형식 오류(시간대 필수, 예 `2025-11-20T14:40:46+09:00`), QA 판정 전이라 아직 분석 불가 |
 | `ServiceUnavailable` | `SERVICE_UNAVAILABLE` | 503 | DB 파일을 열 수 없음 |

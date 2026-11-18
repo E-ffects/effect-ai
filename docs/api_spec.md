@@ -214,6 +214,10 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 }
 ```
 `status` 값: `CLASSIFIED`, `INSUFFICIENT_INFO`(정보 부족), `UNCLASSIFIED`(18종 밖)
+- `request_id`는 FastAPI가 붙인다. `elapsed_ms`, `model_version`(LLM을 썼으면 `+llm`), `warnings`는 `rma_agent.classify()`가 준다.
+- `warnings`: `LLM_UNAVAILABLE`(LLM 장애, 과거 접수 검색만으로 분류), `LLM_OUTPUT_REJECTED`(LLM이 없는 소분류 코드를 냄, 검색 결과 사용).
+- `evidence_spans`는 원문에 글자 그대로 있는 구절만 준다.
+- `severity`, `characteristic_symbol`은 소분류 기준값(`symptom_definition`)이다. 고객·반복을 반영한 최종 심각도와 분석 수준은 QA 접수 판정에서 정한다.
 
 ### 3-2. `POST /analyses`
 **요청**

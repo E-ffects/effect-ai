@@ -266,4 +266,7 @@ def similar_cases(rma_id, as_of=None, limit=5):
 
 
 def refresh_cases():
-    return _runtime().refresh()
+    from . import classifier
+    count = _runtime().refresh()
+    classifier._classifier = None  # rebuilt with the newly labelled intakes on next classify()
+    return count

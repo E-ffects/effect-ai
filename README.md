@@ -13,13 +13,15 @@ pip install -r requirements.txt
 |---|---|
 | `rma_agent/db.py` | DB 연결 (읽기 전용) |
 | `rma_agent/asof.py` | **시점 통제.** `AsOfStore(conn, as_of)`는 `as_of` 이전에 알 수 있던 데이터만 돌려준다 |
-| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `run_analysis`, `similar_cases`, `refresh_cases`, `classify`(다음 단계) |
+| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `classify`, `run_analysis`, `similar_cases`, `refresh_cases` |
 | `rma_agent/agents/graph.py` | LangGraph 그래프(B안 흐름), 실행 기록·진행률, LangSmith 연결 |
 | `rma_agent/agents/cs.py` · `qa.py` · `manufacturing.py` · `cause_analysis.py` | 에이전트별 로직 |
+| `rma_agent/agents/classifier.py` | CS 접수 분류: 과거 접수 검색 + LLM(소분류 정의·예시) |
 | `rma_agent/agents/runtime.py` | 공유 자원(DB, 사례 저장소, 공정 기준선, 기준 테이블). 한 번만 불러온다 |
 | `rma_agent/tools/process.py` · `inspection.py` | 공정 신호(조건 이탈·σ·설비 이벤트), 검사 장비 검출률 |
 | `rma_agent/predictors.py` | 예측기. 기준선 A(글자 유사도), B(같은 소분류의 과거 원인), C(원인분석 에이전트) |
 | `rma_agent/truth.py` | 평가용 정답. **예측기에서 import 금지** |
+| `rma_agent/evaluate_classify.py` | CS 분류 정확도 평가 (`python3 -m rma_agent.evaluate_classify --llm 114`) |
 | `rma_agent/evaluate.py` | 접수 건을 시간 순서대로 넣고 원인·공정·장비 적중률을 계산 |
 | `tests/` | 미래 데이터가 새지 않는지(`test_asof.py`), 그래프 출력이 명세대로인지(`test_agents.py`) |
 | `results/` | 평가 결과 기록 (날짜별 md, json) |
@@ -83,3 +85,12 @@ orchestrator ─┬─ QA: 분석 수준 ────┐
 - 같은 사건 후속(1,230건) 원인@1 94.6%, **다른 사건 같은 원인(677건) 69.0%**. 처음 겪는 사건에 대한 실력은 뒤쪽에 가깝다.
 - 사건성 원인(과거 사례가 특정 장비·자재 Lot을 가리킴)인데 이 Lot에 신호도, 같은 장비·자재도 없으면 점수를 깎는다(0.8, 같은 장비만 지났으면 0.5). 값은 2025-07~09에서 고르고 2025-10 이후에 그대로 적용했다. 다른 사건 원인@1이 54.7% → 69.0%로 올랐다.
 - 약한 곳: 불량 미재현(ELEC04·DIM01, 분석 시작 시점엔 반송품 시험 결과가 없음), 오픈(ELEC01, 취급 스크래치와 재검 오처리처럼 단발 원인끼리 구분이 어려움), 정보 부족(INSUFFICIENT_INFO). 자세한 결과는 `results/`를 본다.
+
+## CS 분류 결과 (2026-11-18, 2025-10-01 이후 접수 2,953건, 정답은 접수 시 CS 소분류)
+| 방식 | 정확도 | 정보 부족 판정 정밀도 / 재현율 |
+|---|---:|---:|
+| 과거 접수 검색만 (LLM 없음, 전체) | 95.2% | 43.4% / 93.2% |
+| **검색 + LLM gpt-5.4-mini** (소분류별 6건 표본 114건) | **100.0%** | 100% / 100% |
+
+- 검색만 쓰면 처음 보는 표현(MARK01 라벨 불일치, SOLD03 패드 들뜸)을 정보 부족으로 잘못 판정해 불필요한 재질의가 생긴다. LLM이 소분류 정의를 읽고 바로잡는다.
+- 접수 문장이 정형화된 합성 데이터라 실제보다 쉽다. LLM 표본은 114건이다.

@@ -17,4 +17,6 @@ def refresh_cases():
 
 
 def classify(raw_text, detection_stage=None, part_no=None, customer_id=None, as_of=None):
-    raise NotImplementedError("CS classification (POST /classify) is the next step; analysis uses the stored intake label")
+    from .agents.classifier import get_classifier
+    return get_classifier().classify(raw_text, detection_stage=detection_stage, part_no=part_no,
+                                     customer_id=customer_id, as_of=as_of)
