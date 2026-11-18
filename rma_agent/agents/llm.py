@@ -3,7 +3,8 @@
 Ranking, evidence checks and every number come from the tools. The LLM rewrites them into sentences.
 
 Settings (environment or effect-ai/.env, never committed):
-  RMA_LLM          model as "provider:model" (default openai:gpt-4.1-mini), "off" to use templates only
+  RMA_LLM          model as "provider:model" (default openai:gpt-5.4-mini), "off" to use templates only
+                   Models in BLOCKED_MODELS are never used (team rule).
   OPENAI_API_KEY   key for the openai provider (other providers: their own key variable)
 
 write() returns None when the LLM is off, fails, or invents a number that is not in the facts.
@@ -19,7 +20,8 @@ from pathlib import Path
 from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
-DEFAULT_MODEL = "openai:gpt-4.1-mini"
+DEFAULT_MODEL = "openai:gpt-5.4-mini"
+BLOCKED_MODELS = {"gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-5.5-pro"}  # not allowed for this project
 KEY_VARIABLE = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "google_genai": "GOOGLE_API_KEY"}
 TIMEOUT_S = 30
 
@@ -28,7 +30,8 @@ SYSTEM = """너는 PCB 제조사 품질(QA) 조직의 RMA(반품) 분석 보조�
 - 주어진 사실(JSON)만 쓴다. 사실에 없는 원인, 수치, 날짜, 장비, 조치를 만들지 않는다.
 - 수치는 사실에 적힌 그대로 옮긴다. 계산하거나 반올림하지 않는다.
 - 확정되지 않은 원인은 '유력', '의심', '후보'로 쓰고 단정하지 않는다.
-- 한국어 존댓말, 짧고 구체적인 문장으로 쓴다. 코드값(예: OL_ETCH_RESIDUE)은 쓰지 말고 이름으로 쓴다."""
+- 한국어 존댓말, 짧고 구체적인 문장으로 쓴다. 코드값(예: OL_ETCH_RESIDUE)은 쓰지 말고 이름으로 쓴다.
+- '사실', 'JSON', '입력' 같은 말을 쓰지 않는다. 근거가 없으면 '확인된 기록이 없습니다'처럼 쓴다."""
 
 _dotenv_loaded = False
 _lock = threading.Lock()
@@ -41,10 +44,14 @@ def _load_dotenv():
         return
     _dotenv_loaded = True
     try:
-        from dotenv import load_dotenv
+        from dotenv import dotenv_values
     except ImportError:
         return
-    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+    # API keys in the project .env win over old keys in the shell; other settings (RMA_LLM, ...) already set
+    # in the environment are kept, so tests and one-off runs can override them.
+    for name, value in dotenv_values(Path(__file__).resolve().parents[2] / ".env").items():
+        if value and (name.endswith("_API_KEY") or name not in os.environ):
+            os.environ[name] = value
 
 
 def model_name():
@@ -53,7 +60,10 @@ def model_name():
     name = os.environ.get("RMA_LLM", DEFAULT_MODEL).strip()
     if not name or name.lower() == "off":
         return None
-    provider = name.split(":", 1)[0] if ":" in name else "openai"
+    provider, _, model = name.partition(":") if ":" in name else ("openai", "", name)
+    if (model or name).lower() in BLOCKED_MODELS:
+        log.error("RMA_LLM=%s is a blocked model; using templates only", name)
+        return None
     key = KEY_VARIABLE.get(provider)
     if key and not os.environ.get(key):
         return None

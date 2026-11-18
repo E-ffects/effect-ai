@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from . import llm
 
 from ..tools.inspection import PHASE_OF, detection_rates, low_detection, lot_inspections, test_item_for
+from ..tools.names import event_name, test_item_name
 from ..tools.process import EVENT_LOOKBACK_DAYS, process_signals
 
 _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", "store", "baseline")}
@@ -49,7 +50,7 @@ def escapes(masters, store, claim, lot_trace, candidates, limit=1):
             if mine:
                 others = ", ".join(f"{eq} {r['rate']:.2%}" for eq, r in sorted(rates.items()) if eq != equipment)
                 evidence.append({"type": "INSPECTION",
-                                 "summary": f"{item or phase} 검출률 {equipment} {mine['rate']:.2%} "
+                                 "summary": f"{test_item_name(item) if item else phase} 검출률 {equipment} {mine['rate']:.2%} "
                                             f"({mine['fails']:,}/{mine['tests']:,}), {others} ({since[:10]} ~ 분석 시각)",
                                  "ref_table": "test_run", "ref_id": f"{item or phase}@{equipment}",
                                  "occurred_at": tested[equipment][2]})
@@ -60,7 +61,7 @@ def escapes(masters, store, claim, lot_trace, candidates, limit=1):
             for e in store.equipment_events([equipment], since=since):
                 if e["result"] == "ABNORMAL":
                     evidence.append({"type": "EQUIPMENT_EVENT",
-                                     "summary": f"{equipment} {e['event_type']}: {e['description']}",
+                                     "summary": f"{equipment} {event_name(e['event_type'])}: {e['description']}",
                                      "ref_table": "equipment_event", "ref_id": f"{e['event_type']}@{equipment}",
                                      "occurred_at": e["occurred_at"]})
         out.append({"escape_code": code, "escape_name": master.get("escape_name", code),

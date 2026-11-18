@@ -58,7 +58,8 @@ orchestrator ─┬─ QA: 분석 수준 ────┐
 
 ## 설정
 `.env.example`을 `.env`로 복사해 채운다(`.env`는 커밋되지 않는다).
-- `RMA_LLM`: `provider:model`. 기본 `openai:gpt-4.1-mini`, `off`면 템플릿만 쓴다. Gemini는 `google_genai:모델명`(패키지 `langchain-google-genai`, 키 `GOOGLE_API_KEY`).
+- `RMA_LLM`: `provider:model`. 기본 `openai:gpt-5.4-mini`, `off`면 템플릿만 쓴다. 사용 금지 모델(gpt-6-astra, gpt-6.1-sol, gpt-6-sol, gpt-5.5-pro)은 설정해도 쓰지 않는다(`llm.BLOCKED_MODELS`).
+- 모델 비교(RMA-08743, 2026-11-18): gpt-4.1-mini는 근거 판정을 틀리게 옮겨 제외, gpt-5.4-mini(약 10초)와 gpt-5.5(약 13초)는 정확. 시연 때 문장 품질을 더 원하면 `openai:gpt-5.5`. Gemini는 `google_genai:모델명`(패키지 `langchain-google-genai`, 키 `GOOGLE_API_KEY`).
 - `OPENAI_API_KEY`: OpenAI 키. 테스트는 LLM을 부르지 않는다(`tests/conftest.py`에서 `RMA_LLM=off`).
 
 ## LangSmith

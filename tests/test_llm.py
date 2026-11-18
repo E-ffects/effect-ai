@@ -63,3 +63,10 @@ def test_invented_numbers():
     facts = {"근거": ["OLE-02 spray_pressure_bar -3.3σ", "ET_SHORT 검출률 1.90% (130/6,833)"]}
     assert llm.invented_numbers("압력이 3.3σ 낮고 검출률 1.90%, 6833건 중 130건", facts) == []
     assert llm.invented_numbers("검출률 2.5%", facts) == ["2.5"]
+
+
+def test_blocked_models(monkeypatch):
+    for name in ("openai:gpt-6-sol", "openai:GPT-5.5-pro", "gpt-6.1-sol"):
+        monkeypatch.setenv("RMA_LLM", name)
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        assert llm.model_name() is None

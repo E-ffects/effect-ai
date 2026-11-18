@@ -19,6 +19,7 @@ from . import llm
 
 from ..asof import process_token
 from ..tools.inspection import PHASE_OF
+from ..tools.names import certainty_name, event_name, item_name
 
 RECENT_DAYS = 60
 W_VOTE, W_RECENT, W_SIGNAL = 0.40, 0.35, 0.25
@@ -43,14 +44,14 @@ def _step_evidence(step, process_name):
         if step["out_of_spec"]:
             parts.append(f"규격 이탈 {step['out_of_spec']}건")
         if item and abs(z) >= 3:
-            parts.append(f"{item} {z:+.1f}σ (직전 90일 대비)")
+            parts.append(f"{item_name(item)} {z:+.1f}σ (직전 90일 대비)")
         if parts:
             out.append({"type": "PROCESS_SIGNAL",
                         "summary": f"{process_name} · {step['equipment_id']} " + ", ".join(parts),
                         "ref_table": "process_run", "ref_id": f"{step['process_id']}@{step['equipment_id']}",
                         "occurred_at": step["started_at"]})
     for e in step["abnormal_events"]:
-        out.append({"type": "EQUIPMENT_EVENT", "summary": f"{step['equipment_id']} {e['event_type']}: {e['description']}",
+        out.append({"type": "EQUIPMENT_EVENT", "summary": f"{step['equipment_id']} {event_name(e['event_type'])}: {e['description']}",
                     "ref_table": "equipment_event", "ref_id": f"{e['event_type']}@{step['equipment_id']}",
                     "occurred_at": e["occurred_at"]})
     return out
@@ -93,7 +94,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
             last = max(recent, key=lambda c: c.applied_at)
             evidence.append({"type": "SIMILAR_CASE",
                              "summary": f"{last.rma_id} ({_day(last.opened_at)}, 같은 제품) → {cause_name}, "
-                                        f"{last.equipment_id or '장비 특정 불가'}, {last.certainty}",
+                                        f"{last.equipment_id or '장비 특정 불가'}, {certainty_name(last.certainty)}",
                              "ref_table": "rma_claim", "ref_id": last.rma_id, "occurred_at": last.opened_at})
             sentences.append(f"같은 제품({claim.get('spec_id')})의 {minor} 반품이 최근 {RECENT_DAYS}일 동안 "
                              f"{len(recent)}건 {cause_name}(으)로 확정됐습니다.")
