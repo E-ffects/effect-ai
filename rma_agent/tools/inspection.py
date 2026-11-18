@@ -51,3 +51,9 @@ def low_detection(rates, equipment_id):
     if not peers or not mine or mine["tests"] < 100:
         return False
     return mine["rate"] < LOW_RATIO * (sum(peers) / len(peers))
+
+
+def tested_at(lot_trace, process_id, equipment_process):
+    """Inspection equipment of this lot that belongs to process_id (e.g. OL_AOI keeps OAOI-*, drops IAOI-*)."""
+    tested = lot_trace["inspections"].get(PHASE_OF.get(process_id, process_id), {})
+    return {eq: v for eq, v in tested.items() if equipment_process.get(eq, process_id) == process_id}

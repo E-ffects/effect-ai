@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from . import llm
 
 from ..asof import process_token
-from ..tools.inspection import PHASE_OF
+from ..tools.inspection import tested_at
 from ..tools.names import certainty_name, event_name, item_name
 
 RECENT_DAYS = 60
@@ -123,7 +123,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
                 fit = 1 - PENALTY_NO_MATCH  # past cases name problem material lots; this lot used none of them
                 sentences.append("과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았습니다.")
         elif category == "INSPECTION" and process_id:
-            tested = lot_trace["inspections"].get(PHASE_OF.get(process_id, process_id), {})
+            tested = tested_at(lot_trace, process_id, masters["equipment_process"])
             if tested and with_equipment >= 0.5:
                 equipment = max(tested, key=lambda eq: tested[eq][1])
         elif process_id and process_id in steps:

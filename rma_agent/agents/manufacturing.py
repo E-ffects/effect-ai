@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from . import llm
 
-from ..tools.inspection import PHASE_OF, detection_rates, low_detection, lot_inspections, test_item_for
+from ..tools.inspection import PHASE_OF, detection_rates, low_detection, lot_inspections, tested_at, test_item_for
 from ..tools.names import event_name, test_item_name
 from ..tools.process import EVENT_LOOKBACK_DAYS, process_signals
 
@@ -40,17 +40,20 @@ def escapes(masters, store, claim, lot_trace, candidates, limit=1):
         master = masters["escapes"].get(code, {})
         process_id = master.get("detection_process_id")
         phase = PHASE_OF.get(process_id)
-        tested = lot_trace["inspections"].get(phase, {}) if phase else {}
+        tested = tested_at(lot_trace, process_id, masters["equipment_process"]) if phase else {}
         equipment = max(tested, key=lambda eq: tested[eq][1]) if tested else None
         evidence, sentences = [], [f"과거 같은 원인 조사 {n}건에서 확인된 유출 원인입니다."]
         if equipment:
             item = test_item_for(minor) if phase == "ET" else None
             since, rates = detection_rates(store, phase, item)
+            rates = {eq: r for eq, r in rates.items()
+                     if masters["equipment_process"].get(eq, process_id) == process_id}  # peers in the same process
             mine = rates.get(equipment)
-            if mine:
+            if mine and any(r["fails"] for r in rates.values()):  # all-zero rates say nothing about this lot
+                label = test_item_name(item) if item else masters["processes"].get(process_id, {}).get("process_name", process_id)
                 others = ", ".join(f"{eq} {r['rate']:.2%}" for eq, r in sorted(rates.items()) if eq != equipment)
                 evidence.append({"type": "INSPECTION",
-                                 "summary": f"{test_item_name(item) if item else phase} 검출률 {equipment} {mine['rate']:.2%} "
+                                 "summary": f"{label} 검출률 {equipment} {mine['rate']:.2%} "
                                             f"({mine['fails']:,}/{mine['tests']:,}), {others} ({since[:10]} ~ 분석 시각)",
                                  "ref_table": "test_run", "ref_id": f"{item or phase}@{equipment}",
                                  "occurred_at": tested[equipment][2]})

@@ -18,6 +18,7 @@ def load_masters(conn):
         "processes": q("select process_id, * from process_master"),
         "symptoms": q("select minor_code, * from symptom_definition"),
         "requirements": q("select cause_code, * from qa_causal_requirement"),
+        "equipment_process": {r[0]: r[1] for r in conn.execute("select equipment_id, process_id from equipment_master")},
     }
 
 
