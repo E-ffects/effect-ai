@@ -83,8 +83,8 @@ def summarize(records, excluded):
     by_label = defaultdict(list)
     for r in known:
         by_label[r["label"]].append(r)
-    out["by_label"] = {label: {"n": len(pool), "cause@3": hit_rate(pool, "cause", 3)[0],
-                               "process@3": hit_rate(pool, "process", 3)[0]}
+    out["by_label"] = {label: {"n": len(pool), "cause@1": hit_rate(pool, "cause", 1)[0], "cause@3": hit_rate(pool, "cause", 3)[0],
+                               "process@1": hit_rate(pool, "process", 1)[0], "process@3": hit_rate(pool, "process", 3)[0]}
                        for label, pool in sorted(by_label.items(), key=lambda kv: str(kv[0]))}
     return out
 
@@ -118,9 +118,11 @@ def report(results, args, elapsed):
         for gname, g in s["groups"].items():
             lines.append(f"| {GROUP_NAMES[gname]} | {g['n']} | {pct(g['cause@1'])} | {pct(g['cause@3'])} | {pct(g['process@1'])} | "
                          f"{pct(g['process@3'])} | {pct(g['equipment@1'])} | {pct(g['equipment@3'])} |")
-        lines += ["", "**소분류별 (알려진 원인)**", "", "| 소분류 | 건수 | 원인@3 | 공정@3 |", "|---|---:|---:|---:|"]
+        lines += ["", "**소분류별 (알려진 원인)**", "", "| 소분류 | 건수 | 원인@1 | 원인@3 | 공정@1 | 공정@3 |",
+                  "|---|---:|---:|---:|---:|---:|"]
         for label, v in s["by_label"].items():
-            lines.append(f"| {label} | {v['n']} | {pct(v['cause@3'])} | {pct(v['process@3'])} |")
+            lines.append(f"| {label} | {v['n']} | {pct(v['cause@1'])} | {pct(v['cause@3'])} | "
+                         f"{pct(v['process@1'])} | {pct(v['process@3'])} |")
         lines.append("")
     return "\n".join(lines)
 

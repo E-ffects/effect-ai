@@ -24,6 +24,11 @@ from ..tools.names import certainty_name, event_name, item_name
 RECENT_DAYS = 60
 W_VOTE, W_RECENT, W_SIGNAL = 0.40, 0.35, 0.25
 SIGNAL_SCORE = {"strong": 1.0, "medium": 0.5, "none": 0.0}
+# Systemic causes (past cases usually name an equipment, or a material lot) should show up in this lot's record.
+# Without a signal at that process the score is cut, more when the lot did not pass any equipment seen in past cases.
+SYSTEMIC_SHARE = 0.5
+PENALTY_NO_MATCH = 0.8          # tuned on 2025-07~09, checked on 2025-10~ (results/)
+PENALTY_MATCH_NO_SIGNAL = 0.5
 
 _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", "store")}
 
@@ -89,7 +94,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
         with_equipment = sum(1 for c in group if c.equipment_id) / len(group)
         vote, recent_score = len(group) / n_max, len(recent) / recent_max
 
-        signal, equipment, other_equipment, evidence, sentences = 0.0, None, [], [], []
+        signal, equipment, other_equipment, evidence, sentences, fit = 0.0, None, [], [], [], 1.0
         if recent:
             last = max(recent, key=lambda c: c.applied_at)
             evidence.append({"type": "SIMILAR_CASE",
@@ -114,6 +119,9 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
                                      "summary": f"자재 Lot {m} ({lot_materials[m]['material_type']}): 과거 {cause_name} 확정 사례와 같은 Lot",
                                      "ref_table": "material_lot", "ref_id": m, "occurred_at": lot_materials[m]["issued_at"]})
                 sentences.append(f"이 Lot에 쓰인 자재 Lot {', '.join(shared)}이(가) 과거 확정 사례와 같습니다.")
+            elif past_lots and sum(1 for c in group if c.material_lot_ids) / len(group) >= SYSTEMIC_SHARE:
+                fit = 1 - PENALTY_NO_MATCH  # past cases name problem material lots; this lot used none of them
+                sentences.append("과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았습니다.")
         elif category == "INSPECTION" and process_id:
             tested = lot_trace["inspections"].get(PHASE_OF.get(process_id, process_id), {})
             if tested and with_equipment >= 0.5:
@@ -135,12 +143,18 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
                                  + "; ".join(e["summary"] for e in step_evidence) + ".")
             else:
                 sentences.append(f"이 Lot의 {process_name} 공정({step['equipment_id']}) 기록에는 이상 신호가 없습니다.")
+            if with_equipment >= SYSTEMIC_SHARE and not signal:
+                if {st["equipment_id"] for st in steps[process_id]} & set(past_equipment):
+                    fit = 1 - PENALTY_MATCH_NO_SIGNAL
+                else:
+                    fit = 1 - PENALTY_NO_MATCH
+                    sentences.append(f"과거 사례의 장비({', '.join(sorted(past_equipment))})를 이 Lot은 거치지 않았습니다.")
 
         candidates.append({
             "cause_code": code, "cause_name": cause_name, "cause_category": category,
             "process_id": process_token(process_id, category), "process_name": process_name,
             "equipment_id": equipment,
-            "score": round(W_VOTE * vote + W_RECENT * recent_score + W_SIGNAL * signal, 2),
+            "score": round((W_VOTE * vote + W_RECENT * recent_score + W_SIGNAL * signal) * fit, 2),
             "explanation": " ".join(sentences), "evidence": evidence,
             "other_equipment": other_equipment, "_vote": len(group), "_investigations": sorted({c.investigation_id for c in group}),
         })
