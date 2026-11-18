@@ -78,3 +78,19 @@ def test_similar_cases_known_before_as_of():
     out = similar_cases("RMA-08743", limit=5)
     assert 0 < len(out["items"]) <= 5
     assert all(item["opened_at"] <= out["as_of"] for item in out["items"])
+
+
+@pytest.mark.parametrize("kwargs, error", [
+    ({"rma_id": "RMA-99999"}, "CLAIM_NOT_FOUND"),
+    ({"rma_id": "RMA-08743", "as_of": "2025-11-01T00:00:00+09:00"}, "CLAIM_NOT_FOUND"),   # before it was opened
+    ({"rma_id": "RMA-08743", "as_of": "2025-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),     # opened, not triaged yet
+    ({"rma_id": "RMA-08743", "as_of": "2025-11-20 14:40"}, "AS_OF_INVALID"),              # no time zone
+    ({"rma_id": "RMA-08743", "as_of": "yesterday"}, "AS_OF_INVALID"),
+    ({"rma_id": "RMA-08743", "mode": "C"}, "INVALID_INPUT"),
+    ({"rma_id": "", "top_k": 3}, "INVALID_INPUT"),
+])
+def test_errors_carry_spec_codes(kwargs, error):
+    from rma_agent.errors import RmaAgentError
+    with pytest.raises(RmaAgentError) as info:
+        run_analysis(**kwargs)
+    assert info.value.code == error

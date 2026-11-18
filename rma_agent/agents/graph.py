@@ -22,6 +22,7 @@ from langgraph.graph import END, START, StateGraph
 from . import cause_analysis, cs, llm, manufacturing, qa
 from .runtime import get_runtime
 from ..asof import analysis_start
+from ..errors import AsOfInvalid, ClaimNotFound, InvalidInput, ServiceUnavailable, check_as_of
 
 PROMPT_VERSION = "agents-0.4"
 RULES_VERSION = "pcb-v4"
@@ -168,10 +169,43 @@ def _public(candidate):
     return {k: v for k, v in candidate.items() if not k.startswith("_")}
 
 
+def _runtime():
+    try:
+        return get_runtime()
+    except Exception as exc:  # DB file missing or unreadable
+        raise ServiceUnavailable(f"DB를 열 수 없습니다: {exc}") from exc
+
+
+def _resolve(rt, rma_id, as_of):
+    """Check the claim and as_of before running anything. Returns the as_of to use."""
+    if not rma_id or not isinstance(rma_id, str):
+        raise InvalidInput("rma_id가 비어 있습니다")
+    as_of = check_as_of(as_of)
+    row = rt.conn.execute("select opened_at from rma_claim where rma_id=?", (rma_id,)).fetchone()
+    if row is None:
+        raise ClaimNotFound(f"{rma_id} 접수를 찾을 수 없습니다")
+    if as_of and as_of < row["opened_at"]:
+        raise ClaimNotFound(f"{rma_id}는 {as_of} 이전에 접수되지 않았습니다 (접수 {row['opened_at']})")
+    try:
+        start = analysis_start(rt.conn, rma_id)
+    except KeyError:
+        raise AsOfInvalid(f"{rma_id}는 아직 QA 접수 판정·분류가 끝나지 않아 분석할 수 없습니다")
+    if as_of and as_of < start:
+        raise AsOfInvalid(f"{rma_id}는 {start}부터 분석할 수 있습니다 (QA 접수 판정·분류 완료 시각)")
+    return as_of or start
+
+
 def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
-    """Analyse one return. Returns the 3-3 response fields: result, trace, warnings, ... (spec docs/api_spec.md)."""
-    rt = get_runtime()
-    as_of = as_of or analysis_start(rt.conn, rma_id)
+    """Analyse one return. Returns the 3-3 response fields: result, trace, warnings, ... (spec docs/api_spec.md).
+
+    Raises rma_agent.errors.* (InvalidInput, ClaimNotFound, AsOfInvalid, ServiceUnavailable) with the spec's codes.
+    """
+    if mode not in ("A", "B"):
+        raise InvalidInput(f"mode는 A 또는 B입니다: {mode!r}")
+    if not isinstance(top_k, int) or not 1 <= top_k <= 10:
+        raise InvalidInput(f"top_k는 1~10입니다: {top_k!r}")
+    rt = _runtime()
+    as_of = _resolve(rt, rma_id, as_of)
     warnings = []
     if mode == "A":
         warnings.append("MODE_A_NOT_READY")  # A (autonomous cause analysis) is not built yet; runs B
@@ -221,8 +255,10 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
 
 
 def similar_cases(rma_id, as_of=None, limit=5):
-    rt = get_runtime()
-    as_of = as_of or analysis_start(rt.conn, rma_id)
+    if not isinstance(limit, int) or not 1 <= limit <= 20:
+        raise InvalidInput(f"limit는 1~20입니다: {limit!r}")
+    rt = _runtime()
+    as_of = _resolve(rt, rma_id, as_of)
     store = rt.store(as_of)
     claim = store.claim(rma_id)
     return {"rma_id": rma_id, "as_of": as_of,
@@ -230,4 +266,4 @@ def similar_cases(rma_id, as_of=None, limit=5):
 
 
 def refresh_cases():
-    return get_runtime().refresh()
+    return _runtime().refresh()
