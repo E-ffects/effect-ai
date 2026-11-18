@@ -19,8 +19,8 @@
 ### 1-1. 역할 (A·B 공통)
 | 에이전트 | 하는 일 | 입력 | 출력 | 쓰는 데이터 |
 |---|---|---|---|---|
-| **오케스트레이터** | 케이스 상태 관리, 다음 에이전트 호출, **기준 시각(as_of) 고정**, 실패 시 대체 경로 | 분석 요청 | 최종 결과, 실행 기록 | — |
-| **CS** | 접수 원문 → 대·소분류, 근거 구절, 정보 부족 판단, 고객 회신 초안 | 원문, 검출 단계, P/N | 분류 결과, 재질의 문구, 회신 초안 | symptom_definition, 과거 접수 문장 |
+| **CS** (앞단) | **접수 창구.** 원문 → 대·소분류, 근거 구절, 정보 부족 판단(재질의). 분류가 끝난 케이스를 오케스트레이터에 넘긴다. 분석이 끝나면 고객 회신 초안을 쓴다 | 원문, 검출 단계, P/N | 분류 결과, 재질의 문구, 회신 초안 | symptom_definition, 과거 접수 문장 |
+| **오케스트레이터** | CS가 넘긴 케이스로 분석 시작. 케이스 상태 관리, 다음 에이전트 호출, **기준 시각(as_of) 고정**, 실패 시 대체 경로 | 분류된 케이스 | 최종 결과, 실행 기록 | — |
 | **QA** | 심각도·특별특성·분석 수준(L1~L3) 판정, 승인 필요 여부와 사유 | 분류 결과, 고객 | 분석 수준, 승인 사유 | qa_triage 규칙, special_characteristic |
 | **공정** | 반품 Lot이 지난 공정·장비, 조건 이탈(규격 이탈, 평소 대비 σ), 설비 이상 이벤트 | Lot | 공정 단계별 신호와 근거 | process_run, process_observation, equipment_event, material_usage |
 | **검사** | 반품 Lot이 지난 검사 장비와 검출률, 자재 IQC, 유출 원인 후보 | Lot | 검사 단계별 신호, 유출 원인 후보 | test_run, test_measurement, material_lot, escape_master |
@@ -30,9 +30,15 @@
 
 ### 1-2. B안: 혼합형 (기본안)
 ```
-요청 → 오케스트레이터 ─▶ CS ─▶ QA ─┬▶ 공정 ─┐
-                                     └▶ 검사 ─┴▶ 원인분석 ─▶ 결과
+[접수] /classify                      [분석] /analyses
+고객 통보 ─▶ CS ─(분류된 케이스)─▶ 오케스트레이터 ─▶ QA ─┬▶ 공정 ─┐
+             │                                            └▶ 검사 ─┴▶ 원인분석 ─┐
+             │                                                                   │
+             └◀──────────────── 회신 초안 요청 (원인 후보 전달) ◀────────────────┘
 ```
+- **CS는 오케스트레이터 앞단**이다. 접수 때 `/classify`로 먼저 실행돼 분류를 끝내고, 분류된 케이스를 오케스트레이터에 넘긴다. 정보 부족이면 재질의로 끝나고, 고객 회신 후 다시 분류한다.
+- 오케스트레이터는 `/analyses`로 시작하며 **CS의 분류 결과를 입력으로 받는다**(다시 분류하지 않음).
+- 원인분석이 끝나면 오케스트레이터가 CS에 **회신 초안**을 요청한다. 구조도의 "CS: 접수·분류·회신"과 같다.
 - 흐름은 **고정**이다. 공정과 검사는 **동시에** 실행한다.
 - 각 에이전트는 정해진 도구(SQL 함수)를 실행하고, **LLM은 해석·설명·초안에만** 쓴다.
 
@@ -207,7 +213,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
   "analysis_id": "ana-20251120-08743-01",
   "rma_id": "RMA-08743",
   "status": "RUNNING",
-  "progress": {"current_agent": "PROCESS", "steps_done": 3, "steps_total": 6},
+  "progress": {"current_agent": "PROCESS", "steps_done": 2, "steps_total": 6},
   "result": null
 }
 ```
@@ -309,12 +315,12 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
     }
   },
   "trace": [
-    {"step": 1, "agent": "ORCHESTRATOR", "action": "as_of 고정, 접수 조회", "llm_used": false, "elapsed_ms": 40},
-    {"step": 2, "agent": "CS", "action": "분류 재확인", "llm_used": true, "elapsed_ms": 900},
-    {"step": 3, "agent": "QA", "action": "분석 수준 판정 L3", "llm_used": true, "elapsed_ms": 600},
-    {"step": 4, "agent": "PROCESS", "action": "Lot 공정 경로·조건 이탈·설비 이벤트 조회", "tools": ["lot_process_history", "process_signals", "equipment_events"], "llm_used": true, "elapsed_ms": 1200},
-    {"step": 5, "agent": "INSPECTION", "action": "검사 장비·검출률·자재 조회", "tools": ["lot_tests", "detection_rate", "material_usage"], "llm_used": true, "elapsed_ms": 1100},
-    {"step": 6, "agent": "CAUSE_ANALYSIS", "action": "유사 사례 검색, 후보 순위·설명·초안", "tools": ["past_cases", "similar_cases"], "llm_used": true, "elapsed_ms": 4200}
+    {"step": 1, "agent": "ORCHESTRATOR", "action": "as_of 고정, CS 분류 결과(ELEC02) 수신", "llm_used": false, "elapsed_ms": 40},
+    {"step": 2, "agent": "QA", "action": "분석 수준 판정 L3", "llm_used": true, "elapsed_ms": 600},
+    {"step": 3, "agent": "PROCESS", "action": "Lot 공정 경로·조건 이탈·설비 이벤트 조회", "tools": ["lot_process_history", "process_signals", "equipment_events"], "llm_used": true, "elapsed_ms": 1200},
+    {"step": 4, "agent": "INSPECTION", "action": "검사 장비·검출률·자재 조회", "tools": ["lot_tests", "detection_rate", "material_usage"], "llm_used": true, "elapsed_ms": 1100},
+    {"step": 5, "agent": "CAUSE_ANALYSIS", "action": "유사 사례 검색, 후보 순위·설명·개선안 초안", "tools": ["past_cases", "similar_cases"], "llm_used": true, "elapsed_ms": 4200},
+    {"step": 6, "agent": "CS", "action": "고객 회신 초안 작성", "llm_used": true, "elapsed_ms": 900}
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
@@ -405,7 +411,7 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 | API | 같음 | 같음 |
 | 원인분석 완료 시간 | 5~15초 | 15~60초 |
 | 같은 입력 → 같은 순위 | 예 | 실행마다 다를 수 있음 |
-| `trace` 단계 수 | 항상 6단계 | 원인분석 안에서 도구 호출이 4~8회 추가 |
+| `trace` 단계 수 | 항상 6단계 (분석 시작 → QA → 공정 → 검사 → 원인분석 → CS 회신) | 원인분석 안에서 도구 호출이 4~8회 추가 |
 | 시간 초과 | 30초 | 90초 |
 | LLM 호출 비용 (1건) | 약 5회 | 약 10~15회 |
 | 화면 처리 | 진행 상태 표시 | 진행 상태 + 오래 걸릴 때 안내 문구 |
@@ -418,7 +424,7 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 ## 7. 화면별 사용
 | 화면 | 호출 | 쓰는 필드 |
 |---|---|---|
-| 접수 등록 | `/classify` | 분류, 근거 구절, 정보 부족 시 재질의 문구 |
+| 접수 등록 | `/classify` (CS, 오케스트레이터 앞단) | 분류, 근거 구절, 정보 부족 시 재질의 문구 |
 | RMA 상세 | `/analyses` → 조회, `/claims/{id}/similar` | 원인 후보 표(순위·원인·공정·장비·점수·상태), 근거 목록, 유사 사례, 실행 기록 |
 | 승인 대기 (L3) | Spring 목록 | `triage.approval_reasons`, 1순위 후보, 근거, 회신·개선안 초안 |
 | 대시보드 | Spring 집계 | "원인 공정·장비 TOP"은 채택된 원인 기준, 손실 금액은 `loss_ledger` 기준 (AI 호출 없음) |
