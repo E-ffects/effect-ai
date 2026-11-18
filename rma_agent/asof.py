@@ -11,6 +11,9 @@ Which column decides "known at":
   test_run             ended_at
   material_usage       issued_at     (material IQC result only after iqc_at)
   similar_cases        searched_at
+  qa_triage            decided_at
+  escape_assessment    assessed_at
+  corrective_action    selected_at   (implemented_at hidden until known)
   past cases           claim_cause.decided_at and cause_assessment.approved_at
 Reference tables (process_master, equipment_master, cause_master, ...) have no time and are always available.
 """
@@ -217,3 +220,60 @@ class AsOfStore:
             if row["iqc_at"] and row["iqc_at"] > self.as_of:
                 row["iqc_result"] = None
         return rows
+
+    # ---------- QA, inspection and past investigations
+    def triage(self, rma_id):
+        rows = self._rows("""select severity, characteristic_id, characteristic_symbol, customer_industry, repeat_signal,
+                                    analysis_level, rationale, decided_at
+                             from qa_triage where rma_id=? and decided_at<=?""", (rma_id, self.as_of), "decided_at")
+        return rows[0] if rows else None
+
+    def item_lab_tests(self, rma_item_id):
+        """Return-lab tests on the returned item itself (for the QA evidence check)."""
+        return self._rows("""select test_run_id, subject_type, sample_origin, origin_verified, overall_result, ended_at
+                             from test_run where rma_item_id=? and phase='RMA_LAB' and ended_at<=?""",
+                          (rma_item_id, self.as_of), "ended_at")
+
+    def detection_counts(self, phase, since, test_spec_id=None):
+        """Tests and fails per inspection equipment over [since, as_of], overall or for one test item."""
+        if test_spec_id:
+            sql = """select r.equipment_id, count(*) n, sum(m.result='FAIL') fails
+                     from test_run r join test_measurement m using(test_run_id)
+                     where r.phase=? and r.ended_at>=? and r.ended_at<=? and r.equipment_id is not null
+                     and m.test_spec_id=? group by r.equipment_id"""
+            params = (phase, since, self.as_of, test_spec_id)
+        else:
+            sql = """select equipment_id, count(*) n, sum(overall_result='FAIL') fails
+                     from test_run where phase=? and ended_at>=? and ended_at<=? and equipment_id is not null
+                     group by equipment_id"""
+            params = (phase, since, self.as_of)
+        return {r["equipment_id"]: (r["fails"], r["n"]) for r in self.conn.execute(sql, params)}
+
+    def escapes(self, investigation_ids):
+        ids = list(investigation_ids)
+        if not ids:
+            return []
+        return self._rows(f"""select investigation_id, escape_code, detection_process_id, status, assessed_at
+                              from escape_assessment where investigation_id in ({','.join('?' * len(ids))})
+                              and assessed_at<=?""", (*ids, self.as_of), "assessed_at")
+
+    def corrective_actions(self, investigation_ids):
+        ids = list(investigation_ids)
+        if not ids:
+            return []
+        rows = self._rows(f"""select investigation_id, action_role, action_category, description, owner_dept, cause_code,
+                                     escape_code, selected_at, implemented_at
+                              from corrective_action where investigation_id in ({','.join('?' * len(ids))})
+                              and selected_at<=? order by selected_at""", (*ids, self.as_of), "selected_at")
+        for row in rows:
+            if row["implemented_at"] and row["implemented_at"] > self.as_of:
+                row["implemented_at"] = None
+        return rows
+
+    def intake(self, rma_item_id):
+        """CS classification at intake: label and the phrases it was based on."""
+        rows = self._rows("""select intake_label, evidence_spans_json, created_at from symptom_assessment
+                             where rma_item_id=? and created_at<=?""", (rma_item_id, self.as_of), "created_at")
+        if not rows:
+            return None
+        return {"intake_label": rows[0]["intake_label"], "evidence_spans": json.loads(rows[0]["evidence_spans_json"] or "[]")}

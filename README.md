@@ -1,22 +1,27 @@
 # effect-ai
 
-E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 지금은 `rma_agent`(시점 통제 데이터 접근과 평가 틀)만 있고, 에이전트·도구·FastAPI는 이 위에 붙인다.
+E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 에이전트 5개(CS, 오케스트레이터, QA, 제조, 원인분석)를 LangGraph 그래프로 묶었고, LangSmith로 실행을 추적한다. FastAPI(구태우)는 `rma_agent`의 함수 4개만 호출한다(`docs/api_spec.md` 1-5).
 
 ## 준비
 ```bash
 pip install -r requirements.txt
 ```
-`data/pcb_rma_v3.sqlite`가 필요하다. 받는 방법은 `data/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
+`data/pcb_rma_v4.sqlite`가 필요하다(없으면 v3). 받는 방법은 `data/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
 
 ## 구조
 | 파일 | 역할 |
 |---|---|
 | `rma_agent/db.py` | DB 연결 (읽기 전용) |
 | `rma_agent/asof.py` | **시점 통제.** `AsOfStore(conn, as_of)`는 `as_of` 이전에 알 수 있던 데이터만 돌려준다 |
-| `rma_agent/predictors.py` | 예측기. 기준선 A(글자 유사도), B(같은 소분류의 과거 원인) |
+| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `run_analysis`, `similar_cases`, `refresh_cases`, `classify`(다음 단계) |
+| `rma_agent/agents/graph.py` | LangGraph 그래프(B안 흐름), 실행 기록·진행률, LangSmith 연결 |
+| `rma_agent/agents/cs.py` · `qa.py` · `manufacturing.py` · `cause_analysis.py` | 에이전트별 로직 |
+| `rma_agent/agents/runtime.py` | 공유 자원(DB, 사례 저장소, 공정 기준선, 기준 테이블). 한 번만 불러온다 |
+| `rma_agent/tools/process.py` · `inspection.py` | 공정 신호(조건 이탈·σ·설비 이벤트), 검사 장비 검출률 |
+| `rma_agent/predictors.py` | 예측기. 기준선 A(글자 유사도), B(같은 소분류의 과거 원인), C(원인분석 에이전트) |
 | `rma_agent/truth.py` | 평가용 정답. **예측기에서 import 금지** |
 | `rma_agent/evaluate.py` | 접수 건을 시간 순서대로 넣고 원인·공정·장비 적중률을 계산 |
-| `tests/test_asof.py` | 미래 데이터가 새지 않는지 확인하는 테스트 |
+| `tests/` | 미래 데이터가 새지 않는지(`test_asof.py`), 그래프 출력이 명세대로인지(`test_agents.py`) |
 | `results/` | 평가 결과 기록 (날짜별 md, json) |
 
 ## 규칙
@@ -29,12 +34,28 @@ pip install -r requirements.txt
 ```bash
 python3 -m pytest -q tests
 ```
+```python
+from rma_agent import run_analysis
+out = run_analysis("RMA-08743")   # as_of 생략 시 분석 시작 시각. 반환 형식은 docs/api_spec.md 3-3
+```
 ```bash
 python3 -m rma_agent.evaluate -p A B
 ```
 ```bash
 python3 -m rma_agent.evaluate -p B --start 2025-07-01 --limit 300 --no-save
 ```
+
+## 에이전트 흐름 (B안)
+```
+orchestrator ─┬─ QA: 분석 수준 ────┐
+              └─ 제조: Lot 추적 ───┴─▶ 원인분석 ─▶ QA: 근거 검토 ─▶ 제조: 개선안 ─▶ CS: 회신 초안
+```
+- 순위는 점수식, 근거 검토는 규칙(`qa_causal_requirement`)이다. 설명·초안은 지금 템플릿 문장이고, LLM은 같은 자리에 붙인다.
+- 원인 점수 = 0.40 × 같은 소분류 투표 + 0.35 × 같은 제품 최근 60일 사례 + 0.25 × 이 Lot의 공정·자재 신호.
+- 장비는 이 Lot이 실제로 지난 장비 중 신호가 가장 강한 것이다. 같은 공정을 여러 장비로 나눠 지났으면 나머지는 `other_equipment`에 둔다.
+
+## LangSmith
+`LANGSMITH_API_KEY`(필수), `LANGSMITH_PROJECT`(선택)를 환경 변수로 넣으면 추적이 켜진다. 그래프와 도구 호출이 한 트레이스로 남고, 응답의 `langsmith_run_id`가 그 ID다. 키가 없으면 추적 없이 그대로 실행된다.
 
 ## 예측기 추가하는 법
 `predictors.py`에 `predict(store, claim) -> Prediction`을 가진 클래스를 만들고 `PREDICTORS`에 등록한다.
@@ -44,10 +65,12 @@ python3 -m rma_agent.evaluate -p B --start 2025-07-01 --limit 300 --no-save
 ## 평가 범위
 **알려진 원인만 평가한다.** 분석 시작 시각 이전에 같은 원인이 이미 승인된 반품만 점수를 매기고, 처음 보는 원인의 반품은 범위 밖이라 제외한다.
 
-## 현재 기준선 (2026-11-17, 2025-10-01 이후 접수 중 알려진 원인 1,907건)
-| 예측기 | 원인@3 | 공정@3 | 장비@3 |
-|---|---:|---:|---:|
-| A 글자 유사도 | 73.3% | 76.1% | 87.3% |
-| B 같은 소분류의 과거 원인 | **88.4%** | **93.3%** | **93.8%** |
+## 현재 결과 (2026-11-18, v4 데이터, 2025-10-01 이후 접수 중 알려진 원인 1,907건)
+| 예측기 | 원인@1 | 원인@3 | 공정@1 | 공정@3 | 장비@1 | 장비@3 |
+|---|---:|---:|---:|---:|---:|---:|
+| A 글자 유사도 | 55.0% | 73.3% | 57.4% | 76.1% | 77.2% | 87.3% |
+| B 같은 소분류의 과거 원인 | 51.4% | 88.4% | 64.6% | 93.3% | 78.4% | 93.8% |
+| **C 원인분석 에이전트** | **79.1%** | **96.4%** | **82.8%** | **97.5%** | **94.5%** | **99.2%** |
 
-목표는 B를 넘는 것이다. 특히 B가 약한 블리스터(STRC01 45%)와 오픈(ELEC01 81%)을 끌어올린다. 자세한 결과는 `results/`를 본다.
+- C는 블리스터(STRC01) 원인@3을 45.4% → 95.0%, 오픈(ELEC01)을 80.6% → 87.6%로 올렸다.
+- 약한 곳: **다른 사건 같은 원인**(원인@1 54.7%)과 정보 부족(INSUFFICIENT_INFO). 자세한 결과는 `results/`를 본다.

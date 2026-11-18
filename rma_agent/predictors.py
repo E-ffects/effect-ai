@@ -3,6 +3,9 @@
 Baselines
   A  text similarity: answers of the stored similar_cases (character-bigram overlap of the raw text)
   B  symptom vote: most frequent answers among past cases with the same intake label
+Agent
+  C  cause analysis agent ranking (agents/cause_analysis.py): symptom vote + same-product recent cases
+     + this lot's process / material record
 """
 from collections import Counter
 from dataclasses import dataclass, field
@@ -53,4 +56,30 @@ class BaselineB:
                           equipment=rank(c.equipment_id for c in cases))
 
 
-PREDICTORS = {"A": BaselineA, "B": BaselineB}
+class CauseAgentC:
+    name = "C_cause_agent"
+    description = "원인분석 에이전트 순위: 소분류 투표 + 같은 제품 최근 사례 + 이 Lot의 공정·자재 기록"
+
+    def __init__(self):
+        self._conn = None
+
+    def _load(self, conn):
+        from .agents.runtime import load_masters
+        from .tools.process import ProcessBaseline
+        self._conn, self.masters, self.baseline = conn, load_masters(conn), ProcessBaseline(conn)
+
+    def predict(self, store, claim):
+        from .agents.cause_analysis import rank_causes
+        from .agents.manufacturing import trace
+        if self._conn is not store.conn:
+            self._load(store.conn)
+        candidates = rank_causes(self.masters, store, claim, trace(self.masters, store, self.baseline, claim), top_k=5)
+        if not candidates:
+            return Prediction(note="no past case with this label")
+        return Prediction(causes=[c["cause_code"] for c in candidates],
+                          processes=_unique(c["process_id"] for c in candidates),
+                          equipment=_unique([c["equipment_id"] for c in candidates]
+                                            + [e for c in candidates for e in c["other_equipment"]]))
+
+
+PREDICTORS = {"A": BaselineA, "B": BaselineB, "C": CauseAgentC}
