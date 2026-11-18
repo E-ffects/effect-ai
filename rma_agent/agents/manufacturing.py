@@ -9,6 +9,9 @@ from collections import Counter
 from datetime import datetime, timedelta
 
 from langsmith import traceable
+from pydantic import BaseModel
+
+from . import llm
 
 from ..tools.inspection import PHASE_OF, detection_rates, low_detection, lot_inspections, test_item_for
 from ..tools.process import EVENT_LOOKBACK_DAYS, process_signals
@@ -73,9 +76,39 @@ def improvement(masters, candidates, escape_list):
         top = masters["causes"].get(candidates[0]["cause_code"], {})
         if top.get("standard_action"):
             process.append({"cause_code": candidates[0]["cause_code"], "action": top["standard_action"],
-                            "owner_dept": top.get("action_owner_dept")})
+                            "standard_action": top["standard_action"], "owner_dept": top.get("action_owner_dept")})
     for e in escape_list:
         master = masters["escapes"].get(e["escape_code"], {})
         if master.get("standard_action"):
-            inspection.append({"escape_code": e["escape_code"], "action": master["standard_action"]})
+            inspection.append({"escape_code": e["escape_code"], "action": master["standard_action"],
+                               "standard_action": master["standard_action"]})
     return {"process": process, "inspection": inspection}
+
+
+class _Improvement(BaseModel):
+    process_action: str
+    inspection_action: str | None = None
+
+
+IMPROVE = """개선안 초안을 써라.
+- process_action: 1순위 원인 후보의 표준 조치를 이 Lot·장비의 근거에 맞게 구체화한 공정 개선안 1~2문장.
+- inspection_action: 유출 원인 후보가 있으면 그 표준 조치를 검사 장비 근거에 맞게 구체화한 검사 기준 개선안 1~2문장, 없으면 null.
+- 표준 조치의 범위를 벗어나는 새 조치나 새 수치를 만들지 않는다."""
+
+
+def improve_with_llm(plan, candidates, escape_list, outcome):
+    if not plan["process"]:
+        return
+    top = candidates[0]
+    facts = {"1순위 원인": {"원인": top["cause_name"], "공정": top["process_name"], "장비": top["equipment_id"] or "특정 불가",
+                        "근거": [e["summary"] for e in top["evidence"]], "표준 조치": plan["process"][0]["standard_action"]}}
+    if plan["inspection"]:
+        e = escape_list[0]
+        facts["유출 원인"] = {"원인": e["escape_name"], "검사 장비": e["equipment_id"],
+                          "근거": [x["summary"] for x in e["evidence"]], "표준 조치": plan["inspection"][0]["standard_action"]}
+    result = llm.write("improvement", IMPROVE, facts, _Improvement,
+                       lambda r: [r["process_action"], r.get("inspection_action") or ""], outcome)
+    if result:
+        plan["process"][0]["action"] = result["process_action"]
+        if plan["inspection"] and result.get("inspection_action"):
+            plan["inspection"][0]["action"] = result["inspection_action"]

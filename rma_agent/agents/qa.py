@@ -4,6 +4,9 @@ Both are rules. Level and approval come from the QA triage record (analysis_leve
 the evidence check follows qa_causal_requirement (what a cause needs before it can be confirmed).
 """
 from langsmith import traceable
+from pydantic import BaseModel
+
+from . import llm
 
 _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", "store")}
 PRODUCTION_EVIDENCE = ("PROCESS_SIGNAL", "EQUIPMENT_EVENT", "MATERIAL")
@@ -80,3 +83,26 @@ def review_note(candidates, checks, triage_result):
     else:
         note += " QA 확인 후 확정합니다."
     return note
+
+
+class _ReviewNote(BaseModel):
+    review_note: str
+
+
+REVIEW = """QA 검토 의견을 2~3문장으로 써라.
+- 1순위 원인 후보의 근거 충분 여부(갖춘 근거, 부족한 근거)와 확정 전에 필요한 확인을 쓴다.
+- 2·3순위와 비교가 필요하면 짧게 덧붙인다.
+- 사람 승인이 필요하면 그 사유와 함께 승인 요청을, 아니면 QA 확인 후 확정함을 쓴다."""
+
+
+def note_with_llm(review_result, candidates, outcome):
+    if not candidates:
+        return
+    names = {c["cause_code"]: c["cause_name"] for c in candidates}
+    facts = {"분석 수준": review_result["analysis_level"], "사람 승인 필요": review_result["needs_approval"],
+             "승인 사유": review_result["approval_reasons"],
+             "후보별 검토": [{"순위": k["rank"], "원인": names[k["cause_code"]], "판정": k["evidence_status"],
+                         "갖춘 근거": k["satisfied"], "부족한 근거": k["missing"]} for k in review_result["candidate_checks"]]}
+    result = llm.write("review_note", REVIEW, facts, _ReviewNote, lambda r: [r["review_note"]], outcome)
+    if result:
+        review_result["review_note"] = result["review_note"]

@@ -13,6 +13,9 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
 from langsmith import traceable
+from pydantic import BaseModel
+
+from . import llm
 
 from ..asof import process_token
 from ..tools.inspection import PHASE_OF
@@ -171,3 +174,35 @@ def similar_case_items(masters, store, claim, limit=5):
              "process_id": c.process, "equipment_id": c.equipment_id, "certainty": c.certainty, "similarity": score,
              "snippet": c.raw_text[:60] + ("…" if len(c.raw_text) > 60 else ""),
              "corrective_actions": actions.get(c.investigation_id, [])} for c, score in chosen]
+
+
+class _CauseExplanation(BaseModel):
+    cause_code: str
+    explanation: str
+
+
+class _Explanations(BaseModel):
+    items: list[_CauseExplanation]
+
+
+EXPLAIN = """원인 후보마다 설명을 2~3문장으로 써라.
+- 이 후보가 이 순위인 이유를 근거(같은 제품 최근 사례, 과거 같은 불량 사례 수, 이 Lot의 공정 신호·설비 이벤트·자재)로 쓴다.
+- 근거가 약하거나 없는 부분(예: 이 Lot 공정 기록에 이상 없음)도 쓴다.
+- items에 후보마다 cause_code와 explanation을 넣는다."""
+
+
+def explain_with_llm(candidates, claim, classification, outcome):
+    """Replace template explanations with LLM sentences (same facts). Keeps templates on failure."""
+    if not candidates:
+        return
+    facts = {"반품": {"고객": claim["customer_id"], "제품": claim.get("reported_part_no"), "Lot": claim.get("lot_id"),
+                    "불량 형태": classification.get("minor_name"), "원문 근거": classification.get("evidence_spans")},
+             "원인 후보": [{"rank": c["rank"], "cause_code": c["cause_code"], "원인": c["cause_name"],
+                        "공정": c["process_name"], "장비": c["equipment_id"] or "특정 불가", "점수": c["score"],
+                        "근거": [e["summary"] for e in c["evidence"]]} for c in candidates]}
+    result = llm.write("explanations", EXPLAIN, facts, _Explanations,
+                       lambda r: [i["explanation"] for i in r["items"]], outcome)
+    if result:
+        by_code = {i["cause_code"]: i["explanation"] for i in result["items"]}
+        for c in candidates:
+            c["explanation"] = by_code.get(c["cause_code"], c["explanation"])

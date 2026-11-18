@@ -1,4 +1,7 @@
 # Python 3.10+
 langgraph>=1.0
 langsmith>=0.4
+langchain>=1.0
+langchain-openai>=1.0
+python-dotenv>=1.0
 pytest>=8

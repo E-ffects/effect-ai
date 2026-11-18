@@ -4,8 +4,8 @@
                           -> mfg_trace ─┴-> cause_analysis -> qa_review -> mfg_improvement -> cs_reply -> END
 
 qa_triage and mfg_trace do not depend on each other and run in parallel.
-The flow is fixed; ranking and evidence checks are rules, sentences are templates (an LLM can replace the
-sentence-writing parts later without changing the order or the output fields).
+The flow is fixed; ranking and evidence checks are rules. Sentences (explanations, review note, improvement,
+reply) are written by the LLM (agents/llm.py) and fall back to templates when it is off or fails.
 
 LangSmith: set LANGSMITH_API_KEY (and LANGSMITH_PROJECT). The graph and every tool call are then traced, and
 the root run id is returned as langsmith_run_id.
@@ -19,11 +19,11 @@ from typing import Annotated, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from . import cause_analysis, cs, manufacturing, qa
+from . import cause_analysis, cs, llm, manufacturing, qa
 from .runtime import get_runtime
 from ..asof import analysis_start
 
-PROMPT_VERSION = "agents-0.3"
+PROMPT_VERSION = "agents-0.4"
 RULES_VERSION = "pcb-v4"
 STEPS_TOTAL = 7
 
@@ -48,14 +48,16 @@ class AnalysisState(TypedDict, total=False):
 
 
 def _agent(order, agent):
-    """Wrap a node: time it, append one trace entry, report progress."""
+    """Wrap a node: time it, append one trace entry, report progress.
+
+    The node returns (update, action, tools) or (update, action, tools, llm_used)."""
     def wrap(fn):
         def node(state, config):
             conf = config["configurable"]
             rt = conf["runtime"]
             started = time.perf_counter()
-            update, action, tools = fn(state, rt, rt.store(state["as_of"]))
-            entry = {"order": order, "agent": agent, "action": action, "tools": tools, "llm_used": False,
+            update, action, tools, *used = fn(state, rt, rt.store(state["as_of"]), conf["llm"])
+            entry = {"order": order, "agent": agent, "action": action, "tools": tools, "llm_used": bool(used and used[0]),
                      "elapsed_ms": round((time.perf_counter() - started) * 1000)}
             progress = conf.get("progress")
             if progress:
@@ -67,7 +69,7 @@ def _agent(order, agent):
 
 
 @_agent(1, "ORCHESTRATOR")
-def orchestrator(state, rt, store):
+def orchestrator(state, rt, store, outcome):
     claim = store.claim(state["rma_id"])
     classification = cs.classification(rt.masters, store, claim)
     return ({"claim": claim, "classification": classification},
@@ -75,13 +77,13 @@ def orchestrator(state, rt, store):
 
 
 @_agent(2, "QA")
-def qa_triage(state, rt, store):
+def qa_triage(state, rt, store, outcome):
     t = qa.triage(store, state["claim"])
     return {"triage": t}, f"분석 수준 판정 {t['analysis_level']} ({t['rationale']})", ["triage_rules"]
 
 
 @_agent(3, "MANUFACTURING")
-def mfg_trace(state, rt, store):
+def mfg_trace(state, rt, store, outcome):
     lot = manufacturing.trace(rt.masters, store, rt.baseline, state["claim"])
     flagged = [s["process_id"] for s in lot["steps"] if s["signal"] != "none"]
     action = (f"Lot {lot['lot_id']} 추적: 공정 {len(lot['steps'])}단계 (이상 신호 {', '.join(flagged) or '없음'}), "
@@ -93,36 +95,47 @@ def mfg_trace(state, rt, store):
 
 
 @_agent(4, "CAUSE_ANALYSIS")
-def cause_node(state, rt, store):
+def cause_node(state, rt, store, outcome):
     candidates = cause_analysis.rank_causes(rt.masters, store, state["claim"], state["lot_trace"], state["top_k"])
+    before = outcome.n_used
+    cause_analysis.explain_with_llm(candidates, state["claim"], state["classification"], outcome)
     similar = cause_analysis.similar_case_items(rt.masters, store, state["claim"])
     warnings = [] if candidates else ["NO_CONFIRMED_CASE"]
     top = ", ".join(c["cause_code"] for c in candidates) or "없음"
     return ({"candidates": candidates, "similar": similar, "warnings": warnings},
             f"이전 사례 {len(store.past_cases(state['claim'].get('intake_label')))}건으로 원인 후보 순위: {top}",
-            ["past_cases", "similar_cases", "process_signals"])
+            ["past_cases", "similar_cases", "process_signals"], outcome.n_used > before)
 
 
 @_agent(5, "QA")
-def qa_review(state, rt, store):
+def qa_review(state, rt, store, outcome):
     review = qa.review(rt.masters, store, state["claim"], state["candidates"], state["triage"])
+    before = outcome.n_used
+    qa.note_with_llm(review, state["candidates"], outcome)
     action = "후보별 근거 검토" + (", 사람 승인 요청 (L3)" if review["needs_approval"] else ", QA 확인 대상")
-    return {"qa_review": review}, action, ["causal_requirements", "item_lab_tests"]
+    return {"qa_review": review}, action, ["causal_requirements", "item_lab_tests"], outcome.n_used > before
 
 
 @_agent(6, "MANUFACTURING")
-def mfg_improvement(state, rt, store):
+def mfg_improvement(state, rt, store, outcome):
     escape_list = manufacturing.escapes(rt.masters, store, state["claim"], state["lot_trace"], state["candidates"])
     plan = manufacturing.improvement(rt.masters, state["candidates"], escape_list)
+    before = outcome.n_used
+    manufacturing.improve_with_llm(plan, state["candidates"], escape_list, outcome)
     targets = [c["cause_code"] for c in state["candidates"][:1]] + [e["escape_code"] for e in escape_list]
     return ({"escapes": escape_list, "improvement": plan},
-            f"공정·검사 개선안 초안 ({', '.join(targets) or '대상 없음'})", ["escape_assessment", "detection_rate", "standard_actions"])
+            f"공정·검사 개선안 초안 ({', '.join(targets) or '대상 없음'})", ["escape_assessment", "detection_rate", "standard_actions"],
+            outcome.n_used > before)
 
 
 @_agent(7, "CS")
-def cs_reply(state, rt, store):
-    text = cs.reply_draft(rt.masters, state["claim"], state["classification"], state["candidates"], state["qa_review"])
-    return {"customer_reply": text}, "QA 검토 결과로 고객 회신 초안 작성", ["reply_template"]
+def cs_reply(state, rt, store, outcome):
+    template = cs.reply_draft(rt.masters, state["claim"], state["classification"], state["candidates"], state["qa_review"])
+    before = outcome.n_used
+    text = cs.reply_with_llm(template, state["claim"], state["classification"], state["candidates"],
+                             state["qa_review"], outcome)
+    return ({"customer_reply": text}, "QA 검토 결과로 고객 회신 초안 작성", ["reply_template"],
+            outcome.n_used > before)
 
 
 def build_graph():
@@ -172,17 +185,23 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
             on_progress(agent, n, STEPS_TOTAL)
 
     tracing = _tracing_on()
+    outcome = llm.Outcome()
     run_id = uuid.uuid4()
     started = time.perf_counter()
     state = GRAPH.invoke(
         {"rma_id": rma_id, "as_of": as_of, "mode": mode, "top_k": top_k, "trace": [], "warnings": warnings},
-        config={"configurable": {"runtime": rt, "progress": progress}, "run_id": run_id,
+        config={"configurable": {"runtime": rt, "progress": progress, "llm": outcome}, "run_id": run_id,
                 "run_name": f"rma_analysis {rma_id}", "tags": [f"mode:{mode}", RULES_VERSION],
                 "metadata": {"rma_id": rma_id, "as_of": as_of, "mode": mode}})
     claim = state["claim"]
     trace = sorted(state["trace"], key=lambda e: e["order"])
+    warnings = list(dict.fromkeys(state["warnings"]))
+    if outcome.failed:
+        warnings.append("LLM_UNAVAILABLE")      # some sentences are templates; ranking and evidence unchanged
+    if outcome.rejected:
+        warnings.append("LLM_OUTPUT_REJECTED")  # an LLM sentence had a number not in the facts; template kept
     return {
-        "rma_id": rma_id, "as_of": as_of, "mode": mode, "status": "SUCCEEDED",
+        "rma_id": rma_id, "as_of": as_of, "mode": mode, "status": "PARTIAL" if outcome.failed else "SUCCEEDED",
         "result": {
             "classification": state["classification"],
             "qa_review": state["qa_review"],
@@ -194,9 +213,9 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
             "drafts": {"customer_reply": state["customer_reply"], "improvement": state["improvement"]},
         },
         "trace": [{"step": i, **{k: v for k, v in e.items() if k != "order"}} for i, e in enumerate(trace, 1)],
-        "warnings": list(dict.fromkeys(state["warnings"])),
+        "warnings": warnings,
         "langsmith_run_id": str(run_id) if tracing else None,
-        "model_versions": {"llm": None, "prompt": PROMPT_VERSION, "rules": RULES_VERSION},
+        "model_versions": {"llm": llm.model_name(), "prompt": PROMPT_VERSION, "rules": RULES_VERSION},
         "elapsed_ms": round((time.perf_counter() - started) * 1000),
     }
 

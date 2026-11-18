@@ -50,9 +50,16 @@ python3 -m rma_agent.evaluate -p B --start 2025-07-01 --limit 300 --no-save
 orchestrator ─┬─ QA: 분석 수준 ────┐
               └─ 제조: Lot 추적 ───┴─▶ 원인분석 ─▶ QA: 근거 검토 ─▶ 제조: 개선안 ─▶ CS: 회신 초안
 ```
-- 순위는 점수식, 근거 검토는 규칙(`qa_causal_requirement`)이다. 설명·초안은 지금 템플릿 문장이고, LLM은 같은 자리에 붙인다.
+- 순위는 점수식, 근거 검토는 규칙(`qa_causal_requirement`)이다. **LLM은 문장만** 쓴다: 원인 설명(원인분석), 검토 의견(QA), 개선안(제조), 고객 회신(CS).
+- LLM에는 도구 결과(사실 JSON)만 주고, 출력에 사실에 없는 숫자가 있으면 버리고 템플릿 문장을 쓴다(`LLM_OUTPUT_REJECTED`).
+- LLM이 꺼져 있거나 키가 없으면 템플릿 문장으로 동작한다. 호출이 실패하면 상태가 `PARTIAL`, 경고가 `LLM_UNAVAILABLE`이고 순위·근거는 그대로다.
 - 원인 점수 = 0.40 × 같은 소분류 투표 + 0.35 × 같은 제품 최근 60일 사례 + 0.25 × 이 Lot의 공정·자재 신호.
 - 장비는 이 Lot이 실제로 지난 장비 중 신호가 가장 강한 것이다. 같은 공정을 여러 장비로 나눠 지났으면 나머지는 `other_equipment`에 둔다.
+
+## 설정
+`.env.example`을 `.env`로 복사해 채운다(`.env`는 커밋되지 않는다).
+- `RMA_LLM`: `provider:model`. 기본 `openai:gpt-4.1-mini`, `off`면 템플릿만 쓴다. Gemini는 `google_genai:모델명`(패키지 `langchain-google-genai`, 키 `GOOGLE_API_KEY`).
+- `OPENAI_API_KEY`: OpenAI 키. 테스트는 LLM을 부르지 않는다(`tests/conftest.py`에서 `RMA_LLM=off`).
 
 ## LangSmith
 `LANGSMITH_API_KEY`(필수), `LANGSMITH_PROJECT`(선택)를 환경 변수로 넣으면 추적이 켜진다. 그래프와 도구 호출이 한 트레이스로 남고, 응답의 `langsmith_run_id`가 그 ID다. 키가 없으면 추적 없이 그대로 실행된다.
