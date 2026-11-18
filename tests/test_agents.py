@@ -94,3 +94,9 @@ def test_errors_carry_spec_codes(kwargs, error):
     with pytest.raises(RmaAgentError) as info:
         run_analysis(**kwargs)
     assert info.value.code == error
+
+
+def test_error_body_matches_frontend():
+    from rma_agent.errors import ClaimNotFound
+    assert ClaimNotFound("RMA-99999 접수를 찾을 수 없습니다").body() == {
+        "detail": "RMA-99999 접수를 찾을 수 없습니다", "code": "CLAIM_NOT_FOUND"}

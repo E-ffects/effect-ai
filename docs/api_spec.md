@@ -6,7 +6,7 @@
 - 상태: **초안.** 3장 API와 5장 저장 책임을 팀이 확인하면 v1.0으로 확정한다.
 
 ## 요약
-- AI 서비스는 **FastAPI 하나**다. Spring만 호출하고, 화면(Vue)은 AI를 직접 부르지 않는다.
+- AI 서비스는 **FastAPI 하나**다. **지금은 화면(Vue)이 AI API를 직접 부른다**(`/api/ai/...`, 3-0). Spring이 준비되면 Spring 경유로 바꾼다. 그때도 FastAPI 코드는 바뀌지 않는다.
 - API는 4개다: **분류**(바로 응답), **원인분석**(등록 → 상태 조회), **유사 사례**(바로 응답), **사례 반영**(승인 후 알림).
 - AI는 DB를 **읽기만** 한다. 업무 상태, 승인, AI 결과 저장은 **Spring**이 한다.
 - 에이전트는 **5개**(CS, 오케스트레이터, QA, 제조, 원인분석)이고, 팀 구조도를 그대로 따른다. CS가 앞단에서 접수·분류하고, QA와 제조가 분석 전후로 두 번씩 일하며, 원인분석 결과는 QA가 검토해 L3(Major) 건의 사람 승인을 요청한다.
@@ -137,8 +137,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 
 ## 3. API
 
-- 기본 주소: `http://{ai-host}/ai/v1` (클러스터 내부, Spring만 호출)
-- 공통 헤더: `X-Request-Id` (Spring이 생성, 로그 추적용), `Content-Type: application/json`
+- 기본 주소: `http://{ai-host}/ai/v1`. 화면은 `/api/ai/...`로 부르고 프록시가 이 주소로 넘긴다(3-0).
+- 공통 헤더: `Content-Type: application/json`. `X-Request-Id`는 있으면 로그에 쓴다(선택). 화면이 보내는 `Authorization` 헤더는 지금은 확인하지 않는다.
 - 시각: ISO 8601, `+09:00`
 - **기준 시각 `as_of`:** 생략하면 서버 설정값을 쓴다. 시연 기본값은 `2025-12-31T23:59:00+09:00`. AI는 이 시각 이전에 알 수 있었던 데이터만 쓴다.
 
@@ -152,6 +152,30 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 | 6 | `GET /health` | 바로 응답 | — | 상태 확인 (LLM 연결 포함) |
 
 챗봇(`POST /chat`)은 2차 범위로, 4번 유사 사례를 근거로 쓰는 형태로 추가한다.
+
+### 3-0. 호출 경로 (지금: 화면 직접 호출)
+```
+브라우저 ── /api/ai/classify ──▶ 프록시(Vite 개발 서버, nginx) ── /ai/v1/classify ──▶ FastAPI (effect-ai)
+        └─ /api/...(그 밖) ──────▶ 프록시 ────────────────────────────────────────▶ 백엔드 (Spring)
+```
+| 화면이 부르는 경로 | FastAPI 경로 |
+|---|---|
+| `POST /api/ai/classify` | `POST /ai/v1/classify` |
+| `POST /api/ai/analyses` | `POST /ai/v1/analyses` |
+| `GET /api/ai/analyses/{analysis_id}` | `GET /ai/v1/analyses/{analysis_id}` |
+| `GET /api/ai/claims/{rma_id}/similar` | `GET /ai/v1/claims/{rma_id}/similar` |
+| `GET /api/ai/health` | `GET /ai/v1/health` |
+
+- `/cases/refresh`는 화면이 아니라 승인 저장 쪽(Spring 또는 운영자)이 부른다.
+- **Vite 개발 서버** (`vite.config.js`): `/api/ai` 규칙을 `/api`보다 **먼저** 둔다.
+  ```js
+  proxy: {
+    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8000', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
+    '/api': process.env.API_TARGET || 'http://127.0.0.1:8080',
+  }
+  ```
+- **nginx** (`nginx.conf`): `location /api/ai/ { proxy_pass http://ai:8000/ai/v1/; proxy_read_timeout 60s; }`를 `location /api/` 위에 둔다.
+- **임시 구조의 한계:** 분석 결과는 FastAPI 메모리에만 있다(재시작하면 사라짐). 채택·기각·승인 저장과 `ai_analysis` 테이블은 Spring이 붙은 뒤 5장대로 한다.
 
 ### 3-1. `POST /classify`
 **요청**
@@ -425,11 +449,14 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 ---
 
 ## 4. 오류
-**오류 응답 형식**
+**오류 응답 형식** (화면의 `api.js`가 `detail`을 그대로 보여 준다)
 ```json
-{"error": {"code": "CLAIM_NOT_FOUND", "message": "RMA-99999 접수를 찾을 수 없습니다", "request_id": "req-8f2c"}}
+{"detail": "RMA-99999 접수를 찾을 수 없습니다", "code": "CLAIM_NOT_FOUND"}
 ```
-| HTTP | code | 상황 | Spring 처리 |
+- `detail`: 화면에 보여 줄 한국어 문구. `code`: 처리 분기용 코드.
+- `rma_agent`의 예외(`rma_agent.errors`)가 `body()`로 이 형식을 만든다.
+
+| HTTP | code | 상황 | 화면 처리 |
 |---|---|---|---|
 | 400 | INVALID_INPUT | 필수 값 누락, 형식 오류 (원문 비어 있음 등) | 입력 확인 메시지 |
 | 404 | CLAIM_NOT_FOUND | 없는 접수, 또는 `as_of` 이전에 접수되지 않은 건 | 접수 확인 |

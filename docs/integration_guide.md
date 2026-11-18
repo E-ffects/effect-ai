@@ -1,6 +1,7 @@
 # AI 패키지 연결 안내 (FastAPI · LangSmith)
 
-- 대상: 구태우(FastAPI), 이상윤(LangSmith)
+- 대상: 구태우(FastAPI), 윤서정(프론트), 이상윤(LangSmith)
+- **지금 구조:** 화면이 AI API를 직접 부른다(`/api/ai/...` → FastAPI `/ai/v1/...`). Spring이 준비되면 Spring 경유로 바꾼다(명세 3-0).
 - 기준: `feature/ai-baseline` 브랜치, 명세 `docs/api_spec.md` v0.3
 - 문의: 유희범(AI/DATA)
 
@@ -51,7 +52,7 @@ FastAPI는 `rma_agent`의 함수 4개만 부른다. 에이전트 내부가 바�
 - **시간 제한:** 명세는 B안 30초다. 넘으면 FastAPI가 `ANALYSIS_TIMEOUT`(504)으로 처리한다.
 
 ### 오류
-함수는 `rma_agent.errors`의 예외를 낸다. 각 예외에 명세 4장의 `code`와 `http_status`가 들어 있으니 그대로 응답하면 된다.
+함수는 `rma_agent.errors`의 예외를 낸다. 각 예외에 명세 4장의 `code`와 `http_status`가 들어 있고, `exc.body()`가 응답 본문 `{"detail": "화면 문구", "code": "CLAIM_NOT_FOUND"}`을 만든다. 프론트 `api.js`는 `detail`을 그대로 보여 준다.
 
 | 예외 | `code` | HTTP | 언제 |
 |---|---|---|---|
@@ -87,11 +88,10 @@ jobs = {}  # analysis_id -> dict (실서비스에서는 Redis 등)
 
 @app.exception_handler(RmaAgentError)
 def agent_error(request, exc):
-    return JSONResponse(status_code=exc.http_status,
-                        content={"error": {"code": exc.code, "message": exc.message, "request_id": str(uuid.uuid4())[:8]}})
+    return JSONResponse(status_code=exc.http_status, content=exc.body())
 
 
-@app.post("/analyses", status_code=202)
+@app.post("/ai/v1/analyses", status_code=202)
 def create_analysis(body: dict):
     analysis_id = f"ana-{uuid.uuid4().hex[:12]}"
     options = body.get("options", {})
@@ -106,17 +106,19 @@ def create_analysis(body: dict):
             job.update(rma_agent.run_analysis(body["rma_id"], as_of=body.get("as_of"), mode=options.get("mode", "B"),
                                               top_k=options.get("top_k", 3), on_progress=progress))
         except RmaAgentError as exc:
-            job.update(status="FAILED", error={"code": exc.code, "message": exc.message})
+            job.update(status="FAILED", error=exc.body())
         except Exception as exc:
-            job.update(status="FAILED", error={"code": "INTERNAL_ERROR", "message": str(exc)})
+            job.update(status="FAILED", error={"detail": "분석 중 오류가 발생했습니다", "code": "INTERNAL_ERROR"})
 
     pool.submit(work)
     return {k: job[k] for k in ("analysis_id", "rma_id", "status", "created_at")} | {"poll_after_ms": 1000}
 
 
-@app.get("/analyses/{analysis_id}")
+@app.get("/ai/v1/analyses/{analysis_id}")
 def get_analysis(analysis_id: str):
-    return jobs[analysis_id]  # 없으면 ANALYSIS_NOT_FOUND 처리
+    if analysis_id not in jobs:
+        return JSONResponse(status_code=404, content={"detail": "분석을 찾을 수 없습니다. 다시 요청하세요", "code": "ANALYSIS_NOT_FOUND"})
+    return jobs[analysis_id]
 ```
 - `POST /analyses`의 입력 검증(없는 접수 등)을 등록 시점에 하고 싶으면 `rma_agent.similar_cases(rma_id, as_of, limit=1)`을 먼저 불러 보면 된다. 같은 검사를 하고 0.1초면 끝난다.
 
@@ -127,7 +129,49 @@ def get_analysis(analysis_id: str):
 | `RMA-99999` | 없는 접수 → `CLAIM_NOT_FOUND` |
 | `RMA-08743` + `as_of="2025-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
 
-## 4. LangSmith (이상윤)
+## 4. 프론트 연결 (윤서정)
+화면은 AI API를 `/api/ai/...`로 부른다. 프록시가 `/api/ai/`만 FastAPI(`/ai/v1/`)로 넘기고, 나머지 `/api/`는 지금처럼 백엔드로 보낸다. 경로 대응은 명세 3-0.
+
+**`vite.config.js`** (`/api/ai`를 `/api`보다 먼저)
+```js
+server: {
+  host: true, port: 5173,
+  proxy: {
+    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8000', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
+    '/api': process.env.API_TARGET || 'http://127.0.0.1:8080',
+  },
+},
+```
+**`nginx.conf`** (`location /api/` 위에)
+```nginx
+location /api/ai/ {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $ai http://ai:8000;
+    rewrite ^/api/ai/(.*)$ /ai/v1/$1 break;
+    proxy_pass $ai;
+    proxy_read_timeout 60s;
+    error_page 502 504 = @ai_down;
+}
+location @ai_down {
+    default_type application/json;
+    charset utf-8;
+    return 503 '{"detail":"AI 분석을 잠시 사용할 수 없습니다","code":"SERVICE_UNAVAILABLE"}';
+}
+```
+- AI가 꺼져 있으면 503이 가서, `api.js`가 이미 하는 대로 "AI 일시 불가" 배너가 뜬다.
+
+**화면별로 바꿀 곳** (응답 모양은 `samples/*.json`, 그리는 법은 화면 시안 참고)
+| 화면 | 지금 부르는 것 | 바꿀 것 |
+|---|---|---|
+| 접수 (`IntakeView.vue`) | `POST /intake` → `subtype` | 저장 전에 `POST /api/ai/classify`로 소분류·근거 구절·재질의 문구 표시 (`status`가 `INSUFFICIENT_INFO`면 `follow_up_questions`) |
+| RMA 상세 AI (`useRmaDetail.js`, `RmaDetailQuality.vue`) | `GET /rmas/{id}/ai` → `suggestion`, `basis` | `POST /api/ai/analyses` `{rma_id}` → 1초마다 `GET /api/ai/analyses/{id}`, `status`가 `SUCCEEDED`·`PARTIAL`이면 `result`를 그린다. 실행 중에는 `progress.current_agent`로 단계 표시 |
+| 유사 사례 (`agent.js` `fetchSimilar`) | `GET /rmas/{id}/similar` → `basis`, `past_action` | `GET /api/ai/claims/{id}/similar` → `items[]`의 `cause_code`, `similarity`, `corrective_actions` |
+| 에이전트 패널 (`agent.js` `fetchAnalysis`) | `GET /rmas/{id}` | 위 분석 결과의 `qa_review`(분석 수준, 승인 필요), `cause_candidates[0]`(1순위 원인·공정·장비) |
+
+- 분석은 LLM을 켜면 약 10초 걸린다. `poll_after_ms`(1000) 간격으로 조회한다.
+- 지금 분석 결과는 FastAPI 메모리에만 있다. 채택·기각·승인 저장은 Spring이 붙은 뒤에 한다(시안 화면의 버튼도 아직 저장하지 않는다).
+
+## 5. LangSmith (이상윤)
 1. LangSmith에서 프로젝트 `effect-ai`를 만들고 API 키를 발급한다.
 2. 서비스 환경(서버의 `.env` 또는 배포 환경 변수)에 `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT=effect-ai`를 넣는다. 코드 수정은 필요 없다. 키가 있으면 추적이 자동으로 켜진다(`LANGSMITH_TRACING=false`로 끌 수 있다).
 3. 키를 팀원에게 줄 때는 채팅이 아니라 각자 `.env`에 직접 넣도록 전달한다.

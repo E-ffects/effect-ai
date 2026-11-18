@@ -1,4 +1,7 @@
-"""Errors FastAPI maps to HTTP responses (docs/api_spec.md 4). Each carries the spec's error code."""
+"""Errors FastAPI maps to HTTP responses (docs/api_spec.md 4). Each carries the spec's error code.
+
+Response body: {"detail": "<message shown on screen>", "code": "<CODE>"}. The frontend already reads `detail`.
+"""
 from datetime import datetime
 
 
@@ -9,6 +12,10 @@ class RmaAgentError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
+
+    def body(self):
+        """JSON body for the HTTP response."""
+        return {"detail": self.message, "code": self.code}
 
 
 class InvalidInput(RmaAgentError):
