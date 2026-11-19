@@ -6,3 +6,4 @@
 - `pcb_rma_v4.sqlite`: 이전 버전. v5 파일이 없을 때만 쓴다. 테스트와 샘플은 v5 기준이라 v4로는 일부 테스트가 실패한다.
 - 팀 공유용 CSV(`PCB_RMA_dataset_v5.zip`)는 Drive의 `03. 데이터 › ssd_data`에 있다.
 - 다른 위치의 파일을 쓰려면 환경 변수 `RMA_DB`에 경로를 지정한다.
+- 받은 zip이 맞는 버전인지는 `datagen/README.md`의 SHA-256 표로 확인한다. 생성 스크립트도 그 폴더에 있다.

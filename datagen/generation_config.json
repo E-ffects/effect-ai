@@ -1,0 +1,5810 @@
+{
+ "AS_OF": "2025-12-31T23:59:00+09:00",
+ "CAUSES": {
+  "DRILL_BIT_WEAR": [
+   "PROCESS",
+   "DRILL",
+   "드릴 비트 수명 초과",
+   "비트 마모로 홀벽 거칠기 증가 → 도금 크랙 → 열사이클 후 간헐 오픈",
+   "반송품 단면(홀벽 거칠기·크랙) + 설비 비트 교체 이력 + 동일 설비·기간 보관 시료 IST 비교",
+   "드릴 비트 수명 카운터 인터록 적용 및 카운터 리셋 로직 수정",
+   "설비팀",
+   "WORK_INSTRUCTION"
+  ],
+  "LAM_PRESS_PROFILE": [
+   "PROCESS",
+   "LAM",
+   "적층 프레스 온도 프로파일 이탈",
+   "열전대 편차로 실제 경화 온도 부족 → 미경화 → 리플로 시 블리스터",
+   "반송품 DSC ΔTg + 프레스 교정 기록 + 동일 Lot 다른 로드 시료 비교",
+   "프레스 열전대 교정 주기 단축(분기→월) 및 이중 열전대 편차 경보",
+   "설비팀",
+   "CONTROL_PLAN"
+  ],
+  "OXIDE_INSUFFICIENT": [
+   "PROCESS",
+   "OXIDE",
+   "산화 피막 부족",
+   "산화 처리욕 농도 저하로 피막 중량 부족 → 층간 밀착력 저하 → 디라미네이션",
+   "반송품 단면 박리 위치(내층 동박 계면) + 산화 피막 중량 SPC 이탈 기록",
+   "산화욕 농도 자동 보충 및 피막 중량 하한 이탈 시 Lot 자동 보류",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "DESMEAR_INSUFFICIENT": [
+   "PROCESS",
+   "DESMEAR",
+   "디스미어 부족",
+   "과망간산 용액 열화로 스미어 잔류 → 내층 연결 분리(ICD) → 오픈·간헐 오픈",
+   "반송품 단면 ICD 확인 + 디스미어율 측정 기록 + 동일 설비 기간 보관 시료 비교",
+   "디스미어 용액 수명 관리(처리 면적 기준 교체) 및 디스미어율 Lot별 측정",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "PLATING_THIN": [
+   "PROCESS",
+   "PLATE",
+   "홀 도금 두께 부족",
+   "정류기 출력 저하로 전류밀도 부족 → 홀 동 두께 미달 → 배럴 크랙",
+   "반송품 단면 홀 동 두께 + 정류기 전류밀도 기록 + 설비 이상 이력",
+   "정류기 출력 실시간 모니터링·이탈 시 라인 정지, 정류기 예방보전 주기 단축",
+   "설비팀",
+   "CONTROL_PLAN"
+  ],
+  "ENIG_NI_CORROSION": [
+   "PROCESS",
+   "SF",
+   "ENIG Ni 부식(블랙패드)",
+   "니켈욕 MTO 초과로 P 함량 상승·금 치환 시 Ni 과부식 → 접합 계면 파단",
+   "반송품 SEM/EDS(Ni 부식 등급·P 함량) + 니켈욕 MTO 기록 + 동일 욕 기간 보관 시료 비교",
+   "니켈욕 MTO 상한 3.5 설정 및 초과 시 욕 교체 강제",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "CCL_RESIN_VOID": [
+   "MATERIAL",
+   null,
+   "원판(CCL) 수지 함침 불량",
+   "공급사 CCL Lot 수지 함침 부족 → 수지 보이드 → 디라미네이션·CAF",
+   "반송품 단면 보이드 + 사용 CCL Lot 추적 + 동일 CCL Lot 미사용 재고 시험",
+   "공급사 시정조치 요구(SCAR) 및 해당 CCL Lot 사용 중지",
+   "구매팀",
+   "IQC_STANDARD"
+  ],
+  "PREPREG_FLOW": [
+   "MATERIAL",
+   null,
+   "프리프레그 수지 흐름 부족",
+   "프리프레그 Lot 수지 흐름(flow) 미달 → 적층 보이드 → 블리스터",
+   "반송품 단면 적층 보이드 + 프리프레그 Lot 추적 + 미사용 재고 resin flow 시험",
+   "공급사 시정조치 요구(SCAR) 및 resin flow 수입검사 추가",
+   "구매팀",
+   "IQC_STANDARD"
+  ],
+  "SM_INK_LOT": [
+   "MATERIAL",
+   null,
+   "PSR 잉크 Lot 점도 이탈",
+   "PSR 잉크 Lot 점도 이탈 → 도막 밀착력 저하 → PSR 박리",
+   "반송품 테이프 시험 + 잉크 Lot 추적 + 미사용 잉크 점도 시험",
+   "공급사 시정조치 요구(SCAR) 및 잉크 점도 수입검사 추가",
+   "구매팀",
+   "IQC_STANDARD"
+  ],
+  "CU_FOIL_PROFILE": [
+   "MATERIAL",
+   null,
+   "동박 표면 처리 불량",
+   "동박 Lot 조화 처리 부족 → 박리 강도 저하 → 패드 들뜸",
+   "반송품 박리 강도 + 동박 Lot 추적 + 미사용 동박 박리 강도 시험",
+   "공급사 시정조치 요구(SCAR) 및 박리 강도 수입검사 추가",
+   "구매팀",
+   "IQC_STANDARD"
+  ],
+  "SM_CURE_INSUFFICIENT": [
+   "PROCESS",
+   "SM",
+   "PSR 경화 부족",
+   "경화로 히터 존 고장 → 경화 온도 부족 → PSR 박리·잔사",
+   "반송품 테이프·경화도 시험 + 경화로 온도 기록 + 설비 이상 이력",
+   "경화로 존별 온도 이탈 경보·인터록 적용",
+   "설비팀",
+   "CONTROL_PLAN"
+  ],
+  "IL_ETCH_OVER": [
+   "PROCESS",
+   "IL_ETCH",
+   "내층 과에칭",
+   "컨베이어 속도 저하로 과에칭 → 선폭 감소 → 임피던스 하한 이탈",
+   "반송품 TDR·선폭 측정 + 에칭 선폭 편차 기록 + 동일 기간 보관 시료 TDR",
+   "에칭 라인 속도 피드백 제어 및 선폭 편차 SPC 경보",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "OL_ETCH_RESIDUE": [
+   "PROCESS",
+   "OL_ETCH",
+   "외층 에칭 잔동",
+   "스프레이 노즐 막힘으로 잔동 발생 → 미세 패턴 쇼트",
+   "반송품 E-Test 재검·현미경 + 에칭 설비 노즐 점검 기록",
+   "스프레이 노즐 막힘 점검 주기 단축(주→일) 및 압력 모니터링",
+   "공정기술팀",
+   "WORK_INSTRUCTION"
+  ],
+  "HANDLING_SCRATCH": [
+   "PROCESS",
+   "OL_IMG",
+   "취급 스크래치",
+   "컨베이어·랙 취급 중 스크래치 → 동 노출·니크 단선",
+   "반송품 현미경 스크래치 위치 + 설비 가이드 롤러 점검 기록",
+   "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "LAM_REGISTRATION": [
+   "PROCESS",
+   "LAM",
+   "층간 정렬 편차",
+   "정렬 핀 마모로 층간 정렬 편차 → 홀 브레이크아웃 → 오픈·홀 위치 편차",
+   "반송품 X-ray 정렬 측정 + 프레스 정렬 편차 기록 + 정렬 핀 점검 이력",
+   "정렬 핀 교체 주기 설정 및 X-ray 정렬 측정 로드별 실시",
+   "설비팀",
+   "CONTROL_PLAN"
+  ],
+  "ROUT_OFFSET": [
+   "PROCESS",
+   "ROUT",
+   "라우터 원점 편차",
+   "보전 후 원점 재설정 오류 → 외형 치수 이탈",
+   "반송품 치수 측정 + 라우터 보전 이력 + 동일 기간 Lot 치수 기록",
+   "보전 후 원점 확인 체크리스트 및 초품 승인 필수화",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "IONIC_CONTAMINATION": [
+   "PROCESS",
+   "CLEAN",
+   "최종 세척 불량(이온 오염)",
+   "순수 이온교환 수지 소진으로 헹굼수 전도도 상승 → 이온 잔류 → 절연저항 저하",
+   "반송품 이온 오염·SIR + 세척수 전도도 기록 + 동일 기간 보관 시료 이온 오염",
+   "이온교환 수지 교체 기준(전도도) 및 전도도 이탈 시 라인 정지",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "PACK_VACUUM_SEAL": [
+   "PROCESS",
+   "PACK",
+   "진공 포장 실링 불량",
+   "실링 바 온도 저하로 진공 누설 → 흡습 → 고객 리플로 시 블리스터",
+   "반송품 수분 함량·베이킹 전후 리플로 재현 + 실링 온도 기록 + 고객 수령 시 HIC 상태",
+   "실링 바 온도 인터록 및 실링 강도 점검 교대별 실시",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "LABEL_PRINT_MIX": [
+   "PROCESS",
+   "PACK",
+   "라벨 재출력 혼입",
+   "라벨 재출력 시 이전 Lot 라벨 혼입 → 라벨·실물 Date code 불일치",
+   "반송품 라벨·마킹 대조 + 라벨 출력 이력 + 출하검사 스캔 기록",
+   "라벨 재출력 승인 절차 및 잔여 라벨 회수 절차 수립",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "LAM_COOLING_RECIPE": [
+   "PROCESS",
+   "LAM",
+   "프레스 냉각 레시피 변경",
+   "냉각 속도 상향 레시피 적용 → 잔류 응력 → 박판 휨",
+   "반송품 휨 측정 + 레시피 변경 이력 + 변경 전·후 Lot 휨 비교",
+   "박판 제품 냉각 레시피 원복 및 레시피 변경 시 변경점 관리(4M) 필수",
+   "공정기술팀",
+   "PFMEA"
+  ],
+  "IMSN_THIN": [
+   "PROCESS",
+   "SF",
+   "주석 두께 부족",
+   "주석욕 농도 저하로 두께 미달 → 납 젖음 불량",
+   "반송품 주석 두께·납땜성 + 주석욕 분석 기록",
+   "주석욕 분석 주기 단축 및 두께 Lot별 측정",
+   "공정기술팀",
+   "CONTROL_PLAN"
+  ],
+  "FOREIGN_MATERIAL": [
+   "PROCESS",
+   "SM",
+   "공정 이물 혼입",
+   "PSR 인쇄 전 이물 부착 → PSR 하부 이물·오염",
+   "반송품 현미경·성분 분석",
+   "인쇄실 청정도 관리 강화",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "DRILL_DEBRIS_PLUGGED_HOLE": [
+   "PROCESS",
+   "DRILL",
+   "드릴 분진 홀 막힘",
+   "드릴 분진 잔류 → 홀 막힘",
+   "반송품 X-ray·현미경",
+   "드릴 후 고압 세척 조건 보완",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "SF_LOCAL_CONTAMINATION": [
+   "PROCESS",
+   "SF",
+   "표면처리 국부 오염",
+   "표면처리 전 국부 오염 → 국부 납 젖음 불량",
+   "반송품 납땜성·현미경",
+   "표면처리 전 세정 조건 보완",
+   "공정기술팀",
+   "WORK_INSTRUCTION"
+  ],
+  "SM_LOCAL_ADHESION": [
+   "PROCESS",
+   "SM",
+   "PSR 국부 밀착 불량",
+   "전처리 국부 불량 → PSR 국부 들뜸",
+   "반송품 테이프 시험",
+   "PSR 전처리 브러싱 조건 점검",
+   "생산팀",
+   "WORK_INSTRUCTION"
+  ],
+  "ET_RETEST_MISJUDGE": [
+   "INSPECTION",
+   "ET",
+   "E-Test 재검 판정 오처리",
+   "불량 판정 패널을 재검 중 수기 합격 처리 → 오픈·쇼트 유출",
+   "반송품 E-Test 재검 + 해당 패널 E-Test 이력(재검·판정 변경 로그)",
+   "재검 판정 수기 변경 금지·2인 확인 적용",
+   "품질팀",
+   "INSPECTION_STANDARD"
+  ],
+  "NO_DEFECT_FOUND": [
+   "UNDETERMINED",
+   null,
+   "불량 미재현(양품 판정)",
+   "반송품·보관 시료 모두 규격 내",
+   "반송품 재시험 + 동일 Lot 보관 시료 비교 + 고객 측정 조건 확인",
+   "고객 측정 조건 공유 및 공동 측정",
+   "품질팀",
+   null
+  ],
+  "ROOT_CAUSE_PENDING": [
+   "UNDETERMINED",
+   null,
+   "원인 분석 진행 중",
+   "분석 미완료",
+   "-",
+   "-",
+   "품질팀",
+   null
+  ]
+ },
+ "CAUSE_LAB": {
+  "DRILL_BIT_WEAR": {
+   "LAB_HOLE_WALL_ROUGH": [
+    31,
+    45
+   ],
+   "LAB_XSEC_CRACK": [
+    1,
+    3
+   ],
+   "LAB_IST_DR": [
+    15,
+    40
+   ]
+  },
+  "LAM_PRESS_PROFILE": {
+   "LAB_DSC_DTG": [
+    7,
+    12
+   ],
+   "LAB_REFLOW_REPRO": [
+    1,
+    5
+   ],
+   "LAB_XSEC_DELAM": [
+    1,
+    2
+   ]
+  },
+  "OXIDE_INSUFFICIENT": {
+   "LAB_XSEC_DELAM": [
+    1,
+    3
+   ],
+   "LAB_REFLOW_REPRO": [
+    1,
+    3
+   ]
+  },
+  "DESMEAR_INSUFFICIENT": {
+   "LAB_XSEC_ICD": [
+    1,
+    4
+   ],
+   "LAB_IST_DR": [
+    12,
+    30
+   ],
+   "LAB_ET_RETEST": [
+    1,
+    2
+   ]
+  },
+  "PLATING_THIN": {
+   "LAB_XSEC_HOLE_CU": [
+    12,
+    17.5
+   ],
+   "LAB_XSEC_CRACK": [
+    1,
+    2
+   ],
+   "LAB_IST_DR": [
+    15,
+    35
+   ]
+  },
+  "ENIG_NI_CORROSION": {
+   "LAB_SEM_NI_CORR": [
+    2,
+    3
+   ],
+   "LAB_EDS_P": [
+    10,
+    12.5
+   ]
+  },
+  "CCL_RESIN_VOID": {
+   "LAB_XSEC_VOID": [
+    2,
+    6
+   ],
+   "LAB_XSEC_DELAM": [
+    1,
+    3
+   ],
+   "LAB_SIR": [
+    7.4,
+    8.6
+   ]
+  },
+  "PREPREG_FLOW": {
+   "LAB_XSEC_VOID": [
+    2,
+    5
+   ],
+   "LAB_REFLOW_REPRO": [
+    1,
+    4
+   ]
+  },
+  "SM_INK_LOT": {
+   "LAB_SM_TAPE": [
+    2,
+    6
+   ]
+  },
+  "CU_FOIL_PROFILE": {
+   "LAB_PEEL": [
+    0.55,
+    0.9
+   ]
+  },
+  "SM_CURE_INSUFFICIENT": {
+   "LAB_SM_TAPE": [
+    1,
+    5
+   ],
+   "LAB_MICROSCOPE": [
+    1,
+    3
+   ]
+  },
+  "IL_ETCH_OVER": {
+   "LAB_LINE_WIDTH": [
+    -19,
+    -13
+   ],
+   "LAB_TDR_IMP": [
+    41.5,
+    44.6
+   ]
+  },
+  "OL_ETCH_RESIDUE": {
+   "LAB_ET_RETEST": [
+    1,
+    2
+   ],
+   "LAB_MICROSCOPE": [
+    1,
+    3
+   ]
+  },
+  "HANDLING_SCRATCH": {
+   "LAB_MICROSCOPE": [
+    1,
+    4
+   ],
+   "LAB_ET_RETEST": [
+    1,
+    1
+   ]
+  },
+  "LAM_REGISTRATION": {
+   "LAB_REG_OFFSET": [
+    58,
+    90
+   ],
+   "LAB_HOLE_POS": [
+    55,
+    80
+   ],
+   "LAB_XRAY": [
+    1,
+    2
+   ],
+   "LAB_ET_RETEST": [
+    1,
+    1
+   ]
+  },
+  "ROUT_OFFSET": {
+   "LAB_DIM": [
+    130,
+    185
+   ]
+  },
+  "IONIC_CONTAMINATION": {
+   "LAB_IONIC": [
+    2.0,
+    3.6
+   ],
+   "LAB_SIR": [
+    7.0,
+    8.5
+   ]
+  },
+  "PACK_VACUUM_SEAL": {
+   "LAB_MOISTURE": [
+    0.15,
+    0.32
+   ],
+   "LAB_REFLOW_REPRO": [
+    1,
+    4
+   ]
+  },
+  "LABEL_PRINT_MIX": {
+   "LAB_LABEL_MATCH": [
+    0,
+    0
+   ]
+  },
+  "LAM_COOLING_RECIPE": {
+   "LAB_WARPAGE": [
+    0.9,
+    1.4
+   ]
+  },
+  "IMSN_THIN": {
+   "LAB_SN_THK": [
+    0.4,
+    0.7
+   ],
+   "LAB_SOLDERABILITY": [
+    70,
+    88
+   ]
+  },
+  "FOREIGN_MATERIAL": {
+   "LAB_MICROSCOPE": [
+    1,
+    2
+   ]
+  },
+  "DRILL_DEBRIS_PLUGGED_HOLE": {
+   "LAB_XRAY": [
+    1,
+    2
+   ]
+  },
+  "SF_LOCAL_CONTAMINATION": {
+   "LAB_SOLDERABILITY": [
+    80,
+    91
+   ]
+  },
+  "SM_LOCAL_ADHESION": {
+   "LAB_SM_TAPE": [
+    1,
+    1
+   ]
+  },
+  "ET_RETEST_MISJUDGE": {
+   "LAB_ET_RETEST": [
+    1,
+    2
+   ]
+  }
+ },
+ "CUSTOMERS": [
+  [
+   "A01",
+   "고객사 A01(차량 전장 Tier1)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949 / VDA 6.3",
+   1
+  ],
+  [
+   "A02",
+   "고객사 A02(차량 전장 Tier1)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949",
+   1
+  ],
+  [
+   "A03",
+   "고객사 A03(차량 전장 Tier1)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949 / VDA 6.3",
+   1
+  ],
+  [
+   "A04",
+   "고객사 A04(차량 전장 Tier1)",
+   "AUTOMOTIVE",
+   "해외",
+   "IATF 16949 / VDA 6.3",
+   1
+  ],
+  [
+   "A05",
+   "고객사 A05(차량 전장 Tier2)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949",
+   1
+  ],
+  [
+   "A06",
+   "고객사 A06(배터리 시스템)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949",
+   1
+  ],
+  [
+   "A07",
+   "고객사 A07(배터리 시스템)",
+   "AUTOMOTIVE",
+   "해외",
+   "IATF 16949 / VDA 6.3",
+   1
+  ],
+  [
+   "A08",
+   "고객사 A08(배터리 시스템)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949",
+   1
+  ],
+  [
+   "A09",
+   "고객사 A09(ADAS 모듈)",
+   "AUTOMOTIVE",
+   "해외",
+   "IATF 16949 / VDA 6.3",
+   1
+  ],
+  [
+   "A10",
+   "고객사 A10(ADAS 모듈)",
+   "AUTOMOTIVE",
+   "국내",
+   "IATF 16949",
+   1
+  ],
+  [
+   "S01",
+   "고객사 S01(메모리 모듈)",
+   "SEMICONDUCTOR",
+   "국내",
+   "ISO 9001 / 고객 품질협약",
+   0
+  ],
+  [
+   "S02",
+   "고객사 S02(메모리·스토리지 EMS)",
+   "SEMICONDUCTOR",
+   "국내",
+   "ISO 9001 / 고객 품질협약",
+   0
+  ],
+  [
+   "S03",
+   "고객사 S03(메모리 모듈)",
+   "SEMICONDUCTOR",
+   "해외",
+   "ISO 9001 / 고객 품질협약",
+   0
+  ],
+  [
+   "S04",
+   "고객사 S04(서버 모듈 EMS)",
+   "SEMICONDUCTOR",
+   "해외",
+   "ISO 9001",
+   0
+  ],
+  [
+   "S05",
+   "고객사 S05(SSD 모듈)",
+   "SEMICONDUCTOR",
+   "국내",
+   "ISO 9001 / 고객 품질협약",
+   0
+  ],
+  [
+   "S06",
+   "고객사 S06(SSD 모듈)",
+   "SEMICONDUCTOR",
+   "해외",
+   "ISO 9001",
+   0
+  ],
+  [
+   "S07",
+   "고객사 S07(스토리지 EMS)",
+   "SEMICONDUCTOR",
+   "국내",
+   "ISO 9001",
+   0
+  ],
+  [
+   "S08",
+   "고객사 S08(스토리지 EMS)",
+   "SEMICONDUCTOR",
+   "해외",
+   "ISO 9001 / 고객 품질협약",
+   0
+  ],
+  [
+   "I01",
+   "고객사 I01(산업 제어)",
+   "INDUSTRIAL",
+   "국내",
+   "ISO 9001",
+   0
+  ],
+  [
+   "I02",
+   "고객사 I02(산업 제어)",
+   "INDUSTRIAL",
+   "국내",
+   "ISO 9001",
+   0
+  ],
+  [
+   "I03",
+   "고객사 I03(전력 제어)",
+   "INDUSTRIAL",
+   "국내",
+   "ISO 9001",
+   0
+  ],
+  [
+   "I04",
+   "고객사 I04(자동화 장비)",
+   "INDUSTRIAL",
+   "해외",
+   "ISO 9001",
+   0
+  ],
+  [
+   "I05",
+   "고객사 I05(산업 제어 EMS)",
+   "INDUSTRIAL",
+   "국내",
+   "ISO 9001",
+   0
+  ],
+  [
+   "I06",
+   "고객사 I06(계측 장비)",
+   "INDUSTRIAL",
+   "국내",
+   "ISO 9001",
+   0
+  ]
+ ],
+ "DETECTION": {
+  "CUSTOMER_IQC": [
+   "고객 수입검사(IQC)에서",
+   [
+    1,
+    12
+   ]
+  ],
+  "SMT_REFLOW": [
+   "SMT 리플로 공정에서",
+   [
+    3,
+    35
+   ]
+  ],
+  "ICT_FUNCTION": [
+   "ICT·기능검사에서",
+   [
+    5,
+    45
+   ]
+  ],
+  "CUSTOMER_RELIABILITY": [
+   "고객 신뢰성 시험(열충격·HAST) 중",
+   [
+    12,
+    70
+   ]
+  ],
+  "FIELD": [
+   "차량·현장 회수품에서",
+   [
+    50,
+    230
+   ]
+  ]
+ },
+ "EQUIPMENT_TYPE": {
+  "IQC-01": "수입검사실",
+  "ILI-01": "내층 노광기",
+  "ILI-02": "내층 노광기",
+  "ILE-01": "내층 에칭 라인",
+  "ILE-02": "내층 에칭 라인",
+  "IAOI-01": "AOI",
+  "IAOI-02": "AOI",
+  "IAOI-03": "AOI",
+  "OXD-01": "산화 처리 라인",
+  "OXD-02": "산화 처리 라인",
+  "PRS-01": "진공 프레스",
+  "PRS-02": "진공 프레스",
+  "PRS-03": "진공 프레스",
+  "PRS-04": "진공 프레스(핀 정렬)",
+  "DRL-01": "CNC 드릴",
+  "DRL-02": "CNC 드릴",
+  "DRL-03": "CNC 드릴",
+  "DRL-04": "CNC 드릴",
+  "DSM-01": "디스미어·PTH 라인",
+  "DSM-02": "디스미어·PTH 라인",
+  "PLT-01": "수직 동도금 라인",
+  "PLT-02": "수직 동도금 라인",
+  "PLT-03": "수직 동도금 라인",
+  "OLI-01": "외층 노광기",
+  "OLI-02": "외층 노광기",
+  "OLE-01": "외층 에칭 라인",
+  "OLE-02": "외층 에칭 라인",
+  "OAOI-01": "AOI",
+  "OAOI-02": "AOI",
+  "OAOI-03": "AOI",
+  "SMR-01": "PSR 인쇄·경화 라인",
+  "SMR-02": "PSR 인쇄·경화 라인",
+  "ENIG-01": "ENIG 라인",
+  "ENIG-02": "ENIG 라인",
+  "OSP-01": "OSP 라인",
+  "IMSN-01": "무전해 주석 라인",
+  "RTR-01": "라우터",
+  "RTR-02": "라우터",
+  "RTR-03": "라우터",
+  "CLN-01": "최종 세척기",
+  "CLN-02": "최종 세척기",
+  "ET-01": "전용 픽스처 E-Tester",
+  "ET-02": "전용 픽스처 E-Tester",
+  "FP-01": "플라잉 프로브",
+  "FQC-01": "최종 외관검사대",
+  "LAB-01": "신뢰성·단면 분석실",
+  "PCK-01": "진공 포장기",
+  "PCK-02": "진공 포장기",
+  "OQC-01": "출하검사대"
+ },
+ "ESCAPES": {
+  "ESC_RELIABILITY_NOT_DETECTABLE": [
+   "신뢰성 잠재 결함 미검출",
+   "FQC",
+   "상온 E-Test로 검출되지 않는 잠재 결함이고 열사이클(IST) 샘플 시험이 없음",
+   "차량용 제품 Lot별 IST(열사이클) 샘플 시험 추가"
+  ],
+  "ESC_FQC_SAMPLING": [
+   "샘플링 빈도·수량 부족",
+   "FQC",
+   "해당 특성의 샘플 시험 빈도·수량이 부족해 영향 Lot이 시험되지 않음",
+   "해당 특성 샘플 시험 Lot별 실시로 환원"
+  ],
+  "ESC_SAMPLE_NOT_REPRESENTATIVE": [
+   "시료 대표성 부족",
+   "FQC",
+   "시험 쿠폰이 영향 로드·위치를 대표하지 못함",
+   "로드별·패널 위치별 쿠폰 채취 기준 개정"
+  ],
+  "ESC_FQC_METHOD": [
+   "검사 방법 미흡",
+   "FQC",
+   "현행 검사 방법으로 해당 특성을 측정할 수 없음",
+   "검사 방법 추가(단면·SEM/고온 휨 등)"
+  ],
+  "ESC_SPC_REACTION": [
+   "SPC 이탈 대응 누락",
+   null,
+   "공정 SPC 이탈 경보가 있었으나 Lot 보류·조치가 수행되지 않음",
+   "SPC 이탈 시 자동 Lot 보류 및 대응 기록 필수화"
+  ],
+  "ESC_IQC_COA_ONLY": [
+   "수입검사 성적서 의존",
+   "IQC",
+   "수입검사가 공급사 성적서(CoA) 확인에 그쳐 Lot 이상을 검출하지 못함",
+   "해당 자재 수입검사 항목 추가(실측)"
+  ],
+  "ESC_ET_FIXTURE": [
+   "E-Test 픽스처 접촉 불량",
+   "ET",
+   "픽스처 핀 마모로 쇼트 검출 누락",
+   "픽스처 핀 수명 관리 및 일일 골든 보드 검증"
+  ],
+  "ESC_AOI_THRESHOLD": [
+   "AOI 판정 기준 완화",
+   "OL_AOI",
+   "오검출 감소 목적 판정 기준 완화 레시피가 승인 없이 적용됨",
+   "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화"
+  ],
+  "ESC_FIRST_ARTICLE_SKIPPED": [
+   "보전 후 초품 검사 누락",
+   "FQC",
+   "설비 보전 후 초품 치수 검사가 누락됨",
+   "보전 후 초품 승인 전 생산 금지"
+  ],
+  "ESC_OQC_LEAK_CHECK_ABSENT": [
+   "포장 진공 유지 검사 부재",
+   "OQC",
+   "출하 전 진공 포장 누설 확인 항목이 없음",
+   "출하검사에 진공 유지·HIC 확인 항목 추가"
+  ],
+  "ESC_OQC_SCAN_SKIPPED": [
+   "출하 라벨 스캔 누락",
+   "OQC",
+   "교대 중 라벨 스캔 검증이 생략됨",
+   "라벨 스캔 미완료 시 출하 불가 인터록"
+  ],
+  "ESC_OPERATOR_OVERRIDE": [
+   "재검 판정 수기 변경",
+   "ET",
+   "E-Test 불량 판정이 재검 중 수기로 합격 변경됨",
+   "판정 변경 로그 일일 검토"
+  ]
+ },
+ "HYPOTHESIS_FAMILY": {
+  "STRC01": [
+   "LAM_PRESS_PROFILE",
+   "PREPREG_FLOW",
+   "PACK_VACUUM_SEAL",
+   "CCL_RESIN_VOID",
+   "OXIDE_INSUFFICIENT"
+  ],
+  "STRC02": [
+   "OXIDE_INSUFFICIENT",
+   "CCL_RESIN_VOID",
+   "LAM_PRESS_PROFILE",
+   "PREPREG_FLOW"
+  ],
+  "ELEC03": [
+   "DRILL_BIT_WEAR",
+   "DESMEAR_INSUFFICIENT",
+   "PLATING_THIN"
+  ],
+  "STRC04": [
+   "DRILL_BIT_WEAR",
+   "PLATING_THIN",
+   "DESMEAR_INSUFFICIENT"
+  ],
+  "ELEC01": [
+   "DESMEAR_INSUFFICIENT",
+   "HANDLING_SCRATCH",
+   "LAM_REGISTRATION",
+   "ET_RETEST_MISJUDGE"
+  ],
+  "ELEC02": [
+   "OL_ETCH_RESIDUE",
+   "FOREIGN_MATERIAL",
+   "ET_RETEST_MISJUDGE"
+  ],
+  "ELEC04": [
+   "IL_ETCH_OVER",
+   "CCL_RESIN_VOID"
+  ],
+  "ELEC05": [
+   "IONIC_CONTAMINATION",
+   "CCL_RESIN_VOID",
+   "FOREIGN_MATERIAL"
+  ],
+  "SOLD01": [
+   "IMSN_THIN",
+   "SF_LOCAL_CONTAMINATION",
+   "SM_CURE_INSUFFICIENT",
+   "ENIG_NI_CORROSION"
+  ],
+  "SOLD02": [
+   "ENIG_NI_CORROSION",
+   "CU_FOIL_PROFILE"
+  ],
+  "SOLD03": [
+   "CU_FOIL_PROFILE",
+   "OXIDE_INSUFFICIENT"
+  ],
+  "STRC03": [
+   "LAM_COOLING_RECIPE",
+   "CCL_RESIN_VOID"
+  ],
+  "APPR01": [
+   "SM_INK_LOT",
+   "SM_CURE_INSUFFICIENT",
+   "SM_LOCAL_ADHESION"
+  ],
+  "APPR02": [
+   "HANDLING_SCRATCH"
+  ],
+  "APPR03": [
+   "FOREIGN_MATERIAL",
+   "SM_CURE_INSUFFICIENT"
+  ],
+  "DIM01": [
+   "ROUT_OFFSET",
+   "LAM_COOLING_RECIPE"
+  ],
+  "DIM02": [
+   "LAM_REGISTRATION",
+   "DRILL_DEBRIS_PLUGGED_HOLE"
+  ],
+  "MARK01": [
+   "LABEL_PRINT_MIX"
+  ]
+ },
+ "LAB_NORMAL": {
+  "LAB_ET_RETEST": [
+   0,
+   0
+  ],
+  "LAB_MICROSCOPE": [
+   0,
+   0
+  ],
+  "LAB_XRAY": [
+   0,
+   0
+  ],
+  "LAB_XSEC_HOLE_CU": [
+   25,
+   1.6
+  ],
+  "LAB_XSEC_CRACK": [
+   0,
+   0
+  ],
+  "LAB_XSEC_ICD": [
+   0,
+   0
+  ],
+  "LAB_HOLE_WALL_ROUGH": [
+   16,
+   3
+  ],
+  "LAB_IST_DR": [
+   3.5,
+   1.5
+  ],
+  "LAB_XSEC_DELAM": [
+   0,
+   0
+  ],
+  "LAB_XSEC_VOID": [
+   0,
+   0
+  ],
+  "LAB_DSC_DTG": [
+   2.2,
+   0.8
+  ],
+  "LAB_REFLOW_REPRO": [
+   0,
+   0
+  ],
+  "LAB_MOISTURE": [
+   0.05,
+   0.012
+  ],
+  "LAB_SEM_NI_CORR": [
+   0.4,
+   0.3
+  ],
+  "LAB_EDS_P": [
+   8.0,
+   0.35
+  ],
+  "LAB_XRF_AU": [
+   0.072,
+   0.006
+  ],
+  "LAB_TDR_IMP": [
+   50,
+   1.4
+  ],
+  "LAB_LINE_WIDTH": [
+   0,
+   3.5
+  ],
+  "LAB_IONIC": [
+   0.6,
+   0.2
+  ],
+  "LAB_SIR": [
+   10.4,
+   0.4
+  ],
+  "LAB_PEEL": [
+   1.35,
+   0.08
+  ],
+  "LAB_SM_TAPE": [
+   0,
+   0
+  ],
+  "LAB_WARPAGE": [
+   0.42,
+   0.08
+  ],
+  "LAB_DIM": [
+   0,
+   25
+  ],
+  "LAB_HOLE_POS": [
+   18,
+   7
+  ],
+  "LAB_REG_OFFSET": [
+   20,
+   8
+  ],
+  "LAB_SOLDERABILITY": [
+   98.5,
+   0.6
+  ],
+  "LAB_SN_THK": [
+   1.05,
+   0.06
+  ],
+  "LAB_LABEL_MATCH": [
+   1,
+   0
+  ]
+ },
+ "MATERIALS": {
+  "CCL": [
+   [
+    "SUP-CCL-A",
+    "SUP-CCL-B"
+   ],
+   true,
+   6,
+   "sheet"
+  ],
+  "PREPREG": [
+   [
+    "SUP-PP-A",
+    "SUP-PP-B"
+   ],
+   true,
+   6,
+   "roll"
+  ],
+  "CU_FOIL": [
+   [
+    "SUP-CU-A",
+    "SUP-CU-B"
+   ],
+   false,
+   8,
+   "roll"
+  ],
+  "DRY_FILM": [
+   [
+    "SUP-DF-A"
+   ],
+   false,
+   10,
+   "roll"
+  ],
+  "PSR_INK": [
+   [
+    "SUP-INK-A",
+    "SUP-INK-B"
+   ],
+   false,
+   9,
+   "kg"
+  ],
+  "SF_CHEM": [
+   [
+    "SUP-CHEM-A"
+   ],
+   false,
+   12,
+   "L"
+  ]
+ },
+ "N_NTF": 320,
+ "N_NTF_MEAS": 180,
+ "N_SPORADIC": 1900,
+ "OPENERS": [
+  "안녕하세요, {cust} 품질팀입니다.",
+  "{cust} 수입검사 담당입니다.",
+  "[불량 통보] {cust}",
+  "긴급 품질 이슈 공유드립니다({cust}).",
+  "{cust} SMT 품질 담당입니다.",
+  "{cust} 품질보증팀입니다. 불량 발생 건 통보드립니다."
+ ],
+ "PARAMS": {
+  "IL_IMG": [
+   [
+    "exposure_mj_cm2",
+    "mJ/cm2",
+    60,
+    50,
+    70,
+    2.2,
+    "ALL",
+    null
+   ]
+  ],
+  "IL_ETCH": [
+   [
+    "line_width_dev_um",
+    "um",
+    0,
+    -12,
+    12,
+    2.8,
+    "ALL",
+    "SC-IMPEDANCE"
+   ],
+   [
+    "conveyor_m_min",
+    "m/min",
+    2.5,
+    2.2,
+    2.8,
+    0.05,
+    "ALL",
+    null
+   ]
+  ],
+  "IL_AOI": [
+   [
+    "aoi_defects_per_panel",
+    "count",
+    0.8,
+    0,
+    3,
+    0.3,
+    "ALL",
+    null
+   ]
+  ],
+  "OXIDE": [
+   [
+    "oxide_weight_g_m2",
+    "g/m2",
+    0.35,
+    0.25,
+    0.45,
+    0.02,
+    "ALL",
+    "SC-INTERLAYER"
+   ],
+   [
+    "bath_temp_c",
+    "C",
+    40,
+    37,
+    43,
+    0.6,
+    "ALL",
+    null
+   ]
+  ],
+  "LAM": [
+   [
+    "press_peak_temp_c",
+    "C",
+    195,
+    190,
+    200,
+    1.0,
+    "ALL",
+    "SC-INTERLAYER"
+   ],
+   [
+    "press_pressure_kgf_cm2",
+    "kgf/cm2",
+    25,
+    22,
+    28,
+    0.6,
+    "ALL",
+    null
+   ],
+   [
+    "registration_offset_um",
+    "um",
+    20,
+    0,
+    50,
+    7,
+    "ALL",
+    "SC-REGISTRATION"
+   ],
+   [
+    "cooling_rate_c_min",
+    "C/min",
+    3.0,
+    2.0,
+    5.0,
+    0.2,
+    "ALL",
+    "SC-WARPAGE"
+   ]
+  ],
+  "DRILL": [
+   [
+    "hit_count_per_bit",
+    "hits",
+    1500,
+    0,
+    2000,
+    160,
+    "ALL",
+    null
+   ],
+   [
+    "spindle_load_pct",
+    "%",
+    55,
+    40,
+    75,
+    4,
+    "ALL",
+    "SC-PTH-REL"
+   ],
+   [
+    "hole_position_um",
+    "um",
+    18,
+    0,
+    50,
+    6,
+    "ALL",
+    null
+   ]
+  ],
+  "DESMEAR": [
+   [
+    "desmear_rate_mg_cm2",
+    "mg/cm2",
+    0.25,
+    0.15,
+    0.35,
+    0.02,
+    "ALL",
+    "SC-PTH-REL"
+   ],
+   [
+    "eless_cu_um",
+    "um",
+    0.6,
+    0.4,
+    0.9,
+    0.04,
+    "ALL",
+    null
+   ]
+  ],
+  "PLATE": [
+   [
+    "current_density_asd",
+    "ASD",
+    2.0,
+    1.7,
+    2.3,
+    0.04,
+    "ALL",
+    "SC-HOLE-CU"
+   ],
+   [
+    "bath_cu_g_l",
+    "g/L",
+    65,
+    55,
+    75,
+    1.8,
+    "ALL",
+    null
+   ]
+  ],
+  "OL_IMG": [
+   [
+    "exposure_mj_cm2",
+    "mJ/cm2",
+    60,
+    50,
+    70,
+    2.2,
+    "ALL",
+    null
+   ]
+  ],
+  "OL_ETCH": [
+   [
+    "line_width_dev_um",
+    "um",
+    0,
+    -12,
+    12,
+    2.8,
+    "ALL",
+    null
+   ],
+   [
+    "spray_pressure_bar",
+    "bar",
+    2.0,
+    1.7,
+    2.3,
+    0.05,
+    "ALL",
+    null
+   ]
+  ],
+  "OL_AOI": [
+   [
+    "aoi_defects_per_panel",
+    "count",
+    0.9,
+    0,
+    3,
+    0.3,
+    "ALL",
+    null
+   ],
+   [
+    "aoi_sensitivity_level",
+    "level",
+    5,
+    4,
+    6,
+    0,
+    "ALL",
+    null
+   ]
+  ],
+  "SM": [
+   [
+    "sm_thickness_um",
+    "um",
+    20,
+    12,
+    30,
+    1.8,
+    "ALL",
+    null
+   ],
+   [
+    "cure_temp_c",
+    "C",
+    150,
+    145,
+    155,
+    0.8,
+    "ALL",
+    null
+   ]
+  ],
+  "SF": [
+   [
+    "ni_thickness_um",
+    "um",
+    4.6,
+    3.0,
+    6.0,
+    0.3,
+    "ENIG",
+    "SC-NI-AU"
+   ],
+   [
+    "au_thickness_um",
+    "um",
+    0.072,
+    0.05,
+    0.1,
+    0.005,
+    "ENIG",
+    "SC-NI-AU"
+   ],
+   [
+    "ni_bath_mto",
+    "MTO",
+    1.8,
+    0,
+    4.0,
+    0.7,
+    "ENIG",
+    "SC-NI-AU"
+   ],
+   [
+    "osp_thickness_um",
+    "um",
+    0.3,
+    0.2,
+    0.5,
+    0.03,
+    "OSP",
+    null
+   ],
+   [
+    "sn_thickness_um",
+    "um",
+    1.05,
+    0.8,
+    1.5,
+    0.05,
+    "ImSn",
+    "STD-SOLDER"
+   ]
+  ],
+  "ROUT": [
+   [
+    "outline_dev_um",
+    "um",
+    0,
+    -100,
+    100,
+    22,
+    "ALL",
+    "STD-DIM"
+   ]
+  ],
+  "CLEAN": [
+   [
+    "rinse_conductivity_us_cm",
+    "uS/cm",
+    4.0,
+    0,
+    10,
+    1.0,
+    "ALL",
+    "SC-IONIC"
+   ]
+  ],
+  "PACK": [
+   [
+    "seal_bar_temp_c",
+    "C",
+    180,
+    170,
+    190,
+    1.5,
+    "ALL",
+    "SC-MOISTURE"
+   ],
+   [
+    "bake_hours",
+    "h",
+    4.0,
+    4.0,
+    6.0,
+    0,
+    "ALL",
+    "SC-MOISTURE"
+   ]
+  ]
+ },
+ "PROCESSES": [
+  [
+   "IQC",
+   "원자재 수입검사",
+   "원자재 입고",
+   1,
+   "MATERIAL_LOT",
+   1,
+   2,
+   [
+    "IQC-01"
+   ]
+  ],
+  [
+   "IL_IMG",
+   "내층 D/F 라미·노광·현상",
+   "내층 제작",
+   2,
+   "LOT",
+   0,
+   3,
+   [
+    "ILI-01",
+    "ILI-02"
+   ]
+  ],
+  [
+   "IL_ETCH",
+   "내층 에칭·박리",
+   "내층 제작",
+   2,
+   "LOT",
+   0,
+   2,
+   [
+    "ILE-01",
+    "ILE-02"
+   ]
+  ],
+  [
+   "IL_AOI",
+   "내층 AOI",
+   "내층 제작",
+   2,
+   "LOT",
+   1,
+   3,
+   [
+    "IAOI-01",
+    "IAOI-02",
+    "IAOI-03"
+   ]
+  ],
+  [
+   "OXIDE",
+   "브라운옥사이드(산화) 처리",
+   "적층",
+   3,
+   "LOT",
+   0,
+   2,
+   [
+    "OXD-01",
+    "OXD-02"
+   ]
+  ],
+  [
+   "LAM",
+   "적층 프레스(정렬·접합)",
+   "적층",
+   3,
+   "LOAD",
+   0,
+   5,
+   [
+    "PRS-01",
+    "PRS-02",
+    "PRS-03",
+    "PRS-04"
+   ]
+  ],
+  [
+   "DRILL",
+   "드릴링",
+   "적층",
+   3,
+   "LOAD",
+   0,
+   6,
+   [
+    "DRL-01",
+    "DRL-02",
+    "DRL-03",
+    "DRL-04"
+   ]
+  ],
+  [
+   "DESMEAR",
+   "디스미어·무전해 동도금",
+   "외층 제작",
+   4,
+   "LOT",
+   0,
+   3,
+   [
+    "DSM-01",
+    "DSM-02"
+   ]
+  ],
+  [
+   "PLATE",
+   "전해 동도금",
+   "외층 제작",
+   4,
+   "LOAD",
+   0,
+   5,
+   [
+    "PLT-01",
+    "PLT-02",
+    "PLT-03"
+   ]
+  ],
+  [
+   "OL_IMG",
+   "외층 노광·현상",
+   "외층 제작",
+   4,
+   "LOT",
+   0,
+   3,
+   [
+    "OLI-01",
+    "OLI-02"
+   ]
+  ],
+  [
+   "OL_ETCH",
+   "외층 에칭",
+   "외층 제작",
+   4,
+   "LOT",
+   0,
+   2,
+   [
+    "OLE-01",
+    "OLE-02"
+   ]
+  ],
+  [
+   "OL_AOI",
+   "외층 AOI",
+   "외층 제작",
+   4,
+   "LOT",
+   1,
+   3,
+   [
+    "OAOI-01",
+    "OAOI-02",
+    "OAOI-03"
+   ]
+  ],
+  [
+   "SM",
+   "PSR(솔더레지스트) 인쇄·경화",
+   "후공정",
+   5,
+   "LOT",
+   0,
+   6,
+   [
+    "SMR-01",
+    "SMR-02"
+   ]
+  ],
+  [
+   "SF",
+   "표면처리",
+   "후공정",
+   5,
+   "LOAD",
+   0,
+   4,
+   [
+    "ENIG-01",
+    "ENIG-02",
+    "OSP-01",
+    "IMSN-01"
+   ]
+  ],
+  [
+   "ROUT",
+   "외형 가공(라우팅)",
+   "후공정",
+   5,
+   "LOT",
+   0,
+   4,
+   [
+    "RTR-01",
+    "RTR-02",
+    "RTR-03"
+   ]
+  ],
+  [
+   "CLEAN",
+   "최종 세척·건조",
+   "후공정",
+   5,
+   "LOT",
+   0,
+   1,
+   [
+    "CLN-01",
+    "CLN-02"
+   ]
+  ],
+  [
+   "ET",
+   "전기검사(E-Test)",
+   "최종검사",
+   6,
+   "LOT",
+   1,
+   8,
+   [
+    "ET-01",
+    "ET-02",
+    "FP-01"
+   ]
+  ],
+  [
+   "FQC",
+   "최종 외관·신뢰성 샘플검사",
+   "최종검사",
+   6,
+   "LOT",
+   1,
+   4,
+   [
+    "FQC-01",
+    "LAB-01"
+   ]
+  ],
+  [
+   "PACK",
+   "베이킹·진공 포장",
+   "포장·출하",
+   7,
+   "LOAD",
+   0,
+   2,
+   [
+    "PCK-01",
+    "PCK-02"
+   ]
+  ],
+  [
+   "OQC",
+   "출하검사(라벨·수량)",
+   "포장·출하",
+   7,
+   "LOT",
+   1,
+   1,
+   [
+    "OQC-01"
+   ]
+  ]
+ ],
+ "PRODUCTS": [
+  {
+   "spec_id": "AUTO-ECU6",
+   "part_no": "PCB-ECU6-A1",
+   "revision": "B",
+   "family": "차량 ECU 제어 기판",
+   "application": "AUTOMOTIVE",
+   "layers": 6,
+   "thickness": 1.6,
+   "finish": "ENIG",
+   "base": "FR-4 High Tg 170",
+   "grade": "TG170",
+   "line_space": 100,
+   "imp": 1,
+   "hdi": 0,
+   "bpp": 12,
+   "weight": 0.22,
+   "customers": [
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "A05"
+   ]
+  },
+  {
+   "spec_id": "AUTO-BMS4H",
+   "part_no": "PCB-BMS4H-C2",
+   "revision": "A",
+   "family": "BMS 후동(3oz) 기판",
+   "application": "AUTOMOTIVE",
+   "layers": 4,
+   "thickness": 2.0,
+   "finish": "OSP",
+   "base": "FR-4 Tg 150",
+   "grade": "TG150",
+   "line_space": 150,
+   "imp": 0,
+   "hdi": 0,
+   "bpp": 8,
+   "weight": 0.15,
+   "customers": [
+    "A03",
+    "A06",
+    "A07",
+    "A08"
+   ]
+  },
+  {
+   "spec_id": "AUTO-RADAR8",
+   "part_no": "PCB-RADAR8-B4",
+   "revision": "C",
+   "family": "ADAS 레이더 HDI 기판",
+   "application": "AUTOMOTIVE",
+   "layers": 8,
+   "thickness": 1.2,
+   "finish": "ENIG",
+   "base": "FR-4 저손실 High Tg 180",
+   "grade": "TG180",
+   "line_space": 75,
+   "imp": 1,
+   "hdi": 1,
+   "bpp": 16,
+   "weight": 0.15,
+   "customers": [
+    "A01",
+    "A09",
+    "A10"
+   ]
+  },
+  {
+   "spec_id": "SEMI-MEM10",
+   "part_no": "PCB-MEM10-D1",
+   "revision": "C",
+   "family": "메모리 모듈 기판",
+   "application": "SEMICONDUCTOR",
+   "layers": 10,
+   "thickness": 1.27,
+   "finish": "ENIG",
+   "base": "FR-4 High Tg 170",
+   "grade": "TG170",
+   "line_space": 75,
+   "imp": 1,
+   "hdi": 0,
+   "bpp": 6,
+   "weight": 0.18,
+   "customers": [
+    "S01",
+    "S02",
+    "S03",
+    "S04"
+   ]
+  },
+  {
+   "spec_id": "SEMI-SSD8H",
+   "part_no": "PCB-SSD8H-E3",
+   "revision": "A",
+   "family": "SSD 컨트롤러 HDI 기판",
+   "application": "SEMICONDUCTOR",
+   "layers": 8,
+   "thickness": 0.8,
+   "finish": "ENIG",
+   "base": "FR-4 High Tg 180",
+   "grade": "TG180",
+   "line_space": 60,
+   "imp": 1,
+   "hdi": 1,
+   "bpp": 24,
+   "weight": 0.2,
+   "customers": [
+    "S02",
+    "S05",
+    "S06",
+    "S07",
+    "S08"
+   ]
+  },
+  {
+   "spec_id": "IND-CTRL4",
+   "part_no": "PCB-CTRL4-F1",
+   "revision": "D",
+   "family": "산업 제어 기판",
+   "application": "INDUSTRIAL",
+   "layers": 4,
+   "thickness": 1.6,
+   "finish": "ImSn",
+   "base": "FR-4 Tg 150",
+   "grade": "TG150",
+   "line_space": 125,
+   "imp": 0,
+   "hdi": 0,
+   "bpp": 10,
+   "weight": 0.1,
+   "customers": [
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "I06"
+   ]
+  }
+ ],
+ "REQUESTS": [
+  "원인 분석 및 대책서 회신 부탁드립니다.",
+  "동일 Lot 재고 확인과 선별 여부를 회신 바랍니다.",
+  "원인과 재발 방지 대책을 회신해 주십시오.",
+  "긴급 봉쇄 조치 내용을 먼저 공유 부탁드립니다.",
+  "분석 결과 회신 부탁드립니다."
+ ],
+ "S": [
+  {
+   "id": "P01",
+   "cause": "DRILL_BIT_WEAR",
+   "escape": "ESC_RELIABILITY_NOT_DETECTABLE",
+   "title": "DRL-03 드릴 비트 수명 초과에 따른 홀 신뢰성 불량",
+   "selector": {
+    "kind": "equipment",
+    "process": "DRILL",
+    "equipment": [
+     "DRL-03"
+    ],
+    "start": "2025-02-10",
+    "end": "2025-03-14"
+   },
+   "shifts": {
+    "spindle_load_pct": [
+     18,
+     4
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-RADAR8",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC03",
+     0.7
+    ],
+    [
+     "STRC04",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "FIELD",
+     0.5
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.2
+    ]
+   ],
+   "claims": 620,
+   "events": [
+    [
+     "DRL-03",
+     "BIT_COUNTER_RESET_ANOMALY",
+     "start",
+     "late",
+     "hit_count_per_bit",
+     1500,
+     "hits",
+     "프로그램 재로딩 시 비트 수명 카운터가 0으로 초기화됨(실제 비트 교체 없음)"
+    ],
+    [
+     "DRL-03",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정기 보전에서 전 비트 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P01R",
+   "recurrence_of": "P01",
+   "cause": "DRILL_BIT_WEAR",
+   "escape": "ESC_RELIABILITY_NOT_DETECTABLE",
+   "title": "DRL-01 동일 원인 재발(인터록 수평 전개 누락)",
+   "selector": {
+    "kind": "equipment",
+    "process": "DRILL",
+    "equipment": [
+     "DRL-01"
+    ],
+    "start": "2025-07-21",
+    "end": "2025-08-08"
+   },
+   "shifts": {
+    "spindle_load_pct": [
+     17,
+     4
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-RADAR8",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC03",
+     0.6
+    ],
+    [
+     "STRC04",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.25
+    ],
+    [
+     "FIELD",
+     0.15
+    ]
+   ],
+   "claims": 160,
+   "events": [
+    [
+     "DRL-01",
+     "BIT_COUNTER_RESET_ANOMALY",
+     "start",
+     "late",
+     "hit_count_per_bit",
+     1500,
+     "hits",
+     "DRL-01 동일 카운터 초기화 현상(DRL-03 조치가 DRL-01에 미적용)"
+    ],
+    [
+     "DRL-01",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정기 보전에서 전 비트 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P02",
+   "cause": "LAM_PRESS_PROFILE",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "PRS-02 열전대 편차로 인한 적층 미경화·블리스터",
+   "selector": {
+    "kind": "equipment",
+    "process": "LAM",
+    "equipment": [
+     "PRS-02"
+    ],
+    "start": "2025-04-07",
+    "end": "2025-05-09"
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-MEM10",
+    "AUTO-RADAR8",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     0.75
+    ],
+    [
+     "STRC02",
+     0.25
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.8
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.2
+    ]
+   ],
+   "claims": 540,
+   "events": [
+    [
+     "PRS-02",
+     "CALIBRATION",
+     "end",
+     "same",
+     "thermocouple_offset_c",
+     -9.0,
+     "C",
+     "정기 교정에서 열전대 -9℃ 편차 확인(기록 온도는 정상 표시)"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P03",
+   "cause": "OXIDE_INSUFFICIENT",
+   "escape": "ESC_SPC_REACTION",
+   "title": "OXD-01 산화욕 농도 저하로 인한 층간 박리",
+   "selector": {
+    "kind": "condition",
+    "process": "OXIDE",
+    "equipment": [
+     "OXD-01"
+    ],
+    "start": "2025-05-12",
+    "end": "2025-05-30",
+    "fraction": 0.65
+   },
+   "shifts": {
+    "oxide_weight_g_m2": [
+     -0.13,
+     0.02
+    ]
+   },
+   "claim_products": [
+    "AUTO-BMS4H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "STRC02",
+     0.7
+    ],
+    [
+     "STRC01",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.6
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.4
+    ]
+   ],
+   "claims": 380,
+   "events": [
+    [
+     "OXD-01",
+     "BATH_ANALYSIS",
+     "end",
+     "same",
+     "oxidizer_conc_pct",
+     62,
+     "%",
+     "욕 분석 결과 산화제 농도 62%(기준 90~110%), 보충 펌프 막힘"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P04",
+   "cause": "DESMEAR_INSUFFICIENT",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "DSM-02 과망간산 열화로 인한 ICD·오픈",
+   "selector": {
+    "kind": "equipment",
+    "process": "DESMEAR",
+    "equipment": [
+     "DSM-02"
+    ],
+    "start": "2025-06-02",
+    "end": "2025-06-27"
+   },
+   "shifts": {
+    "desmear_rate_mg_cm2": [
+     -0.07,
+     0.015
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "AUTO-RADAR8",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "ELEC01",
+     0.5
+    ],
+    [
+     "ELEC03",
+     0.5
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.6
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.25
+    ],
+    [
+     "FIELD",
+     0.15
+    ]
+   ],
+   "claims": 520,
+   "events": [
+    [
+     "DSM-02",
+     "BATH_CHANGE",
+     "end",
+     "same",
+     "permanganate_age_m2",
+     2100,
+     "m2",
+     "과망간산 용액 처리 면적 2,100㎡에서 교체(권장 1,500㎡)"
+    ]
+   ],
+   "plan_change": {
+    "code": "FQC_XSEC",
+    "from_": "2025-05-26",
+    "rate": 0.2,
+    "reason": "원가 절감 목적 단면 검사 5 Lot당 1회로 축소"
+   },
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P05",
+   "cause": "PLATING_THIN",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "PLT-03 정류기 출력 저하로 인한 홀 도금 두께 부족",
+   "selector": {
+    "kind": "condition",
+    "process": "PLATE",
+    "equipment": [
+     "PLT-03"
+    ],
+    "start": "2025-03-17",
+    "end": "2025-03-28",
+    "fraction": 1.0
+   },
+   "shifts": {
+    "current_density_asd": [
+     -0.42,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "STRC04",
+     0.5
+    ],
+    [
+     "ELEC03",
+     0.5
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ],
+    [
+     "FIELD",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.2
+    ]
+   ],
+   "claims": 300,
+   "events": [
+    [
+     "PLT-03",
+     "EQUIPMENT_FAULT",
+     "start",
+     "same",
+     "rectifier_output_pct",
+     79,
+     "%",
+     "정류기 3번 채널 출력 79%로 저하"
+    ],
+    [
+     "PLT-03",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정류기 모듈 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P06",
+   "cause": "ENIG_NI_CORROSION",
+   "escape": "ESC_FQC_METHOD",
+   "title": "ENIG-01 니켈욕 MTO 초과에 따른 블랙패드",
+   "selector": {
+    "kind": "condition",
+    "process": "SF",
+    "equipment": [
+     "ENIG-01"
+    ],
+    "start": "2025-08-04",
+    "end": "2025-08-29",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "ni_bath_mto": [
+     2.9,
+     0.3
+    ]
+   },
+   "claim_products": [
+    "SEMI-MEM10",
+    "SEMI-SSD8H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "SOLD02",
+     0.8
+    ],
+    [
+     "SOLD01",
+     0.2
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.3
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.4
+    ]
+   ],
+   "claims": 560,
+   "events": [
+    [
+     "ENIG-01",
+     "BATH_CHANGE",
+     "end",
+     "same",
+     "ni_bath_mto",
+     4.9,
+     "MTO",
+     "니켈욕 MTO 4.9에서 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P07",
+   "cause": "CCL_RESIN_VOID",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 CCL-B 원판 Lot 수지 함침 불량",
+   "selector": {
+    "kind": "material",
+    "material": "CCL",
+    "supplier": "SUP-CCL-B",
+    "start": "2025-05-05",
+    "end": "2025-05-19"
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-RADAR8",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "STRC02",
+     0.6
+    ],
+    [
+     "ELEC05",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ],
+    [
+     "FIELD",
+     0.2
+    ]
+   ],
+   "claims": 480,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P08",
+   "cause": "PREPREG_FLOW",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 PP-A 프리프레그 Lot 수지 흐름 부족",
+   "selector": {
+    "kind": "material",
+    "material": "PREPREG",
+    "supplier": "SUP-PP-A",
+    "start": "2025-09-01",
+    "end": "2025-09-12"
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-MEM10",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     0.7
+    ],
+    [
+     "STRC02",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.7
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.3
+    ]
+   ],
+   "claims": 360,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P09",
+   "cause": "SM_INK_LOT",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "공급사 PSR-A 잉크 Lot 점도 이탈",
+   "selector": {
+    "kind": "material",
+    "material": "PSR_INK",
+    "supplier": "SUP-INK-A",
+    "start": "2025-06-14",
+    "end": "2025-06-24"
+   },
+   "shifts": {},
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "APPR01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.6
+    ],
+    [
+     "SMT_REFLOW",
+     0.4
+    ]
+   ],
+   "claims": 300,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P10",
+   "cause": "CU_FOIL_PROFILE",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 동박-B Lot 조화 처리 부족",
+   "selector": {
+    "kind": "material",
+    "material": "CU_FOIL",
+    "supplier": "SUP-CU-B",
+    "start": "2025-10-04",
+    "end": "2025-10-16"
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-BMS4H",
+    "IND-CTRL4"
+   ],
+   "symptoms": [
+    [
+     "SOLD03",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.4
+    ]
+   ],
+   "claims": 260,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P11",
+   "cause": "SM_CURE_INSUFFICIENT",
+   "escape": "ESC_SPC_REACTION",
+   "title": "SMR-02 경화로 히터 존 고장",
+   "selector": {
+    "kind": "equipment",
+    "process": "SM",
+    "equipment": [
+     "SMR-02"
+    ],
+    "start": "2025-09-15",
+    "end": "2025-09-26"
+   },
+   "shifts": {
+    "cure_temp_c": [
+     -7,
+     1.2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "APPR01",
+     0.85
+    ],
+    [
+     "APPR03",
+     0.15
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.5
+    ],
+    [
+     "SMT_REFLOW",
+     0.5
+    ]
+   ],
+   "claims": 300,
+   "events": [
+    [
+     "SMR-02",
+     "EQUIPMENT_FAULT",
+     "start",
+     "same",
+     "zone3_heater_pct",
+     0,
+     "%",
+     "경화로 3존 히터 단선"
+    ],
+    [
+     "SMR-02",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "3존 히터 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P12",
+   "cause": "IL_ETCH_OVER",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "ILE-01 컨베이어 속도 저하로 인한 과에칭·임피던스 이탈",
+   "selector": {
+    "kind": "condition",
+    "process": "IL_ETCH",
+    "equipment": [
+     "ILE-01"
+    ],
+    "start": "2025-07-01",
+    "end": "2025-07-18",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "line_width_dev_um": [
+     -16,
+     1.5
+    ],
+    "conveyor_m_min": [
+     -0.4,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "AUTO-RADAR8",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "ELEC04",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.4
+    ],
+    [
+     "ICT_FUNCTION",
+     0.6
+    ]
+   ],
+   "claims": 340,
+   "events": [
+    [
+     "ILE-01",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "컨베이어 구동 모터 감속기 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P13",
+   "cause": "OL_ETCH_RESIDUE",
+   "escape": "ESC_ET_FIXTURE",
+   "title": "OLE-02 노즐 막힘 잔동 + ET-02 픽스처 핀 마모로 쇼트 유출",
+   "selector": {
+    "kind": "equipment",
+    "process": "OL_ETCH",
+    "equipment": [
+     "OLE-02"
+    ],
+    "start": "2025-10-13",
+    "end": "2025-10-31",
+    "escape_equipment": "ET-02"
+   },
+   "shifts": {
+    "spray_pressure_bar": [
+     -0.25,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "ELEC02",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.7
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ]
+   ],
+   "claims": 380,
+   "events": [
+    [
+     "OLE-02",
+     "NOZZLE_CHECK",
+     "end",
+     "same",
+     "clogged_nozzles",
+     7,
+     "ea",
+     "스프레이 노즐 7개 막힘 확인·교체"
+    ],
+    [
+     "ET-02",
+     "FIXTURE_CHECK",
+     "end",
+     "late",
+     "worn_pins",
+     38,
+     "ea",
+     "픽스처 핀 38개 마모 확인"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P14",
+   "cause": "HANDLING_SCRATCH",
+   "escape": "ESC_AOI_THRESHOLD",
+   "title": "OLI-02 가이드 롤러 스크래치 + AOI 판정 기준 완화 레시피",
+   "selector": {
+    "kind": "equipment",
+    "process": "OL_IMG",
+    "equipment": [
+     "OLI-02"
+    ],
+    "start": "2025-04-21",
+    "end": "2025-05-23",
+    "aoi_recipe": true
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "APPR02",
+     0.6
+    ],
+    [
+     "ELEC01",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.4
+    ]
+   ],
+   "claims": 320,
+   "events": [
+    [
+     "OAOI-01",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OAOI-02",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OAOI-03",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OLI-02",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "late",
+     null,
+     null,
+     null,
+     "가이드 롤러 표면 손상 확인·교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "CONDITION"
+   ]
+  },
+  {
+   "id": "P15",
+   "cause": "LAM_REGISTRATION",
+   "escape": "ESC_SPC_REACTION",
+   "title": "PRS-04 정렬 핀 마모로 인한 층간 정렬 편차",
+   "selector": {
+    "kind": "condition",
+    "process": "LAM",
+    "equipment": [
+     "PRS-04"
+    ],
+    "start": "2025-11-03",
+    "end": "2025-11-21",
+    "fraction": 0.75
+   },
+   "shifts": {
+    "registration_offset_um": [
+     52,
+     7
+    ]
+   },
+   "claim_products": [
+    "AUTO-RADAR8",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "ELEC01",
+     0.6
+    ],
+    [
+     "DIM02",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.6
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.4
+    ]
+   ],
+   "claims": 260,
+   "events": [
+    [
+     "PRS-04",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     "pin_wear_um",
+     85,
+     "um",
+     "정렬 핀 마모 85um 확인·교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P16",
+   "cause": "ROUT_OFFSET",
+   "escape": "ESC_FIRST_ARTICLE_SKIPPED",
+   "title": "RTR-02 보전 후 원점 편차",
+   "selector": {
+    "kind": "equipment",
+    "process": "ROUT",
+    "equipment": [
+     "RTR-02"
+    ],
+    "start": "2025-08-18",
+    "end": "2025-08-23"
+   },
+   "shifts": {
+    "outline_dev_um": [
+     150,
+     15
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "DIM01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.7
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ]
+   ],
+   "claims": 180,
+   "events": [
+    [
+     "RTR-02",
+     "PREVENTIVE_MAINTENANCE",
+     "start",
+     "same",
+     null,
+     null,
+     null,
+     "스핀들 교체 보전"
+    ],
+    [
+     "RTR-02",
+     "CALIBRATION",
+     "end",
+     "same",
+     "origin_offset_um",
+     150,
+     "um",
+     "원점 +150um 편차 확인·재설정"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P17",
+   "cause": "IONIC_CONTAMINATION",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "CLN-01 이온교환 수지 소진으로 인한 이온 오염",
+   "selector": {
+    "kind": "condition",
+    "process": "CLEAN",
+    "equipment": [
+     "CLN-01"
+    ],
+    "start": "2025-02-24",
+    "end": "2025-03-21",
+    "fraction": 0.85
+   },
+   "shifts": {
+    "rinse_conductivity_us_cm": [
+     11,
+     1.5
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC05",
+     0.8
+    ],
+    [
+     "APPR03",
+     0.2
+    ]
+   ],
+   "detection": [
+    [
+     "FIELD",
+     0.5
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ]
+   ],
+   "claims": 320,
+   "events": [
+    [
+     "CLN-01",
+     "CONSUMABLE_CHANGE",
+     "end",
+     "same",
+     "rinse_conductivity_us_cm",
+     16,
+     "uS/cm",
+     "이온교환 수지 교체(교체 시점 전도도 16uS/cm)"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P18",
+   "cause": "PACK_VACUUM_SEAL",
+   "escape": "ESC_OQC_LEAK_CHECK_ABSENT",
+   "title": "PCK-02 실링 바 온도 저하로 진공 누설·흡습",
+   "selector": {
+    "kind": "equipment",
+    "process": "PACK",
+    "equipment": [
+     "PCK-02"
+    ],
+    "start": "2025-06-09",
+    "end": "2025-07-04"
+   },
+   "shifts": {
+    "seal_bar_temp_c": [
+     -16,
+     2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "SEMI-MEM10",
+    "AUTO-RADAR8"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     1.0
+    ]
+   ],
+   "claims": 420,
+   "events": [
+    [
+     "PCK-02",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "실링 바 히터 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P19",
+   "cause": "LABEL_PRINT_MIX",
+   "escape": "ESC_OQC_SCAN_SKIPPED",
+   "title": "라벨 재출력 혼입 + 출하 라벨 스캔 누락",
+   "selector": {
+    "kind": "equipment",
+    "process": "OQC",
+    "equipment": [
+     "OQC-01"
+    ],
+    "start": "2025-09-29",
+    "end": "2025-10-03",
+    "products": [
+     "AUTO-BMS4H",
+     "AUTO-ECU6"
+    ],
+    "fraction": 0.5
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-BMS4H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "MARK01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     1.0
+    ]
+   ],
+   "claims": 120,
+   "key_dims": [
+    "TIME_WINDOW",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P20",
+   "cause": "LAM_COOLING_RECIPE",
+   "escape": "ESC_FQC_METHOD",
+   "title": "PRS-01 냉각 레시피 변경으로 박판 휨",
+   "selector": {
+    "kind": "equipment",
+    "process": "LAM",
+    "equipment": [
+     "PRS-01"
+    ],
+    "start": "2025-03-31",
+    "end": "2025-04-25",
+    "products": [
+     "SEMI-SSD8H"
+    ],
+    "recipe": "LAM-R5"
+   },
+   "shifts": {
+    "cooling_rate_c_min": [
+     2.4,
+     0.2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC03",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.7
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.3
+    ]
+   ],
+   "claims": 280,
+   "events": [
+    [
+     "PRS-01",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "cooling_rate_c_min",
+     5.4,
+     "C/min",
+     "생산성 향상 목적 냉각 레시피 LAM-R5 적용(박판 제품 검증 없음)"
+    ],
+    [
+     "PRS-01",
+     "RECIPE_CHANGE",
+     "end",
+     "same",
+     "cooling_rate_c_min",
+     3.0,
+     "C/min",
+     "레시피 LAM-R4 원복"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P21",
+   "cause": "IMSN_THIN",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "IMSN-01 주석욕 농도 저하로 두께 부족",
+   "selector": {
+    "kind": "condition",
+    "process": "SF",
+    "equipment": [
+     "IMSN-01"
+    ],
+    "start": "2025-11-10",
+    "end": "2025-11-28",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "sn_thickness_um": [
+     -0.48,
+     0.05
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4"
+   ],
+   "symptoms": [
+    [
+     "SOLD01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     1.0
+    ]
+   ],
+   "claims": 200,
+   "events": [
+    [
+     "IMSN-01",
+     "BATH_ANALYSIS",
+     "end",
+     "same",
+     "sn_conc_g_l",
+     11,
+     "g/L",
+     "주석 농도 11g/L(기준 16~20g/L)"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  }
+ ],
+ "SCENARIOS": [
+  {
+   "id": "P01",
+   "cause": "DRILL_BIT_WEAR",
+   "escape": "ESC_RELIABILITY_NOT_DETECTABLE",
+   "title": "DRL-03 드릴 비트 수명 초과에 따른 홀 신뢰성 불량",
+   "selector": {
+    "kind": "equipment",
+    "process": "DRILL",
+    "equipment": [
+     "DRL-03"
+    ],
+    "start": "2025-02-10",
+    "end": "2025-03-14"
+   },
+   "shifts": {
+    "spindle_load_pct": [
+     18,
+     4
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-RADAR8",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC03",
+     0.7
+    ],
+    [
+     "STRC04",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "FIELD",
+     0.5
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.2
+    ]
+   ],
+   "claims": 620,
+   "events": [
+    [
+     "DRL-03",
+     "BIT_COUNTER_RESET_ANOMALY",
+     "start",
+     "late",
+     "hit_count_per_bit",
+     1500,
+     "hits",
+     "프로그램 재로딩 시 비트 수명 카운터가 0으로 초기화됨(실제 비트 교체 없음)"
+    ],
+    [
+     "DRL-03",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정기 보전에서 전 비트 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P01R",
+   "recurrence_of": "P01",
+   "cause": "DRILL_BIT_WEAR",
+   "escape": "ESC_RELIABILITY_NOT_DETECTABLE",
+   "title": "DRL-01 동일 원인 재발(인터록 수평 전개 누락)",
+   "selector": {
+    "kind": "equipment",
+    "process": "DRILL",
+    "equipment": [
+     "DRL-01"
+    ],
+    "start": "2025-07-21",
+    "end": "2025-08-08"
+   },
+   "shifts": {
+    "spindle_load_pct": [
+     17,
+     4
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-RADAR8",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC03",
+     0.6
+    ],
+    [
+     "STRC04",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.25
+    ],
+    [
+     "FIELD",
+     0.15
+    ]
+   ],
+   "claims": 160,
+   "events": [
+    [
+     "DRL-01",
+     "BIT_COUNTER_RESET_ANOMALY",
+     "start",
+     "late",
+     "hit_count_per_bit",
+     1500,
+     "hits",
+     "DRL-01 동일 카운터 초기화 현상(DRL-03 조치가 DRL-01에 미적용)"
+    ],
+    [
+     "DRL-01",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정기 보전에서 전 비트 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P02",
+   "cause": "LAM_PRESS_PROFILE",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "PRS-02 열전대 편차로 인한 적층 미경화·블리스터",
+   "selector": {
+    "kind": "equipment",
+    "process": "LAM",
+    "equipment": [
+     "PRS-02"
+    ],
+    "start": "2025-04-07",
+    "end": "2025-05-09"
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-MEM10",
+    "AUTO-RADAR8",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     0.75
+    ],
+    [
+     "STRC02",
+     0.25
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.8
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.2
+    ]
+   ],
+   "claims": 540,
+   "events": [
+    [
+     "PRS-02",
+     "CALIBRATION",
+     "end",
+     "same",
+     "thermocouple_offset_c",
+     -9.0,
+     "C",
+     "정기 교정에서 열전대 -9℃ 편차 확인(기록 온도는 정상 표시)"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P03",
+   "cause": "OXIDE_INSUFFICIENT",
+   "escape": "ESC_SPC_REACTION",
+   "title": "OXD-01 산화욕 농도 저하로 인한 층간 박리",
+   "selector": {
+    "kind": "condition",
+    "process": "OXIDE",
+    "equipment": [
+     "OXD-01"
+    ],
+    "start": "2025-05-12",
+    "end": "2025-05-30",
+    "fraction": 0.65
+   },
+   "shifts": {
+    "oxide_weight_g_m2": [
+     -0.13,
+     0.02
+    ]
+   },
+   "claim_products": [
+    "AUTO-BMS4H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "STRC02",
+     0.7
+    ],
+    [
+     "STRC01",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.6
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.4
+    ]
+   ],
+   "claims": 380,
+   "events": [
+    [
+     "OXD-01",
+     "BATH_ANALYSIS",
+     "end",
+     "same",
+     "oxidizer_conc_pct",
+     62,
+     "%",
+     "욕 분석 결과 산화제 농도 62%(기준 90~110%), 보충 펌프 막힘"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P04",
+   "cause": "DESMEAR_INSUFFICIENT",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "DSM-02 과망간산 열화로 인한 ICD·오픈",
+   "selector": {
+    "kind": "equipment",
+    "process": "DESMEAR",
+    "equipment": [
+     "DSM-02"
+    ],
+    "start": "2025-06-02",
+    "end": "2025-06-27"
+   },
+   "shifts": {
+    "desmear_rate_mg_cm2": [
+     -0.07,
+     0.015
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "AUTO-RADAR8",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "ELEC01",
+     0.5
+    ],
+    [
+     "ELEC03",
+     0.5
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.6
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.25
+    ],
+    [
+     "FIELD",
+     0.15
+    ]
+   ],
+   "claims": 520,
+   "events": [
+    [
+     "DSM-02",
+     "BATH_CHANGE",
+     "end",
+     "same",
+     "permanganate_age_m2",
+     2100,
+     "m2",
+     "과망간산 용액 처리 면적 2,100㎡에서 교체(권장 1,500㎡)"
+    ]
+   ],
+   "plan_change": {
+    "code": "FQC_XSEC",
+    "from_": "2025-05-26",
+    "rate": 0.2,
+    "reason": "원가 절감 목적 단면 검사 5 Lot당 1회로 축소"
+   },
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P05",
+   "cause": "PLATING_THIN",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "PLT-03 정류기 출력 저하로 인한 홀 도금 두께 부족",
+   "selector": {
+    "kind": "condition",
+    "process": "PLATE",
+    "equipment": [
+     "PLT-03"
+    ],
+    "start": "2025-03-17",
+    "end": "2025-03-28",
+    "fraction": 1.0
+   },
+   "shifts": {
+    "current_density_asd": [
+     -0.42,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "STRC04",
+     0.5
+    ],
+    [
+     "ELEC03",
+     0.5
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ],
+    [
+     "FIELD",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.2
+    ]
+   ],
+   "claims": 300,
+   "events": [
+    [
+     "PLT-03",
+     "EQUIPMENT_FAULT",
+     "start",
+     "same",
+     "rectifier_output_pct",
+     79,
+     "%",
+     "정류기 3번 채널 출력 79%로 저하"
+    ],
+    [
+     "PLT-03",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "정류기 모듈 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P06",
+   "cause": "ENIG_NI_CORROSION",
+   "escape": "ESC_FQC_METHOD",
+   "title": "ENIG-01 니켈욕 MTO 초과에 따른 블랙패드",
+   "selector": {
+    "kind": "condition",
+    "process": "SF",
+    "equipment": [
+     "ENIG-01"
+    ],
+    "start": "2025-08-04",
+    "end": "2025-08-29",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "ni_bath_mto": [
+     2.9,
+     0.3
+    ]
+   },
+   "claim_products": [
+    "SEMI-MEM10",
+    "SEMI-SSD8H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "SOLD02",
+     0.8
+    ],
+    [
+     "SOLD01",
+     0.2
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.3
+    ],
+    [
+     "ICT_FUNCTION",
+     0.3
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.4
+    ]
+   ],
+   "claims": 560,
+   "events": [
+    [
+     "ENIG-01",
+     "BATH_CHANGE",
+     "end",
+     "same",
+     "ni_bath_mto",
+     4.9,
+     "MTO",
+     "니켈욕 MTO 4.9에서 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P07",
+   "cause": "CCL_RESIN_VOID",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 CCL-B 원판 Lot 수지 함침 불량",
+   "selector": {
+    "kind": "material",
+    "material": "CCL",
+    "supplier": "SUP-CCL-B",
+    "start": "2025-05-05",
+    "end": "2025-05-19"
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-RADAR8",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "STRC02",
+     0.6
+    ],
+    [
+     "ELEC05",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ],
+    [
+     "FIELD",
+     0.2
+    ]
+   ],
+   "claims": 480,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P08",
+   "cause": "PREPREG_FLOW",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 PP-A 프리프레그 Lot 수지 흐름 부족",
+   "selector": {
+    "kind": "material",
+    "material": "PREPREG",
+    "supplier": "SUP-PP-A",
+    "start": "2025-09-01",
+    "end": "2025-09-12"
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-MEM10",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     0.7
+    ],
+    [
+     "STRC02",
+     0.3
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.7
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.3
+    ]
+   ],
+   "claims": 360,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P09",
+   "cause": "SM_INK_LOT",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "공급사 PSR-A 잉크 Lot 점도 이탈",
+   "selector": {
+    "kind": "material",
+    "material": "PSR_INK",
+    "supplier": "SUP-INK-A",
+    "start": "2025-06-14",
+    "end": "2025-06-24"
+   },
+   "shifts": {},
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "APPR01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.6
+    ],
+    [
+     "SMT_REFLOW",
+     0.4
+    ]
+   ],
+   "claims": 300,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P10",
+   "cause": "CU_FOIL_PROFILE",
+   "escape": "ESC_IQC_COA_ONLY",
+   "title": "공급사 동박-B Lot 조화 처리 부족",
+   "selector": {
+    "kind": "material",
+    "material": "CU_FOIL",
+    "supplier": "SUP-CU-B",
+    "start": "2025-10-04",
+    "end": "2025-10-16"
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-BMS4H",
+    "IND-CTRL4"
+   ],
+   "symptoms": [
+    [
+     "SOLD03",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.4
+    ]
+   ],
+   "claims": 260,
+   "key_dims": [
+    "MATERIAL_LOT"
+   ]
+  },
+  {
+   "id": "P11",
+   "cause": "SM_CURE_INSUFFICIENT",
+   "escape": "ESC_SPC_REACTION",
+   "title": "SMR-02 경화로 히터 존 고장",
+   "selector": {
+    "kind": "equipment",
+    "process": "SM",
+    "equipment": [
+     "SMR-02"
+    ],
+    "start": "2025-09-15",
+    "end": "2025-09-26"
+   },
+   "shifts": {
+    "cure_temp_c": [
+     -7,
+     1.2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "APPR01",
+     0.85
+    ],
+    [
+     "APPR03",
+     0.15
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.5
+    ],
+    [
+     "SMT_REFLOW",
+     0.5
+    ]
+   ],
+   "claims": 300,
+   "events": [
+    [
+     "SMR-02",
+     "EQUIPMENT_FAULT",
+     "start",
+     "same",
+     "zone3_heater_pct",
+     0,
+     "%",
+     "경화로 3존 히터 단선"
+    ],
+    [
+     "SMR-02",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "3존 히터 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P12",
+   "cause": "IL_ETCH_OVER",
+   "escape": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+   "title": "ILE-01 컨베이어 속도 저하로 인한 과에칭·임피던스 이탈",
+   "selector": {
+    "kind": "condition",
+    "process": "IL_ETCH",
+    "equipment": [
+     "ILE-01"
+    ],
+    "start": "2025-07-01",
+    "end": "2025-07-18",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "line_width_dev_um": [
+     -16,
+     1.5
+    ],
+    "conveyor_m_min": [
+     -0.4,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "AUTO-RADAR8",
+    "SEMI-MEM10"
+   ],
+   "symptoms": [
+    [
+     "ELEC04",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.4
+    ],
+    [
+     "ICT_FUNCTION",
+     0.6
+    ]
+   ],
+   "claims": 340,
+   "events": [
+    [
+     "ILE-01",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "컨베이어 구동 모터 감속기 교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P13",
+   "cause": "OL_ETCH_RESIDUE",
+   "escape": "ESC_ET_FIXTURE",
+   "title": "OLE-02 노즐 막힘 잔동 + ET-02 픽스처 핀 마모로 쇼트 유출",
+   "selector": {
+    "kind": "equipment",
+    "process": "OL_ETCH",
+    "equipment": [
+     "OLE-02"
+    ],
+    "start": "2025-10-13",
+    "end": "2025-10-31",
+    "escape_equipment": "ET-02"
+   },
+   "shifts": {
+    "spray_pressure_bar": [
+     -0.25,
+     0.04
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "ELEC02",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.7
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ]
+   ],
+   "claims": 380,
+   "events": [
+    [
+     "OLE-02",
+     "NOZZLE_CHECK",
+     "end",
+     "same",
+     "clogged_nozzles",
+     7,
+     "ea",
+     "스프레이 노즐 7개 막힘 확인·교체"
+    ],
+    [
+     "ET-02",
+     "FIXTURE_CHECK",
+     "end",
+     "late",
+     "worn_pins",
+     38,
+     "ea",
+     "픽스처 핀 38개 마모 확인"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P14",
+   "cause": "HANDLING_SCRATCH",
+   "escape": "ESC_AOI_THRESHOLD",
+   "title": "OLI-02 가이드 롤러 스크래치 + AOI 판정 기준 완화 레시피",
+   "selector": {
+    "kind": "equipment",
+    "process": "OL_IMG",
+    "equipment": [
+     "OLI-02"
+    ],
+    "start": "2025-04-21",
+    "end": "2025-05-23",
+    "aoi_recipe": true
+   },
+   "shifts": {},
+   "claim_products": [
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "APPR02",
+     0.6
+    ],
+    [
+     "ELEC01",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.6
+    ],
+    [
+     "ICT_FUNCTION",
+     0.4
+    ]
+   ],
+   "claims": 320,
+   "events": [
+    [
+     "OAOI-01",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OAOI-02",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OAOI-03",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "aoi_sensitivity_level",
+     3,
+     "level",
+     "오검출 감소 목적 판정 감도 5→3 변경(변경 승인 없음)"
+    ],
+    [
+     "OLI-02",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "late",
+     null,
+     null,
+     null,
+     "가이드 롤러 표면 손상 확인·교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "CONDITION"
+   ]
+  },
+  {
+   "id": "P15",
+   "cause": "LAM_REGISTRATION",
+   "escape": "ESC_SPC_REACTION",
+   "title": "PRS-04 정렬 핀 마모로 인한 층간 정렬 편차",
+   "selector": {
+    "kind": "condition",
+    "process": "LAM",
+    "equipment": [
+     "PRS-04"
+    ],
+    "start": "2025-11-03",
+    "end": "2025-11-21",
+    "fraction": 0.75
+   },
+   "shifts": {
+    "registration_offset_um": [
+     52,
+     7
+    ]
+   },
+   "claim_products": [
+    "AUTO-RADAR8",
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "ELEC01",
+     0.6
+    ],
+    [
+     "DIM02",
+     0.4
+    ]
+   ],
+   "detection": [
+    [
+     "ICT_FUNCTION",
+     0.6
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.4
+    ]
+   ],
+   "claims": 260,
+   "events": [
+    [
+     "PRS-04",
+     "PREVENTIVE_MAINTENANCE",
+     "end",
+     "same",
+     "pin_wear_um",
+     85,
+     "um",
+     "정렬 핀 마모 85um 확인·교체"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P16",
+   "cause": "ROUT_OFFSET",
+   "escape": "ESC_FIRST_ARTICLE_SKIPPED",
+   "title": "RTR-02 보전 후 원점 편차",
+   "selector": {
+    "kind": "equipment",
+    "process": "ROUT",
+    "equipment": [
+     "RTR-02"
+    ],
+    "start": "2025-08-18",
+    "end": "2025-08-23"
+   },
+   "shifts": {
+    "outline_dev_um": [
+     150,
+     15
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "DIM01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     0.7
+    ],
+    [
+     "SMT_REFLOW",
+     0.3
+    ]
+   ],
+   "claims": 180,
+   "events": [
+    [
+     "RTR-02",
+     "PREVENTIVE_MAINTENANCE",
+     "start",
+     "same",
+     null,
+     null,
+     null,
+     "스핀들 교체 보전"
+    ],
+    [
+     "RTR-02",
+     "CALIBRATION",
+     "end",
+     "same",
+     "origin_offset_um",
+     150,
+     "um",
+     "원점 +150um 편차 확인·재설정"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P17",
+   "cause": "IONIC_CONTAMINATION",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "CLN-01 이온교환 수지 소진으로 인한 이온 오염",
+   "selector": {
+    "kind": "condition",
+    "process": "CLEAN",
+    "equipment": [
+     "CLN-01"
+    ],
+    "start": "2025-02-24",
+    "end": "2025-03-21",
+    "fraction": 0.85
+   },
+   "shifts": {
+    "rinse_conductivity_us_cm": [
+     11,
+     1.5
+    ]
+   },
+   "claim_products": [
+    "AUTO-ECU6",
+    "AUTO-BMS4H"
+   ],
+   "symptoms": [
+    [
+     "ELEC05",
+     0.8
+    ],
+    [
+     "APPR03",
+     0.2
+    ]
+   ],
+   "detection": [
+    [
+     "FIELD",
+     0.5
+    ],
+    [
+     "CUSTOMER_RELIABILITY",
+     0.5
+    ]
+   ],
+   "claims": 320,
+   "events": [
+    [
+     "CLN-01",
+     "CONSUMABLE_CHANGE",
+     "end",
+     "same",
+     "rinse_conductivity_us_cm",
+     16,
+     "uS/cm",
+     "이온교환 수지 교체(교체 시점 전도도 16uS/cm)"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P18",
+   "cause": "PACK_VACUUM_SEAL",
+   "escape": "ESC_OQC_LEAK_CHECK_ABSENT",
+   "title": "PCK-02 실링 바 온도 저하로 진공 누설·흡습",
+   "selector": {
+    "kind": "equipment",
+    "process": "PACK",
+    "equipment": [
+     "PCK-02"
+    ],
+    "start": "2025-06-09",
+    "end": "2025-07-04"
+   },
+   "shifts": {
+    "seal_bar_temp_c": [
+     -16,
+     2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H",
+    "SEMI-MEM10",
+    "AUTO-RADAR8"
+   ],
+   "symptoms": [
+    [
+     "STRC01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     1.0
+    ]
+   ],
+   "claims": 420,
+   "events": [
+    [
+     "PCK-02",
+     "REPAIR",
+     "end",
+     "same",
+     null,
+     null,
+     null,
+     "실링 바 히터 교체"
+    ]
+   ],
+   "key_dims": [
+    "EQUIPMENT",
+    "TIME_WINDOW"
+   ]
+  },
+  {
+   "id": "P19",
+   "cause": "LABEL_PRINT_MIX",
+   "escape": "ESC_OQC_SCAN_SKIPPED",
+   "title": "라벨 재출력 혼입 + 출하 라벨 스캔 누락",
+   "selector": {
+    "kind": "equipment",
+    "process": "OQC",
+    "equipment": [
+     "OQC-01"
+    ],
+    "start": "2025-09-29",
+    "end": "2025-10-03",
+    "products": [
+     "AUTO-BMS4H",
+     "AUTO-ECU6"
+    ],
+    "fraction": 0.5
+   },
+   "shifts": {},
+   "claim_products": [
+    "AUTO-BMS4H",
+    "AUTO-ECU6"
+   ],
+   "symptoms": [
+    [
+     "MARK01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "CUSTOMER_IQC",
+     1.0
+    ]
+   ],
+   "claims": 120,
+   "key_dims": [
+    "TIME_WINDOW",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P20",
+   "cause": "LAM_COOLING_RECIPE",
+   "escape": "ESC_FQC_METHOD",
+   "title": "PRS-01 냉각 레시피 변경으로 박판 휨",
+   "selector": {
+    "kind": "equipment",
+    "process": "LAM",
+    "equipment": [
+     "PRS-01"
+    ],
+    "start": "2025-03-31",
+    "end": "2025-04-25",
+    "products": [
+     "SEMI-SSD8H"
+    ],
+    "recipe": "LAM-R5"
+   },
+   "shifts": {
+    "cooling_rate_c_min": [
+     2.4,
+     0.2
+    ]
+   },
+   "claim_products": [
+    "SEMI-SSD8H"
+   ],
+   "symptoms": [
+    [
+     "STRC03",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     0.7
+    ],
+    [
+     "CUSTOMER_IQC",
+     0.3
+    ]
+   ],
+   "claims": 280,
+   "events": [
+    [
+     "PRS-01",
+     "RECIPE_CHANGE",
+     "start",
+     "same",
+     "cooling_rate_c_min",
+     5.4,
+     "C/min",
+     "생산성 향상 목적 냉각 레시피 LAM-R5 적용(박판 제품 검증 없음)"
+    ],
+    [
+     "PRS-01",
+     "RECIPE_CHANGE",
+     "end",
+     "same",
+     "cooling_rate_c_min",
+     3.0,
+     "C/min",
+     "레시피 LAM-R4 원복"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  },
+  {
+   "id": "P21",
+   "cause": "IMSN_THIN",
+   "escape": "ESC_FQC_SAMPLING",
+   "title": "IMSN-01 주석욕 농도 저하로 두께 부족",
+   "selector": {
+    "kind": "condition",
+    "process": "SF",
+    "equipment": [
+     "IMSN-01"
+    ],
+    "start": "2025-11-10",
+    "end": "2025-11-28",
+    "fraction": 0.8
+   },
+   "shifts": {
+    "sn_thickness_um": [
+     -0.48,
+     0.05
+    ]
+   },
+   "claim_products": [
+    "IND-CTRL4"
+   ],
+   "symptoms": [
+    [
+     "SOLD01",
+     1.0
+    ]
+   ],
+   "detection": [
+    [
+     "SMT_REFLOW",
+     1.0
+    ]
+   ],
+   "claims": 200,
+   "events": [
+    [
+     "IMSN-01",
+     "BATH_ANALYSIS",
+     "end",
+     "same",
+     "sn_conc_g_l",
+     11,
+     "g/L",
+     "주석 농도 11g/L(기준 16~20g/L)"
+    ]
+   ],
+   "key_dims": [
+    "CONDITION",
+    "EQUIPMENT"
+   ]
+  }
+ ],
+ "SF_BY_FINISH": {
+  "ENIG": [
+   "ENIG-01",
+   "ENIG-02"
+  ],
+  "OSP": [
+   "OSP-01"
+  ],
+  "ImSn": [
+   "IMSN-01"
+  ]
+ },
+ "SPECIAL_CHARACTERISTICS": [
+  [
+   "SC-HOLE-CU",
+   "홀 도금 두께",
+   "CC",
+   "Lot별 단면 측정, 정류기 전류밀도 SPC",
+   "PLATE",
+   "FQC_XSEC_HOLE_CU"
+  ],
+  [
+   "SC-PTH-REL",
+   "홀 신뢰성(열사이클 저항 변화)",
+   "CC",
+   "드릴 비트 수명·디스미어율 관리, IST 샘플",
+   "DRILL",
+   "LAB_IST_DR"
+  ],
+  [
+   "SC-INTERLAYER",
+   "층간 접합(디라미네이션 없음)",
+   "SC",
+   "프레스 프로파일·산화 피막 관리, 솔더 플로트",
+   "LAM",
+   "FQC_SOLDER_FLOAT"
+  ],
+  [
+   "SC-IMPEDANCE",
+   "특성 임피던스",
+   "SC",
+   "선폭 관리, TDR 쿠폰 측정",
+   "IL_ETCH",
+   "FQC_TDR_IMP"
+  ],
+  [
+   "SC-NI-AU",
+   "Ni/Au 두께·Ni 부식",
+   "SC",
+   "XRF 두께, 욕 MTO 관리",
+   "SF",
+   "FQC_XRF_NI"
+  ],
+  [
+   "SC-IONIC",
+   "이온 오염도",
+   "SC",
+   "세척수 전도도 관리, 이온 오염 시험",
+   "CLEAN",
+   "FQC_IONIC"
+  ],
+  [
+   "SC-WARPAGE",
+   "휨",
+   "SC",
+   "프레스 냉각 프로파일, 휨 측정",
+   "LAM",
+   "FQC_WARPAGE"
+  ],
+  [
+   "SC-REGISTRATION",
+   "층간 정렬",
+   "SC",
+   "X-ray 정렬 측정",
+   "LAM",
+   "FQC_REG_OFFSET"
+  ],
+  [
+   "SC-MOISTURE",
+   "포장 흡습 관리",
+   "SC",
+   "베이킹·진공 실링 온도 관리",
+   "PACK",
+   "FQC_MOISTURE"
+  ],
+  [
+   "SC-TRACE",
+   "식별·추적성(라벨/Date code)",
+   "SC",
+   "출하 라벨 스캔 검증",
+   "OQC",
+   "OQC_LABEL_MATCH"
+  ],
+  [
+   "STD-SM",
+   "PSR 밀착",
+   "STD",
+   "테이프 시험",
+   "SM",
+   "FQC_SM_TAPE"
+  ],
+  [
+   "STD-DIM",
+   "외형 치수",
+   "STD",
+   "초품·Lot별 치수 측정",
+   "ROUT",
+   "FQC_DIM"
+  ],
+  [
+   "STD-SOLDER",
+   "납땜성",
+   "STD",
+   "납땜성 시험",
+   "SF",
+   "FQC_SOLDERABILITY"
+  ]
+ ],
+ "SPORADIC": {
+  "APPR03": [
+   [
+    "FOREIGN_MATERIAL",
+    1.0
+   ]
+  ],
+  "APPR02": [
+   [
+    "HANDLING_SCRATCH",
+    1.0
+   ]
+  ],
+  "DIM02": [
+   [
+    "DRILL_DEBRIS_PLUGGED_HOLE",
+    1.0
+   ]
+  ],
+  "ELEC01": [
+   [
+    "ET_RETEST_MISJUDGE",
+    0.5
+   ],
+   [
+    "HANDLING_SCRATCH",
+    0.5
+   ]
+  ],
+  "ELEC02": [
+   [
+    "ET_RETEST_MISJUDGE",
+    0.6
+   ],
+   [
+    "FOREIGN_MATERIAL",
+    0.4
+   ]
+  ],
+  "SOLD01": [
+   [
+    "SF_LOCAL_CONTAMINATION",
+    1.0
+   ]
+  ],
+  "APPR01": [
+   [
+    "SM_LOCAL_ADHESION",
+    1.0
+   ]
+  ]
+ },
+ "SPORADIC_ESCAPE": {
+  "ET_RETEST_MISJUDGE": "ESC_OPERATOR_OVERRIDE"
+ },
+ "SPORADIC_WEIGHTS": {
+  "APPR03": 0.22,
+  "APPR02": 0.2,
+  "DIM02": 0.12,
+  "ELEC01": 0.14,
+  "ELEC02": 0.12,
+  "SOLD01": 0.1,
+  "APPR01": 0.1
+ },
+ "SUPPLIER_NAMES": {
+  "SUP-CCL-A": "공급사 CCL-A",
+  "SUP-CCL-B": "공급사 CCL-B",
+  "SUP-PP-A": "공급사 PP-A",
+  "SUP-PP-B": "공급사 PP-B",
+  "SUP-CU-A": "공급사 동박-A",
+  "SUP-CU-B": "공급사 동박-B",
+  "SUP-DF-A": "공급사 드라이필름-A",
+  "SUP-INK-A": "공급사 PSR-A",
+  "SUP-INK-B": "공급사 PSR-B",
+  "SUP-CHEM-A": "공급사 약품-A"
+ },
+ "SYMPTOMS": [
+  [
+   "ELEC01",
+   "ELEC",
+   "전기적 불량",
+   "오픈(단선)",
+   7,
+   null,
+   "도통 불가, 패턴 끊김, ICT 오픈 판정",
+   "간헐 증상(온도·진동 의존)은 ELEC03"
+  ],
+  [
+   "ELEC02",
+   "ELEC",
+   "전기적 불량",
+   "쇼트",
+   7,
+   null,
+   "패턴 간 쇼트, 전원-GND 쇼트, 브리지",
+   "고습 누설·절연 저하는 ELEC05"
+  ],
+  [
+   "ELEC03",
+   "ELEC",
+   "전기적 불량",
+   "간헐 오픈(열·진동 후)",
+   9,
+   "SC-PTH-REL",
+   "온도 사이클·진동 후 저항 증가·순간 단선, 필드 간헐 통신 단절",
+   "상온에서 상시 오픈이면 ELEC01"
+  ],
+  [
+   "ELEC04",
+   "ELEC",
+   "전기적 불량",
+   "임피던스 규격 이탈",
+   6,
+   "SC-IMPEDANCE",
+   "TDR 측정값 규격 이탈, 고속 신호 품질 저하",
+   "측정 조건(쿠폰·픽스처) 확인 필요"
+  ],
+  [
+   "ELEC05",
+   "ELEC",
+   "전기적 불량",
+   "절연저항 저하·누설",
+   8,
+   "SC-IONIC",
+   "고습 누설 전류, HAST 후 절연저항 미달, 패턴 사이 변색",
+   "직접 쇼트는 ELEC02"
+  ],
+  [
+   "SOLD01",
+   "SOLD",
+   "납땜·실장 불량",
+   "납 젖음 불량",
+   6,
+   "STD-SOLDER",
+   "디웨팅·논웨팅, 솔더 뭉침",
+   "접합 계면 파단은 SOLD02"
+  ],
+  [
+   "SOLD02",
+   "SOLD",
+   "납땜·실장 불량",
+   "접합 계면 파단(블랙패드 의심)",
+   9,
+   "SC-NI-AU",
+   "BGA 접합부 패드 계면 분리, 파단면 흑색",
+   "패드 자체 박리는 SOLD03"
+  ],
+  [
+   "SOLD03",
+   "SOLD",
+   "납땜·실장 불량",
+   "패드 들뜸",
+   7,
+   null,
+   "리워크·부품 제거 시 패드 박리",
+   "접합 계면 파단은 SOLD02"
+  ],
+  [
+   "STRC01",
+   "STRC",
+   "구조·적층 불량",
+   "리플로 후 블리스터",
+   7,
+   "SC-INTERLAYER",
+   "리플로 후 표면 부풂, BGA 하부 부풂",
+   "층간 분리가 단면으로 확인되면 STRC02 병기"
+  ],
+  [
+   "STRC02",
+   "STRC",
+   "구조·적층 불량",
+   "층간 박리(디라미네이션)",
+   8,
+   "SC-INTERLAYER",
+   "층간 분리, 열충격 후 박리, 모서리 층 벌어짐",
+   "표면 부풂만 있으면 STRC01"
+  ],
+  [
+   "STRC03",
+   "STRC",
+   "구조·적층 불량",
+   "휨 규격 초과",
+   6,
+   "SC-WARPAGE",
+   "인쇄·실장 불량을 유발하는 휨, 리플로 후 휨",
+   "고정 지그 문제 여부 확인"
+  ],
+  [
+   "STRC04",
+   "STRC",
+   "구조·적층 불량",
+   "홀·배럴 크랙",
+   8,
+   "SC-HOLE-CU",
+   "단면상 홀 도금 크랙, 열충격 후 비아 저항 상승",
+   "간헐 전기 증상만 있으면 ELEC03"
+  ],
+  [
+   "APPR01",
+   "APPR",
+   "외관 불량",
+   "PSR 들뜸·박리",
+   5,
+   "STD-SM",
+   "테이프 시험·세척 후 PSR 벗겨짐",
+   "이물 혼입은 APPR03"
+  ],
+  [
+   "APPR02",
+   "APPR",
+   "외관 불량",
+   "동 노출·스크래치",
+   4,
+   null,
+   "패턴 동 노출, 표면 스크래치",
+   "단선 동반 시 ELEC01 병기"
+  ],
+  [
+   "APPR03",
+   "APPR",
+   "외관 불량",
+   "이물·오염·변색",
+   4,
+   null,
+   "표면 이물, 패드 얼룩·변색",
+   "누설 동반 시 ELEC05"
+  ],
+  [
+   "DIM01",
+   "DIM",
+   "치수·가공 불량",
+   "외형 치수 이탈",
+   5,
+   "STD-DIM",
+   "외곽 치수·V-cut 위치 편차로 조립 불가",
+   "휨으로 인한 조립 불가는 STRC03"
+  ],
+  [
+   "DIM02",
+   "DIM",
+   "치수·가공 불량",
+   "홀 위치 편차·홀 막힘",
+   6,
+   "SC-REGISTRATION",
+   "홀 위치 틀어짐, 홀 막힘, 비아-패드 정렬 편차",
+   "외곽 치수는 DIM01"
+  ],
+  [
+   "MARK01",
+   "MARK",
+   "식별·추적 불량",
+   "라벨·Date code 불일치",
+   7,
+   "SC-TRACE",
+   "라벨 Lot·Date code와 실물 마킹 불일치, 타 P/N 라벨",
+   "수량 차이만 있으면 대상 아님"
+  ]
+ ],
+ "SYMPTOM_LAB": {
+  "ELEC01": [
+   "LAB_ET_RETEST",
+   "LAB_MICROSCOPE",
+   "LAB_XSEC_ICD",
+   "LAB_REG_OFFSET"
+  ],
+  "ELEC02": [
+   "LAB_ET_RETEST",
+   "LAB_MICROSCOPE",
+   "LAB_XRAY"
+  ],
+  "ELEC03": [
+   "LAB_IST_DR",
+   "LAB_XSEC_HOLE_CU",
+   "LAB_XSEC_CRACK",
+   "LAB_XSEC_ICD",
+   "LAB_HOLE_WALL_ROUGH"
+  ],
+  "ELEC04": [
+   "LAB_TDR_IMP",
+   "LAB_LINE_WIDTH"
+  ],
+  "ELEC05": [
+   "LAB_SIR",
+   "LAB_IONIC",
+   "LAB_XSEC_VOID",
+   "LAB_MICROSCOPE"
+  ],
+  "SOLD01": [
+   "LAB_SOLDERABILITY",
+   "LAB_SN_THK",
+   "LAB_MICROSCOPE"
+  ],
+  "SOLD02": [
+   "LAB_SEM_NI_CORR",
+   "LAB_EDS_P",
+   "LAB_XRF_AU"
+  ],
+  "SOLD03": [
+   "LAB_PEEL",
+   "LAB_MICROSCOPE"
+  ],
+  "STRC01": [
+   "LAB_REFLOW_REPRO",
+   "LAB_MOISTURE",
+   "LAB_DSC_DTG",
+   "LAB_XSEC_VOID",
+   "LAB_XSEC_DELAM"
+  ],
+  "STRC02": [
+   "LAB_XSEC_DELAM",
+   "LAB_XSEC_VOID",
+   "LAB_DSC_DTG",
+   "LAB_REFLOW_REPRO"
+  ],
+  "STRC03": [
+   "LAB_WARPAGE"
+  ],
+  "STRC04": [
+   "LAB_XSEC_HOLE_CU",
+   "LAB_XSEC_CRACK",
+   "LAB_HOLE_WALL_ROUGH",
+   "LAB_IST_DR"
+  ],
+  "APPR01": [
+   "LAB_SM_TAPE",
+   "LAB_MICROSCOPE"
+  ],
+  "APPR02": [
+   "LAB_MICROSCOPE"
+  ],
+  "APPR03": [
+   "LAB_MICROSCOPE",
+   "LAB_IONIC"
+  ],
+  "DIM01": [
+   "LAB_DIM"
+  ],
+  "DIM02": [
+   "LAB_HOLE_POS",
+   "LAB_REG_OFFSET",
+   "LAB_XRAY"
+  ],
+  "MARK01": [
+   "LAB_LABEL_MATCH"
+  ]
+ },
+ "SYMPTOM_TEXT": {
+  "ELEC01": [
+   "특정 넷이 오픈으로 판정됩니다",
+   "신호 라인 단선이 확인되었고 루페상 패턴 끊김이 의심됩니다",
+   "전원 라인 도통이 되지 않습니다",
+   "오픈 불량이 반복해서 검출됩니다",
+   "회로 단선으로 부팅이 되지 않습니다"
+  ],
+  "ELEC02": [
+   "인접 패턴 간 쇼트가 발생했습니다",
+   "전원-GND 쇼트로 전류가 과다하게 흐릅니다",
+   "쇼트 판정이 나오며 육안상 잔동이 의심됩니다",
+   "미세 패턴 사이 브리지 형태의 쇼트가 보입니다"
+  ],
+  "ELEC03": [
+   "온도 사이클 이후 간헐적으로 오픈이 발생합니다",
+   "간헐적 통신 단절이 있고 회수품을 가열하면 오픈이 재현됩니다",
+   "상온에서는 정상이나 고온에서 저항이 증가합니다",
+   "진동 시험 중 순간 단선이 발생합니다"
+  ],
+  "ELEC04": [
+   "임피던스 측정값이 규격(50Ω±10%) 하한을 벗어납니다",
+   "고속 신호 품질이 나쁘고 임피던스가 낮게 측정됩니다",
+   "TDR 측정 결과 44Ω 수준으로 확인됩니다"
+  ],
+  "ELEC05": [
+   "고습 환경에서 누설 전류가 증가합니다",
+   "절연저항 저하로 오동작이 발생합니다",
+   "회수품 패턴 사이에 변색과 누설이 확인됩니다",
+   "HAST 이후 절연저항이 규격에 미달합니다"
+  ],
+  "SOLD01": [
+   "패드 납 젖음이 불량합니다",
+   "솔더가 패드에 퍼지지 않고 뭉칩니다",
+   "부품이 들뜨고 패드 젖음성이 저조합니다",
+   "디웨팅이 다수 발생했습니다"
+  ],
+  "SOLD02": [
+   "낙하 시험 후 BGA 접합부가 패드 계면에서 분리됩니다",
+   "접합부 파단면이 검게 보입니다",
+   "부품이 탈락했고 패드 표면이 흑색으로 변색되어 있습니다",
+   "BGA 리워크 시 패드 계면이 깨집니다"
+  ],
+  "SOLD03": [
+   "리워크 중 패드가 기판에서 떨어집니다",
+   "패드 들뜸이 발생했습니다",
+   "부품 제거 후 패드가 함께 박리됩니다"
+  ],
+  "STRC01": [
+   "리플로 후 기판 표면이 부풀었습니다(블리스터)",
+   "2차 리플로 후 BGA 하부에 부풂이 생깁니다",
+   "리플로 통과 후 기판 내부 들뜸이 보입니다"
+  ],
+  "STRC02": [
+   "기판 층간 박리가 발생했습니다",
+   "단면 확인 결과 층간 분리가 보입니다",
+   "열충격 시험 후 디라미네이션이 발생했습니다",
+   "기판 모서리에서 층이 벌어집니다"
+  ],
+  "STRC03": [
+   "기판 휨이 커서 인쇄·실장 불량이 납니다",
+   "리플로 후 휨이 1% 이상으로 측정됩니다",
+   "평탄도 불량으로 BGA 미접합이 발생합니다"
+  ],
+  "STRC04": [
+   "단면 분석에서 홀 배럴 크랙이 보여 확인 요청드립니다",
+   "비아 홀 도금 크랙이 의심됩니다",
+   "열충격 후 비아 저항이 상승합니다"
+  ],
+  "APPR01": [
+   "PSR이 테이프 시험에서 벗겨집니다",
+   "세척 후 PSR 들뜸이 발생했습니다",
+   "솔더레지스트가 박리됩니다"
+  ],
+  "APPR02": [
+   "패턴 동이 노출되어 있습니다",
+   "기판 표면에 스크래치가 있습니다",
+   "PSR 긁힘으로 동박이 보입니다"
+  ],
+  "APPR03": [
+   "기판 표면에 이물이 있습니다",
+   "패드에 변색·얼룩이 있습니다",
+   "PSR 하부에 이물이 혼입되어 있습니다"
+  ],
+  "DIM01": [
+   "외형 치수가 도면보다 커서 케이스 조립이 되지 않습니다",
+   "기판 외곽 치수가 규격을 벗어납니다",
+   "외곽 가공 위치가 틀어져 있습니다"
+  ],
+  "DIM02": [
+   "홀 위치가 틀어져 커넥터 삽입이 되지 않습니다",
+   "홀 막힘으로 핀 삽입이 안 됩니다",
+   "비아와 패드 정렬이 틀어져 있습니다"
+  ],
+  "MARK01": [
+   "박스 라벨 Date code와 기판 마킹이 다릅니다",
+   "라벨 Lot 번호와 실물 Lot이 일치하지 않습니다",
+   "다른 Lot 라벨이 혼입된 것으로 보입니다"
+  ]
+ },
+ "TEST_SPECS": [
+  [
+   "ET_OPEN",
+   "open_count",
+   "E-Test 오픈 수",
+   "ET",
+   "count",
+   null,
+   0,
+   null
+  ],
+  [
+   "ET_SHORT",
+   "short_count",
+   "E-Test 쇼트 수",
+   "ET",
+   "count",
+   null,
+   0,
+   null
+  ],
+  [
+   "IAOI_DEFECT",
+   "defects_per_panel",
+   "내층 AOI 결함 수(패널 평균)",
+   "IN_PROCESS",
+   "count",
+   null,
+   3,
+   null
+  ],
+  [
+   "OAOI_DEFECT",
+   "defects_per_panel",
+   "외층 AOI 결함 수(패널 평균)",
+   "IN_PROCESS",
+   "count",
+   null,
+   3,
+   null
+  ],
+  [
+   "FQC_XSEC_HOLE_CU",
+   "hole_cu_um",
+   "단면 홀 동 두께(최소)",
+   "FQC",
+   "um",
+   20,
+   null,
+   "SC-HOLE-CU"
+  ],
+  [
+   "FQC_XRF_NI",
+   "ni_um",
+   "XRF Ni 두께",
+   "FQC",
+   "um",
+   3.0,
+   6.0,
+   "SC-NI-AU"
+  ],
+  [
+   "FQC_XRF_AU",
+   "au_um",
+   "XRF Au 두께",
+   "FQC",
+   "um",
+   0.05,
+   0.1,
+   "SC-NI-AU"
+  ],
+  [
+   "FQC_TDR_IMP",
+   "impedance_ohm",
+   "TDR 임피던스(50Ω 쿠폰)",
+   "FQC",
+   "ohm",
+   45,
+   55,
+   "SC-IMPEDANCE"
+  ],
+  [
+   "FQC_SOLDER_FLOAT",
+   "delam_count",
+   "솔더 플로트(288℃ 10s×3) 박리 수",
+   "FQC",
+   "count",
+   null,
+   0,
+   "SC-INTERLAYER"
+  ],
+  [
+   "FQC_IONIC",
+   "ionic_ug_cm2",
+   "이온 오염도(NaCl 당량)",
+   "FQC",
+   "ug/cm2",
+   null,
+   1.56,
+   "SC-IONIC"
+  ],
+  [
+   "FQC_WARPAGE",
+   "warpage_pct",
+   "휨(상온)",
+   "FQC",
+   "%",
+   null,
+   0.75,
+   "SC-WARPAGE"
+  ],
+  [
+   "FQC_WARPAGE_HOT",
+   "warpage_hot_pct",
+   "휨(260℃ 섀도 모아레)",
+   "FQC",
+   "%",
+   null,
+   0.75,
+   "SC-WARPAGE"
+  ],
+  [
+   "FQC_PEEL",
+   "peel_n_mm",
+   "박리 강도",
+   "FQC",
+   "N/mm",
+   1.05,
+   null,
+   null
+  ],
+  [
+   "FQC_SM_TAPE",
+   "fail_count",
+   "PSR 테이프 시험 박리 수",
+   "FQC",
+   "count",
+   null,
+   0,
+   "STD-SM"
+  ],
+  [
+   "FQC_DIM",
+   "outline_dev_um",
+   "외형 치수 편차",
+   "FQC",
+   "um",
+   -100,
+   100,
+   "STD-DIM"
+  ],
+  [
+   "FQC_SOLDERABILITY",
+   "wetting_pct",
+   "납땜성(젖음 면적)",
+   "FQC",
+   "%",
+   95,
+   null,
+   "STD-SOLDER"
+  ],
+  [
+   "FQC_SN_THK",
+   "sn_um",
+   "주석 두께",
+   "FQC",
+   "um",
+   0.8,
+   1.5,
+   "STD-SOLDER"
+  ],
+  [
+   "IQC_CCL_VOID",
+   "void_sites",
+   "CCL 수입 단면 보이드 수",
+   "IQC",
+   "count",
+   null,
+   0,
+   "SC-INTERLAYER"
+  ],
+  [
+   "IQC_PP_FLOW",
+   "resin_flow_pct",
+   "프리프레그 resin flow",
+   "IQC",
+   "%",
+   20,
+   32,
+   "SC-INTERLAYER"
+  ],
+  [
+   "IQC_CU_PEEL",
+   "peel_n_mm",
+   "동박 박리 강도",
+   "IQC",
+   "N/mm",
+   1.05,
+   null,
+   null
+  ],
+  [
+   "IQC_INK_VISC",
+   "viscosity_dpa_s",
+   "PSR 잉크 점도",
+   "IQC",
+   "dPa.s",
+   180,
+   260,
+   "STD-SM"
+  ],
+  [
+   "FQC_REG_OFFSET",
+   "reg_offset_um",
+   "X-ray 층간 정렬 편차",
+   "FQC",
+   "um",
+   null,
+   50,
+   "SC-REGISTRATION"
+  ],
+  [
+   "FQC_IST",
+   "ist_dr_pct",
+   "IST 500cyc 저항 변화",
+   "FQC",
+   "%",
+   null,
+   10,
+   "SC-PTH-REL"
+  ],
+  [
+   "FQC_NI_CORR",
+   "ni_corrosion_grade",
+   "Ni 부식 등급(단면 SEM)",
+   "FQC",
+   "grade",
+   null,
+   1,
+   "SC-NI-AU"
+  ],
+  [
+   "FQC_MOISTURE",
+   "moisture_pct",
+   "포장 전 수분 함량",
+   "FQC",
+   "%",
+   null,
+   0.1,
+   "SC-MOISTURE"
+  ],
+  [
+   "OQC_LABEL_MATCH",
+   "label_match",
+   "라벨·실물 일치",
+   "OQC",
+   "boolean",
+   1,
+   1,
+   "SC-TRACE"
+  ],
+  [
+   "OQC_BAG_LEAK",
+   "leak_count",
+   "진공 포장 누설 수",
+   "OQC",
+   "count",
+   null,
+   0,
+   "SC-MOISTURE"
+  ],
+  [
+   "LAB_ET_RETEST",
+   "fail_nets",
+   "반송품 E-Test 재검 불량 넷 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   null
+  ],
+  [
+   "LAB_MICROSCOPE",
+   "defect_sites",
+   "현미경 결함 부위 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   null
+  ],
+  [
+   "LAB_XRAY",
+   "defect_sites",
+   "X-ray 결함 부위 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   null
+  ],
+  [
+   "LAB_XSEC_HOLE_CU",
+   "hole_cu_um",
+   "단면 홀 동 두께(최소)",
+   "RMA_LAB",
+   "um",
+   20,
+   null,
+   "SC-HOLE-CU"
+  ],
+  [
+   "LAB_XSEC_CRACK",
+   "crack_count",
+   "단면 도금 크랙 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "SC-HOLE-CU"
+  ],
+  [
+   "LAB_XSEC_ICD",
+   "icd_count",
+   "단면 내층 연결 분리(ICD) 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "SC-PTH-REL"
+  ],
+  [
+   "LAB_HOLE_WALL_ROUGH",
+   "roughness_um",
+   "홀벽 거칠기",
+   "RMA_LAB",
+   "um",
+   null,
+   25,
+   "SC-PTH-REL"
+  ],
+  [
+   "LAB_IST_DR",
+   "ist_dr_pct",
+   "IST 500cyc 저항 변화",
+   "RMA_LAB",
+   "%",
+   null,
+   10,
+   "SC-PTH-REL"
+  ],
+  [
+   "LAB_XSEC_DELAM",
+   "delam_sites",
+   "단면 층간 박리 부위 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "SC-INTERLAYER"
+  ],
+  [
+   "LAB_XSEC_VOID",
+   "void_sites",
+   "단면 수지 보이드 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "SC-INTERLAYER"
+  ],
+  [
+   "LAB_DSC_DTG",
+   "delta_tg_c",
+   "DSC ΔTg(경화도)",
+   "RMA_LAB",
+   "C",
+   null,
+   5,
+   "SC-INTERLAYER"
+  ],
+  [
+   "LAB_REFLOW_REPRO",
+   "blister_count",
+   "리플로 260℃×3 재현 시험 블리스터 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "SC-INTERLAYER"
+  ],
+  [
+   "LAB_MOISTURE",
+   "moisture_pct",
+   "수분 함량",
+   "RMA_LAB",
+   "%",
+   null,
+   0.1,
+   "SC-MOISTURE"
+  ],
+  [
+   "LAB_SEM_NI_CORR",
+   "ni_corrosion_grade",
+   "SEM Ni 부식 등급",
+   "RMA_LAB",
+   "grade",
+   null,
+   1,
+   "SC-NI-AU"
+  ],
+  [
+   "LAB_EDS_P",
+   "p_pct",
+   "EDS Ni층 P 함량",
+   "RMA_LAB",
+   "%",
+   7.0,
+   9.0,
+   "SC-NI-AU"
+  ],
+  [
+   "LAB_XRF_AU",
+   "au_um",
+   "XRF Au 두께",
+   "RMA_LAB",
+   "um",
+   0.05,
+   0.1,
+   "SC-NI-AU"
+  ],
+  [
+   "LAB_TDR_IMP",
+   "impedance_ohm",
+   "TDR 임피던스",
+   "RMA_LAB",
+   "ohm",
+   45,
+   55,
+   "SC-IMPEDANCE"
+  ],
+  [
+   "LAB_LINE_WIDTH",
+   "line_dev_um",
+   "선폭 편차",
+   "RMA_LAB",
+   "um",
+   -12,
+   12,
+   "SC-IMPEDANCE"
+  ],
+  [
+   "LAB_IONIC",
+   "ionic_ug_cm2",
+   "이온 오염도",
+   "RMA_LAB",
+   "ug/cm2",
+   null,
+   1.56,
+   "SC-IONIC"
+  ],
+  [
+   "LAB_SIR",
+   "sir_log_ohm",
+   "표면 절연저항(log10 Ω)",
+   "RMA_LAB",
+   "log_ohm",
+   9,
+   null,
+   "SC-IONIC"
+  ],
+  [
+   "LAB_PEEL",
+   "peel_n_mm",
+   "박리 강도",
+   "RMA_LAB",
+   "N/mm",
+   1.05,
+   null,
+   null
+  ],
+  [
+   "LAB_SM_TAPE",
+   "fail_count",
+   "PSR 테이프 시험 박리 수",
+   "RMA_LAB",
+   "count",
+   null,
+   0,
+   "STD-SM"
+  ],
+  [
+   "LAB_WARPAGE",
+   "warpage_pct",
+   "휨(260℃)",
+   "RMA_LAB",
+   "%",
+   null,
+   0.75,
+   "SC-WARPAGE"
+  ],
+  [
+   "LAB_DIM",
+   "outline_dev_um",
+   "외형 치수 편차",
+   "RMA_LAB",
+   "um",
+   -100,
+   100,
+   "STD-DIM"
+  ],
+  [
+   "LAB_HOLE_POS",
+   "hole_pos_um",
+   "홀 위치 편차",
+   "RMA_LAB",
+   "um",
+   null,
+   50,
+   "SC-REGISTRATION"
+  ],
+  [
+   "LAB_REG_OFFSET",
+   "reg_offset_um",
+   "X-ray 층간 정렬 편차",
+   "RMA_LAB",
+   "um",
+   null,
+   50,
+   "SC-REGISTRATION"
+  ],
+  [
+   "LAB_SOLDERABILITY",
+   "wetting_pct",
+   "납땜성(젖음 면적)",
+   "RMA_LAB",
+   "%",
+   95,
+   null,
+   "STD-SOLDER"
+  ],
+  [
+   "LAB_SN_THK",
+   "sn_um",
+   "주석 두께",
+   "RMA_LAB",
+   "um",
+   0.8,
+   1.5,
+   "STD-SOLDER"
+  ],
+  [
+   "LAB_LABEL_MATCH",
+   "label_match",
+   "라벨·실물 마킹 일치",
+   "RMA_LAB",
+   "boolean",
+   1,
+   1,
+   "SC-TRACE"
+  ]
+ ],
+ "TOTAL_CLAIMS": 10000
+}

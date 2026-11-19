@@ -1,0 +1,926 @@
+{
+  "version": "v5",
+  "domain": "PCB 제조(다층 PCB 원판) RMA",
+  "based_on": "PCB_RMA_dataset_v31 + v3 patches + patch_v4_loss.py (+ slim_v3.py)",
+  "as_of": "2025-12-31T23:59:00+09:00",
+  "basis_mail": "RE: [SKALA 프로젝트 문의] RMA AI 프로젝트 관련 현업 기준 (SK AX 이재민, 2026-11-16)",
+  "table_rows": {
+    "analysis_level_rule": 3,
+    "cause_assessment": 58,
+    "cause_candidate": 76,
+    "cause_master": 28,
+    "claim_cause": 10610,
+    "claim_text_variant": 457,
+    "communication": 21404,
+    "corrective_action": 81,
+    "cost_rule": 66,
+    "customer": 24,
+    "customer_test_report": 1912,
+    "effectiveness_check": 70,
+    "equipment_event": 837,
+    "equipment_master": 49,
+    "escape_assessment": 30,
+    "escape_master": 12,
+    "evidence": 10290,
+    "inspection_plan": 33,
+    "investigation": 58,
+    "investigation_claim": 10404,
+    "loss_ledger": 59672,
+    "material_lot": 1040,
+    "material_usage": 10711,
+    "process_master": 20,
+    "process_observation": 107228,
+    "process_parameter_spec": 33,
+    "process_run": 55302,
+    "product_cost": 6,
+    "product_spec": 6,
+    "production_lot": 1864,
+    "qa_causal_requirement": 26,
+    "qa_triage": 10610,
+    "recurrence_review": 2724,
+    "rma_claim": 10610,
+    "rma_item": 10610,
+    "service_action": 10372,
+    "shipment": 2278,
+    "shipment_lot": 2400,
+    "similar_cases": 17655,
+    "special_characteristic": 13,
+    "supplier": 10,
+    "symptom_assessment": 10610,
+    "symptom_definition": 20,
+    "test_measurement": 756318,
+    "test_run": 369945,
+    "test_spec": 56
+  },
+  "views": [
+    "cause_confirmation_basis",
+    "claim_loss",
+    "escape_point_summary",
+    "loss_by_investigation",
+    "loss_by_month",
+    "monthly_claims",
+    "qa_case_overview",
+    "qa_symptom_reproduction",
+    "spc_out_of_spec_by_equipment_month",
+    "special_characteristic_results"
+  ],
+  "claims_by_major": {
+    "APPR": 2064,
+    "DIM": 538,
+    "ELEC": 3866,
+    "MARK": 120,
+    "SOLD": 1250,
+    "STRC": 2772
+  },
+  "claims_by_cause_category": {
+    "INSPECTION": 281,
+    "MATERIAL": 1520,
+    "PROCESS": 8309,
+    "UNDETERMINED": 500
+  },
+  "claims_by_analysis_level": {
+    "L1": 547,
+    "L2": 6186,
+    "L3": 3877
+  },
+  "monthly_claims": {
+    "2025-01": 385,
+    "2025-02": 298,
+    "2025-03": 339,
+    "2025-04": 652,
+    "2025-05": 1285,
+    "2025-06": 785,
+    "2025-07": 1459,
+    "2025-08": 926,
+    "2025-09": 950,
+    "2025-10": 1292,
+    "2025-11": 953,
+    "2025-12": 1286
+  },
+  "scenarios": [
+    {
+      "id": "P01",
+      "title": "DRL-03 드릴 비트 수명 초과에 따른 홀 신뢰성 불량",
+      "cause_code": "DRILL_BIT_WEAR",
+      "escape_code": "ESC_RELIABILITY_NOT_DETECTABLE",
+      "claims": 620,
+      "impacted_lots": 63,
+      "investigation_id": "INV-25-0001"
+    },
+    {
+      "id": "P01R",
+      "title": "DRL-01 동일 원인 재발(인터록 수평 전개 누락)",
+      "cause_code": "DRILL_BIT_WEAR",
+      "escape_code": "ESC_RELIABILITY_NOT_DETECTABLE",
+      "claims": 160,
+      "impacted_lots": 42,
+      "investigation_id": "INV-25-0013"
+    },
+    {
+      "id": "P02",
+      "title": "PRS-02 열전대 편차로 인한 적층 미경화·블리스터",
+      "cause_code": "LAM_PRESS_PROFILE",
+      "escape_code": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+      "claims": 540,
+      "impacted_lots": 62,
+      "investigation_id": "INV-25-0005"
+    },
+    {
+      "id": "P03",
+      "title": "OXD-01 산화욕 농도 저하로 인한 층간 박리",
+      "cause_code": "OXIDE_INSUFFICIENT",
+      "escape_code": "ESC_SPC_REACTION",
+      "claims": 380,
+      "impacted_lots": 24,
+      "investigation_id": "INV-25-0008"
+    },
+    {
+      "id": "P04",
+      "title": "DSM-02 과망간산 열화로 인한 ICD·오픈",
+      "cause_code": "DESMEAR_INSUFFICIENT",
+      "escape_code": "ESC_FQC_SAMPLING",
+      "claims": 520,
+      "impacted_lots": 54,
+      "investigation_id": "INV-25-0009"
+    },
+    {
+      "id": "P05",
+      "title": "PLT-03 정류기 출력 저하로 인한 홀 도금 두께 부족",
+      "cause_code": "PLATING_THIN",
+      "escape_code": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+      "claims": 300,
+      "impacted_lots": 35,
+      "investigation_id": "INV-25-0003"
+    },
+    {
+      "id": "P06",
+      "title": "ENIG-01 니켈욕 MTO 초과에 따른 블랙패드",
+      "cause_code": "ENIG_NI_CORROSION",
+      "escape_code": "ESC_FQC_METHOD",
+      "claims": 560,
+      "impacted_lots": 61,
+      "investigation_id": "INV-25-0014"
+    },
+    {
+      "id": "P07",
+      "title": "공급사 CCL-B 원판 Lot 수지 함침 불량",
+      "cause_code": "CCL_RESIN_VOID",
+      "escape_code": "ESC_IQC_COA_ONLY",
+      "claims": 480,
+      "impacted_lots": 23,
+      "investigation_id": "INV-25-0007"
+    },
+    {
+      "id": "P08",
+      "title": "공급사 PP-A 프리프레그 Lot 수지 흐름 부족",
+      "cause_code": "PREPREG_FLOW",
+      "escape_code": "ESC_IQC_COA_ONLY",
+      "claims": 360,
+      "impacted_lots": 31,
+      "investigation_id": "INV-25-0016"
+    },
+    {
+      "id": "P09",
+      "title": "공급사 PSR-A 잉크 Lot 점도 이탈",
+      "cause_code": "SM_INK_LOT",
+      "escape_code": "ESC_FQC_SAMPLING",
+      "claims": 300,
+      "impacted_lots": 27,
+      "investigation_id": "INV-25-0011"
+    },
+    {
+      "id": "P10",
+      "title": "공급사 동박-B Lot 조화 처리 부족",
+      "cause_code": "CU_FOIL_PROFILE",
+      "escape_code": "ESC_IQC_COA_ONLY",
+      "claims": 260,
+      "impacted_lots": 17,
+      "investigation_id": "INV-25-0019"
+    },
+    {
+      "id": "P11",
+      "title": "SMR-02 경화로 히터 존 고장",
+      "cause_code": "SM_CURE_INSUFFICIENT",
+      "escape_code": "ESC_SPC_REACTION",
+      "claims": 300,
+      "impacted_lots": 30,
+      "investigation_id": "INV-25-0017"
+    },
+    {
+      "id": "P12",
+      "title": "ILE-01 컨베이어 속도 저하로 인한 과에칭·임피던스 이탈",
+      "cause_code": "IL_ETCH_OVER",
+      "escape_code": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+      "claims": 340,
+      "impacted_lots": 37,
+      "investigation_id": "INV-25-0012"
+    },
+    {
+      "id": "P13",
+      "title": "OLE-02 노즐 막힘 잔동 + ET-02 픽스처 핀 마모로 쇼트 유출",
+      "cause_code": "OL_ETCH_RESIDUE",
+      "escape_code": "ESC_ET_FIXTURE",
+      "claims": 380,
+      "impacted_lots": 42,
+      "investigation_id": "INV-25-0021"
+    },
+    {
+      "id": "P14",
+      "title": "OLI-02 가이드 롤러 스크래치 + AOI 판정 기준 완화 레시피",
+      "cause_code": "HANDLING_SCRATCH",
+      "escape_code": "ESC_AOI_THRESHOLD",
+      "claims": 318,
+      "impacted_lots": 72,
+      "investigation_id": "INV-25-0006"
+    },
+    {
+      "id": "P15",
+      "title": "PRS-04 정렬 핀 마모로 인한 층간 정렬 편차",
+      "cause_code": "LAM_REGISTRATION",
+      "escape_code": "ESC_SPC_REACTION",
+      "claims": 260,
+      "impacted_lots": 36,
+      "investigation_id": "INV-25-0023"
+    },
+    {
+      "id": "P16",
+      "title": "RTR-02 보전 후 원점 편차",
+      "cause_code": "ROUT_OFFSET",
+      "escape_code": "ESC_FIRST_ARTICLE_SKIPPED",
+      "claims": 180,
+      "impacted_lots": 10,
+      "investigation_id": "INV-25-0015"
+    },
+    {
+      "id": "P17",
+      "title": "CLN-01 이온교환 수지 소진으로 인한 이온 오염",
+      "cause_code": "IONIC_CONTAMINATION",
+      "escape_code": "ESC_FQC_SAMPLING",
+      "claims": 320,
+      "impacted_lots": 49,
+      "investigation_id": "INV-25-0002"
+    },
+    {
+      "id": "P18",
+      "title": "PCK-02 실링 바 온도 저하로 진공 누설·흡습",
+      "cause_code": "PACK_VACUUM_SEAL",
+      "escape_code": "ESC_OQC_LEAK_CHECK_ABSENT",
+      "claims": 420,
+      "impacted_lots": 109,
+      "investigation_id": "INV-25-0010"
+    },
+    {
+      "id": "P19",
+      "title": "라벨 재출력 혼입 + 출하 라벨 스캔 누락",
+      "cause_code": "LABEL_PRINT_MIX",
+      "escape_code": "ESC_OQC_SCAN_SKIPPED",
+      "claims": 120,
+      "impacted_lots": 2,
+      "investigation_id": "INV-25-0018"
+    },
+    {
+      "id": "P20",
+      "title": "PRS-01 냉각 레시피 변경으로 박판 휨",
+      "cause_code": "LAM_COOLING_RECIPE",
+      "escape_code": "ESC_FQC_METHOD",
+      "claims": 280,
+      "impacted_lots": 7,
+      "investigation_id": "INV-25-0004"
+    },
+    {
+      "id": "P21",
+      "title": "IMSN-01 주석욕 농도 저하로 두께 부족",
+      "cause_code": "IMSN_THIN",
+      "escape_code": "ESC_FQC_SAMPLING",
+      "claims": 200,
+      "impacted_lots": 6,
+      "investigation_id": "INV-25-0025"
+    },
+    {
+      "id": "P04R",
+      "title": "DSM-01 동일 원인 재발(교체 기준 DSM-02에만 적용, 수평 전개 누락)",
+      "cause_code": "DESMEAR_INSUFFICIENT",
+      "escape_code": "ESC_FQC_SAMPLING",
+      "claims": 180,
+      "impacted_lots": 45,
+      "investigation_id": "INV-25-0020"
+    },
+    {
+      "id": "P05R",
+      "title": "PLT-03 정류기 다른 채널 출력 저하로 재발(예방 보전 주기 미설정)",
+      "cause_code": "PLATING_THIN",
+      "escape_code": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+      "claims": 150,
+      "impacted_lots": 42,
+      "investigation_id": "INV-25-0022"
+    },
+    {
+      "id": "P12R",
+      "title": "ILE-02 컨베이어 속도 저하로 재발(점검 주기 기준서만 반영, 현장 미준수)",
+      "cause_code": "IL_ETCH_OVER",
+      "escape_code": "ESC_SAMPLE_NOT_REPRESENTATIVE",
+      "claims": 160,
+      "impacted_lots": 41,
+      "investigation_id": "INV-25-0024"
+    },
+    {
+      "id": "P09R",
+      "title": "공급사 PSR-A 다른 Lot에서 점도 이탈 재발(시정조치 후에도 성적서 의존 수입검사 유지)",
+      "cause_code": "SM_INK_LOT",
+      "escape_code": "ESC_IQC_COA_ONLY",
+      "claims": 120,
+      "impacted_lots": 29,
+      "investigation_id": "INV-25-0026"
+    }
+  ],
+  "lot_impact_decisions": {
+    "CLEARED": 945,
+    "IMPACTED": 996,
+    "ISOLATED_UNIT": 1239,
+    "NOT_IMPACTED": 356,
+    "SUSPECT_MONITOR": 60
+  },
+  "bottleneck_by_activity": [
+    {
+      "activity_type": "EFFECTIVENESS_VERIFICATION",
+      "n": 16,
+      "avg_days": 47.9,
+      "max_days": 59.0,
+      "avg_data_sources": 2.0
+    },
+    {
+      "activity_type": "CANDIDATE_REVIEW",
+      "n": 26,
+      "avg_days": 13.2,
+      "max_days": 19.9,
+      "avg_data_sources": 2.0
+    },
+    {
+      "activity_type": "CA_IMPLEMENTATION",
+      "n": 22,
+      "avg_days": 12.2,
+      "max_days": 17.4,
+      "avg_data_sources": 1.0
+    },
+    {
+      "activity_type": "LAB_ANALYSIS",
+      "n": 26,
+      "avg_days": 8.1,
+      "max_days": 14.3,
+      "avg_data_sources": 1.0
+    },
+    {
+      "activity_type": "DATA_COLLECTION",
+      "n": 26,
+      "avg_days": 8.0,
+      "max_days": 10.0,
+      "avg_data_sources": 3.9
+    },
+    {
+      "activity_type": "LOT_TRACE",
+      "n": 26,
+      "avg_days": 6.6,
+      "max_days": 9.6,
+      "avg_data_sources": 2.0
+    }
+  ],
+  "checks": {
+    "integrity_check": {
+      "value": "ok",
+      "ok": true
+    },
+    "foreign_key_violations": {
+      "value": 0,
+      "ok": true
+    },
+    "claims_total": {
+      "value": 10610,
+      "ok": true
+    },
+    "non_manufacturing_cause_codes(logistics/customer/host)": {
+      "value": 0,
+      "ok": true
+    },
+    "claims_linked_to_logistics_or_customer_fault": {
+      "value": 0,
+      "ok": true
+    },
+    "claim_occurred_before_delivery": {
+      "value": 0,
+      "ok": true
+    },
+    "returned_panel_outside_shipped_range": {
+      "value": 0,
+      "ok": true
+    },
+    "impacted_lot_shipped_after_impact_decision": {
+      "value": 0,
+      "ok": true
+    },
+    "confirmed_cause_without_verified_lab_evidence": {
+      "value": 0,
+      "ok": true
+    },
+    "confirmed_scenario_cause_without_production_record": {
+      "value": 0,
+      "ok": true
+    },
+    "impacted_lots_without_any_claim": {
+      "value": 621,
+      "ok": true
+    },
+    "return_authorization_decided_by_non_QA": {
+      "value": 0,
+      "ok": true
+    },
+    "recurrence_reviews_flagged_RECURRENCE": {
+      "value": 756,
+      "ok": true
+    },
+    "L3_investigations_without_full_8D": {
+      "value": 0,
+      "ok": true
+    },
+    "claim_application_before_open_or_assessment_or_approval": {
+      "value": 0,
+      "ok": true
+    },
+    "test_results_after_cutoff": {
+      "value": 0,
+      "ok": true
+    },
+    "unsupported_verified_defect_quantity": {
+      "value": 0,
+      "ok": true
+    },
+    "candidate_future_evidence": {
+      "value": 0,
+      "ok": true
+    },
+    "investigation_claim_premature_link": {
+      "value": 0,
+      "ok": true
+    },
+    "search_non_historical_or_oracle_reference": {
+      "value": 0,
+      "ok": true
+    },
+    "unverified_returned_sample_reproduction": {
+      "value": 0,
+      "ok": true
+    },
+    "no_defect_applied_without_verified_pass": {
+      "value": 0,
+      "ok": true
+    },
+    "full_8d_missing_any_step": {
+      "value": 0,
+      "ok": true
+    },
+    "investigation_holdout_overlap": {
+      "value": 0,
+      "ok": true
+    },
+    "confirmed_manufacturing_cause_without_production_evidence": {
+      "value": 0,
+      "ok": true
+    },
+    "recurrence_verdict_before_cause_application": {
+      "value": 0,
+      "ok": true
+    },
+    "future_customer_messages": {
+      "value": 0,
+      "ok": true
+    },
+    "service_action_before_case_decision": {
+      "value": 0,
+      "ok": true
+    },
+    "input_qty_above_delivered": {
+      "value": 0,
+      "ok": true
+    },
+    "input_qty_text_mismatch": {
+      "value": 0,
+      "ok": true
+    },
+    "claimed_defect_above_input": {
+      "value": 0,
+      "ok": true
+    },
+    "claim_count_at_decision_missing": {
+      "value": 0,
+      "ok": true
+    },
+    "claim_application_before_approval": {
+      "value": 0,
+      "ok": true
+    },
+    "sporadic_link_before_cause_application": {
+      "value": 0,
+      "ok": true
+    },
+    "d4_completed_before_cause_approval": {
+      "value": 0,
+      "ok": true
+    },
+    "shipment_before_lot_completion": {
+      "value": 0,
+      "ok": true
+    },
+    "delivery_not_after_shipment": {
+      "value": 0,
+      "ok": true
+    },
+    "impacted_lots_without_claim_at_decision": {
+      "value": 777,
+      "ok": true
+    },
+    "symptom_span_not_in_text": {
+      "value": 0,
+      "ok": true
+    },
+    "insufficient_reply_after_triage": {
+      "value": 0,
+      "ok": true
+    },
+    "customer_report_before_claim": {
+      "value": 0,
+      "ok": true
+    },
+    "triage_severity_not_symptom_severity": {
+      "value": 0,
+      "ok": true
+    },
+    "L3_claim_in_lower_investigation_without_note": {
+      "value": 0,
+      "ok": true
+    },
+    "return_basis_level_mismatch": {
+      "value": 0,
+      "ok": true
+    },
+    "loss_after_snapshot": {
+      "value": 0,
+      "ok": true
+    },
+    "loss_non_positive": {
+      "value": 0,
+      "ok": true
+    },
+    "executed_service_action_without_loss": {
+      "value": 0,
+      "ok": true
+    },
+    "scheduled_service_action_booked": {
+      "value": 0,
+      "ok": true
+    },
+    "chargeback_on_non_manufacturing_cause": {
+      "value": 0,
+      "ok": true
+    },
+    "chargeback_above_cap": {
+      "value": 0,
+      "ok": true
+    },
+    "completed_containment_without_loss": {
+      "value": 0,
+      "ok": true
+    }
+  },
+  "v31_patch": {
+    "late_tests_removed": 21,
+    "application_dates_shifted_or_deferred": 2351,
+    "service_disposition_deferred": 32,
+    "no_defect_application_deferred": 32,
+    "holdout_claims_by_split": {
+      "train": 7203,
+      "validation": 1703,
+      "test": 1704
+    },
+    "symptom_reproduction": {
+      "NOT_REPRODUCED": 503,
+      "NOT_TESTED": 678,
+      "REPRODUCED": 5540,
+      "REVIEW_REQUIRED": 3129,
+      "UNVERIFIED_SAMPLE": 760
+    },
+    "unsupported_manufacturing_confirmations_downgraded": 4,
+    "recurrence_review_dates_shifted": 2549,
+    "recurrence_reviews_pending_cause": 17,
+    "recurrence_verdicts": {
+      "PENDING_CAUSE_REVIEW": 17,
+      "PRE_ACTION_PRODUCT": 1951,
+      "RECURRENCE": 756
+    }
+  },
+  "v3_patch": {
+    "input_qty_capped_to_delivered": 6917,
+    "claim_cause_moved_to_approval": 1158,
+    "claim_cause_deferred_unapproved": 60,
+    "sporadic_links_removed_pending": 206,
+    "sporadic_links_moved_to_cause_application": 2196,
+    "impact_rows_removed_unlinked_claim": 126,
+    "impact_rows_with_later_claims": 491,
+    "d4_completion_moved_to_approval": 26,
+    "shipments_moved_after_lot_completion": 2,
+    "recurrence_reviews_moved": 0,
+    "recurrence_reviews_pending": 0,
+    "symptom_reproduction": {
+      "NOT_REPRODUCED": 456,
+      "NOT_TESTED": 678,
+      "REPRODUCED": 5540,
+      "REVIEW_REQUIRED": 3176,
+      "UNVERIFIED_SAMPLE": 760
+    }
+  },
+  "v3_text": {
+    "unclassified": 100,
+    "insufficient_info": 300,
+    "paraphrased": 4990,
+    "sold01_bga_boundary": 121,
+    "spacing_noise": 521,
+    "elec04_conditions_full": 170,
+    "elec04_conditions_partial": 40,
+    "intake_labels": {
+      "INSUFFICIENT_INFO": 300,
+      "UNCLASSIFIED": 100
+    }
+  },
+  "v3_severity": {
+    "triage_rows_updated": 2946,
+    "analysis_level_changes": {
+      "ELEC02 L2->L3": 478,
+      "DIM01 L1->L2": 29,
+      "ELEC01 L2->L3": 321
+    },
+    "investigations_upgraded_to_L3": [
+      "INV-25-0021",
+      "INV-25-0023"
+    ],
+    "sporadic_groups_kept_L2_with_note": [
+      "INV-25-0031",
+      "INV-25-0032",
+      "INV-25-0033",
+      "INV-25-0035",
+      "INV-25-0036",
+      "INV-25-0037",
+      "INV-25-0038",
+      "INV-25-0039",
+      "INV-25-0040",
+      "INV-25-0041",
+      "INV-25-0042",
+      "INV-25-0043",
+      "INV-25-0044",
+      "INV-25-0045",
+      "INV-25-0046"
+    ],
+    "claims_by_analysis_level": {
+      "L1": 547,
+      "L2": 6186,
+      "L3": 3877
+    }
+  },
+  "v5_noise": {
+    "shifts": [
+      {
+        "equipment": "PLT-01",
+        "item": "current_density_asd",
+        "from": "2025-10-08",
+        "to": "2025-10-15",
+        "sigma": 0.0393,
+        "shift_sigma": -3.5,
+        "observations": 36,
+        "note": "정류기 출력 일시 저하(규격 안, 재작업 없이 출하)"
+      },
+      {
+        "equipment": "DSM-02",
+        "item": "desmear_rate_mg_cm2",
+        "from": "2025-11-12",
+        "to": "2025-11-19",
+        "sigma": 0.0294,
+        "shift_sigma": 3.2,
+        "observations": 14,
+        "note": "약품조 교체 직후 제거량 상승(규격 안)"
+      }
+    ],
+    "events": [
+      {
+        "event_id": "EVT-000833",
+        "equipment": "OLE-01",
+        "type": "NOZZLE_CHECK",
+        "occurred_at": "2025-11-05T10:20:00+09:00"
+      },
+      {
+        "event_id": "EVT-000834",
+        "equipment": "SMR-01",
+        "type": "EQUIPMENT_FAULT",
+        "occurred_at": "2025-10-21T14:05:00+09:00"
+      },
+      {
+        "event_id": "EVT-000835",
+        "equipment": "SMR-01",
+        "type": "REPAIR",
+        "occurred_at": "2025-10-21T18:30:00+09:00"
+      },
+      {
+        "event_id": "EVT-000836",
+        "equipment": "DSM-02",
+        "type": "BATH_CHANGE",
+        "occurred_at": "2025-11-11T22:00:00+09:00"
+      },
+      {
+        "event_id": "EVT-000837",
+        "equipment": "PLT-01",
+        "type": "EQUIPMENT_FAULT",
+        "occurred_at": "2025-10-08T07:40:00+09:00"
+      }
+    ]
+  },
+  "v5_text": {
+    "from": "2025-10-01",
+    "returns_in_period": 3531,
+    "changed": {
+      "paraphrase": 103,
+      "typo": 152,
+      "two_symptoms": 59,
+      "english": 118,
+      "vague": 25
+    },
+    "changed_total": 457,
+    "share": 0.129,
+    "table": "claim_text_variant"
+  },
+  "intake_labels": {
+    "APPR01": 863,
+    "APPR02": 552,
+    "APPR03": 560,
+    "DIM01": 192,
+    "DIM02": 326,
+    "ELEC01": 899,
+    "ELEC02": 623,
+    "ELEC03": 1080,
+    "ELEC04": 695,
+    "ELEC05": 429,
+    "INSUFFICIENT_INFO": 300,
+    "MARK01": 116,
+    "SOLD01": 507,
+    "SOLD02": 436,
+    "SOLD03": 253,
+    "STRC01": 1188,
+    "STRC02": 768,
+    "STRC03": 270,
+    "STRC04": 453,
+    "UNCLASSIFIED": 100
+  },
+  "v4_loss": {
+    "ledger_rows": 59672,
+    "total_krw": 57335881754,
+    "by_type_krw": {
+      "CUSTOMER_CHARGEBACK": 35078086175,
+      "CONTAINMENT_RETURN_REPLACE": 7184600000,
+      "LAB_ANALYSIS": 5338310000,
+      "ENGINEERING": 2947500000,
+      "LOGISTICS": 2145850000,
+      "REPLACEMENT_BOARDS": 1826533002,
+      "SORTING_SUPPORT": 1362600000,
+      "CREDIT_REFUND": 990539577,
+      "CONTAINMENT_SCRAP": 375276000,
+      "CONTAINMENT_SORT": 80000000,
+      "CONTAINMENT_REWORK": 6587000
+    },
+    "by_category_krw": {
+      "EXTERNAL_FAILURE": 41403608754,
+      "APPRAISAL": 8285810000,
+      "CONTAINMENT": 7646463000
+    },
+    "claims_with_loss": 10528,
+    "claim_loss_median_krw": 2504736,
+    "claim_loss_mean_krw": 4686257,
+    "chargeback_capped_claims": 275
+  },
+  "v4_terms": {
+    "table": "cause_candidate",
+    "columns": [
+      "candidate_id",
+      "candidate_no",
+      "review_note",
+      "review_method",
+      "review_evidence_ids_json",
+      "review_status",
+      "reviewed_at"
+    ],
+    "review_status": {
+      "ADOPTED": 30,
+      "REJECTED": 46
+    },
+    "note": "이전 이름과의 대응은 PCB_RMA_v4_수정내역.md 참고"
+  },
+  "v3_slim": {
+    "dropped_tables": [
+      "qa_report",
+      "eight_d_step",
+      "containment_action",
+      "document_change",
+      "supplier_action",
+      "customer_disposition_approval",
+      "monitoring_cohort",
+      "lot_impact_assessment",
+      "analysis_activity",
+      "return_authorization",
+      "return_receipt",
+      "order_item",
+      "panel"
+    ],
+    "dropped_views": [
+      "lot_impact_overview",
+      "investigation_activity_duration",
+      "eight_d_progress",
+      "corrective_action_status",
+      "customer_open_dispositions",
+      "impacted_lots_without_claims",
+      "bottleneck_by_activity"
+    ],
+    "foreign_keys_removed": [
+      "shipment.order_item_id -> order_item",
+      "rma_item.panel_id -> panel"
+    ],
+    "note": "checks above were computed on the full v3 before this step; tables listed here are no longer in the database",
+    "claims_by_analysis_level": {
+      "L1": 547,
+      "L2": 6186,
+      "L3": 3877
+    }
+  },
+  "v5": {
+    "date": "2026-11-18",
+    "claims": 10610,
+    "recurrences": [
+      {
+        "investigation_id": "INV-25-0013",
+        "reopened_from": "INV-25-0001",
+        "cause": "DRILL_BIT_WEAR",
+        "equipment": "DRL-01",
+        "claims": 160
+      },
+      {
+        "investigation_id": "INV-25-0020",
+        "reopened_from": "INV-25-0009",
+        "cause": "DESMEAR_INSUFFICIENT",
+        "equipment": "DSM-01",
+        "claims": 180
+      },
+      {
+        "investigation_id": "INV-25-0022",
+        "reopened_from": "INV-25-0003",
+        "cause": "PLATING_THIN",
+        "equipment": "PLT-03",
+        "claims": 150
+      },
+      {
+        "investigation_id": "INV-25-0024",
+        "reopened_from": "INV-25-0012",
+        "cause": "IL_ETCH_OVER",
+        "equipment": "ILE-02",
+        "claims": 160
+      },
+      {
+        "investigation_id": "INV-25-0026",
+        "reopened_from": "INV-25-0011",
+        "cause": "SM_INK_LOT",
+        "equipment": null,
+        "claims": 120
+      }
+    ],
+    "tables": 46,
+    "views": 10,
+    "reproduce": "PYTHONHASHSEED=0 ./run_all.sh <out>"
+  },
+  "request_text": {
+    "date": "2026-11-19",
+    "replaced": [
+      {
+        "from": "원인 분석 및 대책서(8D) 회신 부탁드립니다.",
+        "to": "원인 분석 및 대책서 회신 부탁드립니다."
+      },
+      {
+        "from": "긴급 봉쇄 조치(D3) 내용을 먼저 공유 부탁드립니다.",
+        "to": "긴급 봉쇄 조치 내용을 먼저 공유 부탁드립니다."
+      },
+      {
+        "from": "[D3 봉쇄] ",
+        "to": "[봉쇄 조치] "
+      }
+    ],
+    "rows_changed": {
+      "rma_claim.raw_text": 4257,
+      "communication.message_text": 202,
+      "claim_text_variant.original_raw_text": 167
+    },
+    "evaluation_files": 6,
+    "labels_and_spans_unchanged": true,
+    "similar_cases_recomputed": 17655
+  }
+}

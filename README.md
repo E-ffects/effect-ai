@@ -6,7 +6,7 @@ E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 에이전트 5개(CS, �
 ```bash
 pip install -r requirements.txt
 ```
-`data/pcb_rma_v5.sqlite`가 필요하다(없으면 v4). 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다. 받는 방법은 `data/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
+`data/pcb_rma_v5.sqlite`가 필요하다(없으면 v4). 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다. 받는 방법은 `data/README.md`를, 데이터를 만드는 스크립트와 버전별 체크섬은 `datagen/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
 
 ## 구조
 | 파일 | 역할 |
