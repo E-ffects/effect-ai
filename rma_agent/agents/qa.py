@@ -124,8 +124,7 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
       RECURRENCE            lot started after the action, same cause
       PRE_ACTION_PRODUCT    lot started before the action: leftover product, not a recurrence
       PENDING_CAUSE_REVIEW  the symptom is not confirmed yet (INSUFFICIENT_INFO / UNCLASSIFIED), or the lot started after
-                            the action but shows no production evidence of the leading cause (likely a wrong cause:
-                            this halved false RECURRENCE calls, 771 -> 352, for 32 fewer true ones; results/)
+                            the action but shows no evidence the leading cause hit it (likely a wrong cause; results/)
       NOT_APPLICABLE        no cause candidate, a sporadic leading cause (no machine or material pinned down),
                             no implemented action on it, or no lot to date
     Whether the lot went through the action's scope (machine or material lot) does not change the verdict; it explains it
@@ -177,11 +176,16 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
               "symptom_confirmed": symptom_known, "lot_id": lot_id, "lot_started_at": lot["started_at"],
               "produced_after_action": after, "in_action_scope": in_scope}
     day, scope_text = action["implemented_at"][:10], _scope_text(scope)
-    production_evidence = any(e["type"] in PRODUCTION_EVIDENCE + ("SUPPLIER",) for e in top.get("evidence", []))
+    # Evidence that the leading cause really hit this lot: a condition drift at its process, a material cause, or an
+    # equipment event on a machine the earlier fix did not cover. An event alone on the machine that was fixed is
+    # usually routine (chosen on 2025-07~09: precision 36% -> 66%; on 2025-10~: 72% -> 75% with no true recurrence lost).
+    types = {e["type"] for e in top.get("evidence", [])}
+    production_evidence = ("PROCESS_SIGNAL" in types or top.get("cause_category") == "MATERIAL"
+                           or ("EQUIPMENT_EVENT" in types and in_scope is False))
     if after and symptom_known and not production_evidence:
         status = "PENDING_CAUSE_REVIEW"
         reason = (f"Lot {lot_id}은(는) 같은 원인의 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐지만, 이 Lot에서 "
-                  f"{top['cause_name']}의 생산 기록 근거(공정 신호·설비 이벤트·자재)가 없어 원인부터 다시 확인해야 합니다.")
+                  f"{top['cause_name']}의 근거(원인 공정의 조건 이탈, 조치하지 않은 설비의 이상, 자재)가 없어 원인부터 다시 확인해야 합니다.")
     elif not symptom_known:
         status = "PENDING_CAUSE_REVIEW"
         reason = (f"과거 조치({action['corrective_action_id']}, {day} 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 "

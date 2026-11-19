@@ -22,13 +22,13 @@
   "minor_name": "동 노출·스크래치",
   "confidence": 1.0,
   "evidence_spans": [
-   "기판에 긁힌 자국이 있고 동이 보입니다"
+   "ICT·기능검사에서 기판에 긁힌 자국이 있고 동이 보입니다."
   ],
   "severity": 4,
   "characteristic_symbol": null,
   "alternatives": [],
   "follow_up_questions": [],
-  "elapsed_ms": 1238,
+  "elapsed_ms": 1339,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -68,7 +68,7 @@
       "requirement": "반송품 현미경 스크래치 위치 + 설비 가이드 롤러 점검 기록. 고객 측 측정값은 시료 출처·측정 조건이 확인된 경우에만 근거로 사용한다."
      }
     ],
-    "review_note": "1순위 후보 취급 스크래치은(는) 같은 원인 확정 사례 근거가 있으나, 생산 기록 근거, 출처 확인된 반송품 시험, 비교 시료(보관 시료·골든 샘플) 시험이(가) 없어 확정 전 확인이 필요합니다. QA 확인 후 확정합니다."
+    "review_note": "1순위 취급 스크래치는 같은 원인 확정 사례는 있으나, 생산 기록 근거와 출처 확인된 반송품 시험 결과가 부족합니다. 또한 보관 시료·골든 샘플 비교 시험이 필요하므로, 현재는 유력 후보로만 보고 QA 확인 후 확정하는 것이 적절합니다."
    },
    "trace_summary": {
     "lot_id": "LT-01398",
@@ -84,7 +84,7 @@
      "process_name": "외층 노광·현상",
      "equipment_id": null,
      "score": 0.4,
-     "explanation": "동 노출·스크래치 반품 380건 중 380건이 취급 스크래치로 분류되어, 이 후보가 가장 유력합니다. 다만 이 Lot의 공정 기록에서는 별도 이상 신호나 설비 이벤트가 확인되지 않았고, 자재 관련 근거도 제시되지 않았습니다. 따라서 현재는 같은 제품군의 과거 사례에 근거한 후보로 보는 것이 타당합니다.",
+     "explanation": "이 후보가 1순위인 이유는 과거 동 노출·스크래치 반품 380건이 모두 취급 스크래치로 분류되어, 같은 불량 형태와의 연관성이 가장 높기 때문입니다. 이번 Lot의 공정 신호나 설비 이벤트에 대한 기록은 확인된 기록이 없습니다. 자재 관련 근거도 없어, 현재로서는 취급 중 긁힘이 가장 유력한 후보입니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -1789,12 +1789,12 @@
     }
    ],
    "drafts": {
-    "customer_reply": "S02 품질 담당자님, PCB-SSD8H-E3 Lot LT-01398의 동 노출·스크래치 불량 통보를 확인했습니다. 현재 외층 노광·현상 공정의 취급 스크래치가 유력 원인으로 보이나, 확정은 아니며 확인 중입니다. 회송해 주시는 시료로 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 여부를 검토하겠습니다. 결과는 확인되는 대로 다시 회신드리겠습니다.",
+    "customer_reply": "S02 품질 담당자님, PCB-SSD8H-E3 Lot LT-01398의 동 노출·스크래치 불량 접수 확인했습니다. 현재 외층 노광·현상 공정의 취급 스크래치가 유력 원인으로 보이나, 확정 전 단계입니다. 회송 시료와 보관 시료 및 골든 샘플 비교 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 검토하겠습니다. 확인 결과는 정리되는 대로 다시 회신드리겠습니다.",
     "improvement": {
      "process": [
       {
        "cause_code": "HANDLING_SCRATCH",
-       "action": "외층 노광·현상에서의 취급 스크래치 유력 원인에 대해, 장비는 특정 불가로 보되 외층 컨베이어 가이드 롤러 교체를 우선 적용하고 취급 표준을 개정해 동일 유형의 스크래치 재발을 줄이도록 하십시오.",
+       "action": "외층 노광·현상 공정에서는 취급 스크래치 예방을 위해 외층 컨베이어 가이드 롤러 교체를 반영하고, 해당 Lot의 취급 표준을 개정해 작업 중 스크래치 발생 가능성을 낮추시기 바랍니다. 장비는 특정되지 않았으므로, 특정 장비에 한정하지 말고 외층 공정 전반의 취급 기준에 맞춰 적용하시는 것이 적절합니다.",
        "standard_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
        "owner_dept": "생산팀"
       }
@@ -1802,7 +1802,7 @@
      "inspection": [
       {
        "escape_code": "ESC_AOI_THRESHOLD",
-       "action": "OAOI-01의 AOI 판정 기준 완화가 유출 원인 후보이므로, AOI 레시피 변경은 승인 절차를 거친 뒤에만 적용하고 결함 검출력 검증을 필수로 수행하도록 검사 기준을 강화하십시오.",
+       "action": "OAOI-01에서는 AOI 레시피 변경 시 승인 절차를 반드시 거치도록 하고, 결함 검출력 검증을 필수화해 판정 기준 완화로 인한 유출을 방지하시기 바랍니다. 검사 기준 변경 전후의 검출력 확인이 누락되지 않도록 관리하시는 것이 필요합니다.",
        "standard_action": "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화"
       }
      ]
@@ -1829,7 +1829,7 @@
      "triage_rules"
     ],
     "llm_used": false,
-    "elapsed_ms": 2
+    "elapsed_ms": 1
    },
    {
     "step": 3,
@@ -1843,7 +1843,7 @@
      "material_usage"
     ],
     "llm_used": false,
-    "elapsed_ms": 9
+    "elapsed_ms": 8
    },
    {
     "step": 4,
@@ -1855,7 +1855,7 @@
      "process_signals"
     ],
     "llm_used": true,
-    "elapsed_ms": 1713
+    "elapsed_ms": 1454
    },
    {
     "step": 5,
@@ -1866,8 +1866,8 @@
      "item_lab_tests",
      "recurrence_check"
     ],
-    "llm_used": false,
-    "elapsed_ms": 1624
+    "llm_used": true,
+    "elapsed_ms": 1362
    },
    {
     "step": 6,
@@ -1880,7 +1880,7 @@
      "candidate_lots"
     ],
     "llm_used": true,
-    "elapsed_ms": 1459
+    "elapsed_ms": 1731
    },
    {
     "step": 7,
@@ -1890,18 +1890,16 @@
      "reply_template"
     ],
     "llm_used": true,
-    "elapsed_ms": 1348
+    "elapsed_ms": 1422
    }
   ],
-  "warnings": [
-   "LLM_OUTPUT_REJECTED"
-  ],
+  "warnings": [],
   "langsmith_run_id": null,
   "model_versions": {
    "llm": "openai:gpt-5.4-mini",
    "prompt": "agents-0.4",
    "rules": "pcb-v4"
   },
-  "elapsed_ms": 6162
+  "elapsed_ms": 5987
  }
 }

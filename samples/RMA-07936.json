@@ -20,7 +20,7 @@
   "major_name": "전기적 불량",
   "minor_code": null,
   "minor_name": null,
-  "confidence": 0.99,
+  "confidence": 0.66,
   "evidence_spans": [
    "ICT·기능검사에서 외관 NG가 발생했습니다."
   ],
@@ -30,13 +30,18 @@
    {
     "minor_code": "ELEC01",
     "minor_name": "오픈(단선)",
-    "confidence": 0.01
+    "confidence": 0.2
+   },
+   {
+    "minor_code": "ELEC02",
+    "minor_name": "쇼트",
+    "confidence": 0.07
    }
   ],
   "follow_up_questions": [
-   "불량 현상이 외관 NG 외에 구체적으로 어떻게 나타나는지, 발생 위치와 재현 조건이 있으면 함께 알려주시겠습니까?"
+   "불량 현상이 무엇인지, 발생 위치와 재현 조건이 있는지 알려 주시겠습니까? 외관 NG가 맞다면 구체적인 외관 이상 부위도 함께 부탁드립니다."
   ],
-  "elapsed_ms": 1451,
+  "elapsed_ms": 1567,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  }
