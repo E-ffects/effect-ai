@@ -183,21 +183,36 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
     return candidates[:top_k]
 
 
+_GRAMS = {}
+
+
+def _text_bigrams(rma_id, text):
+    """Character bigrams of a claim text (letters and digits, no spaces). Cached by claim: texts do not change."""
+    grams = _GRAMS.get(rma_id)
+    if grams is None:
+        cleaned = "".join(ch for ch in text or "" if ch.isalnum() or ch == " ")
+        grams = _GRAMS[rma_id] = frozenset(cleaned[i:i + 2] for i in range(len(cleaned) - 1) if " " not in cleaned[i:i + 2])
+    return grams
+
+
 @traceable(name="similar_cases", run_type="tool", process_inputs=_hide)
 def similar_case_items(masters, store, claim, limit=5):
-    """Past approved cases for the screen: stored text-similarity results first, then recent same-label same-product."""
-    chosen = []
-    for row in store.similar_cases(claim["rma_id"]):
-        case = store.past_case(row["reference_rma_id"])
-        if case and case.rma_id not in {c.rma_id for c, _ in chosen}:
-            chosen.append((case, round(row["similarity_score"], 2)))
-    if len(chosen) < limit and claim.get("intake_label"):
-        same = [c for c in store.past_cases(intake_label=claim["intake_label"]) if c.spec_id == claim.get("spec_id")]
-        for case in reversed(same):
-            if len(chosen) >= limit:
-                break
-            if case.rma_id not in {c.rma_id for c, _ in chosen}:
-                chosen.append((case, None))
+    """Past approved cases for the screen: the same intake label first, ranked by text similarity (character-bigram
+    Jaccard of the whole intake text), most recent first on ties. Without a symptom label every past case is a
+    candidate. Filtering by label keeps boilerplate (greetings, requests, "Lot unknown") from pulling in cases of
+    another symptom: same cause and label in the top 5 rose from 85.5% to 91.9% on 2025-10~ (chosen on 2025-08~09,
+    results/20261119_similar_cases_method.md)."""
+    label = claim.get("intake_label")
+    labelled = label and label not in ("INSUFFICIENT_INFO", "UNCLASSIFIED")
+    pool = store.past_cases(intake_label=label) if labelled else store.past_cases()
+    query = _text_bigrams(claim["rma_id"], claim.get("raw_text"))
+    scored = []
+    for order, case in enumerate(pool):
+        grams = _text_bigrams(case.rma_id, case.raw_text)
+        union = len(query | grams)
+        scored.append((len(query & grams) / union if union else 0.0, order, case))
+    scored.sort(key=lambda x: (-x[0], -x[1]))
+    chosen = [(case, round(score, 2)) for score, _, case in scored[:limit]]
     chosen = chosen[:limit]
     actions = defaultdict(list)
     for a in store.corrective_actions({c.investigation_id for c, _ in chosen}):

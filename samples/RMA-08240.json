@@ -28,7 +28,7 @@
   "characteristic_symbol": null,
   "alternatives": [],
   "follow_up_questions": [],
-  "elapsed_ms": 1215,
+  "elapsed_ms": 1572,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -95,7 +95,7 @@
       "requirement": "반송품 E-Test 재검 + 해당 패널 E-Test 이력(재검·판정 변경 로그). 고객 측 측정값은 시료 출처·측정 조건이 확인된 경우에만 근거로 사용한다."
      }
     ],
-    "review_note": "1순위 디스미어 부족은 같은 원인 확정 사례와 DSM-02 약품조 교체 기록으로 근거는 갖췄으나, 출처 확인된 반송품 시험 결과와 보관 시료·골든 샘플 비교 시험이 없어 아직 확정하기는 어렵습니다. 2·3순위는 같은 원인 확정 사례 외의 생산 기록과 반송품 시험 근거가 부족해 1순위보다 근거가 약합니다. 따라서 QA 확인 후 1순위로 확정하는 검토가 필요합니다."
+    "review_note": "1순위 디스미어 부족은 같은 원인 확정 사례와 DSM-02 약품조 교체 기록이 있어 유력하나, 출처 확인된 반송품 시험 결과와 비교 시료 시험이 없어 확정 근거는 부족합니다. 2·3순위는 같은 원인 확정 사례만 있고 생산 기록이나 반송품 시험 근거가 부족해 1순위보다 근거가 약합니다. QA에서 반송품 시험과 비교 시료 확인 후 확정하는 것이 적절합니다."
    },
    "trace_summary": {
     "lot_id": "LT-01050",
@@ -111,7 +111,7 @@
      "process_name": "디스미어·무전해 동도금",
      "equipment_id": "DSM-02",
      "score": 0.88,
-     "explanation": "이 후보가 1순위인 이유는 같은 제품의 최근 반품인 RMA-07085에서 디스미어 부족이 확정되었고, 과거 오픈(단선) 반품 560건 중 235건이 같은 원인으로 가장 많기 때문입니다. 또한 DSM-02의 과망간산 용액 처리 면적이 2,100㎡로 권장 1,500㎡를 넘는 설비 이벤트가 있어 공정 부담 신호가 보입니다. 다만 이 Lot의 다른 공정 기록 이상은 제시되지 않았습니다.",
+     "explanation": "가장 유력한 후보입니다. 같은 제품의 최근 반품에서 디스미어 부족이 확정되었고, 과거 오픈(단선) 반품 560건 중 235건이 이 원인이라 재현성이 높습니다. 다만 이 Lot의 공정 기록에서 직접 확인된 이상은 없고, DSM-02에서 과망간산 용액 처리 면적이 권장 1,500㎡를 넘은 2,100㎡로 교체된 이력이 있어 공정 조건 저하가 의심됩니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -148,7 +148,7 @@
      "process_name": "외층 노광·현상",
      "equipment_id": "OLI-02",
      "score": 0.19,
-     "explanation": "이 후보는 같은 제품의 최근 사례 RMA-04635에서 취급 스크래치가 추정되었고, 과거 오픈(단선) 반품 560건 중 214건이 취급 스크래치로 집계되어 상위권에 있습니다. 다만 장비는 특정되지 않았고, 이 Lot에서 취급 스크래치를 직접 뒷받침하는 공정 신호나 설비 이벤트는 확인되지 않았습니다. 따라서 유력 후보이지만 1순위보다는 근거가 약합니다.",
+     "explanation": "두 번째 후보입니다. 같은 제품의 최근 반품에서 취급 스크래치가 추정되었고, 과거 오픈(단선) 반품 560건 중 214건이 이 원인이라 빈도는 높은 편입니다. 다만 장비 특정은 불가했고, 이 Lot의 공정 신호나 설비 이벤트에서 직접적인 이상 기록은 확인된 바 없습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -178,7 +178,7 @@
      "process_name": "전기검사(E-Test)",
      "equipment_id": null,
      "score": 0.18,
-     "explanation": "이 후보는 같은 제품의 최근 사례 RMA-05506에서 E-Test 재검 판정 오처리가 추정되었고, 과거 오픈(단선) 반품 560건 중 93건이 같은 원인으로 확인되어 후보에 포함되었습니다. 다만 다른 후보들보다 건수가 적고, 장비도 특정되지 않습니다. 이 Lot의 전기검사 공정에서 별도 이상 기록은 제시되지 않아 근거가 약한 편입니다.",
+     "explanation": "세 번째 후보입니다. 같은 제품의 최근 반품에서 E-Test 재검 판정 오처리가 추정되었고, 과거 오픈(단선) 반품 560건 중 93건으로 일부 사례가 있습니다. 다만 다른 후보들보다 건수가 적고, 이 Lot에서는 전기검사 재검 판정과 관련한 직접 이상이나 특정 설비 이벤트가 확인된 기록이 없습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -224,6 +224,11 @@
      "snippet": "S05 수입검사 담당입니다. P/N PCB-SSD8H-E3 (D/C 2526, 라벨 훼손으로 Lot 번호 확…",
      "corrective_actions": [
       {
+       "category": "SYSTEM",
+       "description": "PFMEA '디스미어 부족' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
+       "implemented_at": "2025-08-11T11:55:55+09:00"
+      },
+      {
        "category": "PROCESS_EQUIPMENT",
        "description": "디스미어 용액 수명 관리(처리 면적 기준 교체) 및 디스미어율 Lot별 측정",
        "implemented_at": "2025-07-30T15:29:27+09:00"
@@ -232,11 +237,6 @@
        "category": "INSPECTION",
        "description": "해당 특성 샘플 시험 Lot별 실시로 환원",
        "implemented_at": "2025-07-25T15:14:30+09:00"
-      },
-      {
-       "category": "SYSTEM",
-       "description": "PFMEA '디스미어 부족' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
-       "implemented_at": "2025-08-11T11:55:55+09:00"
       }
      ]
     },
@@ -252,51 +252,33 @@
      "snippet": "긴급 품질 이슈 공유드립니다(S07). P/N PCB-SSD8H-E3 (D/C 2519, 라벨 훼손으로 Lo…",
      "corrective_actions": [
       {
-       "category": "PROCESS_EQUIPMENT",
-       "description": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
-       "implemented_at": "2025-06-08T19:45:45+09:00"
-      },
-      {
        "category": "INSPECTION",
        "description": "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화",
        "implemented_at": "2025-05-29T18:28:16+09:00"
-      }
-     ]
-    },
-    {
-     "rma_id": "RMA-05173",
-     "opened_at": "2025-08-01T12:22:29+09:00",
-     "minor_code": "STRC01",
-     "cause_code": "PACK_VACUUM_SEAL",
-     "process_id": "PACK",
-     "equipment_id": "PCK-02",
-     "certainty": "CONFIRMED",
-     "similarity": 0.6,
-     "snippet": "S05 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-SSD8H-E3 (D/C 2526, 라벨…",
-     "corrective_actions": [
-      {
-       "category": "PROCESS_EQUIPMENT",
-       "description": "실링 바 온도 인터록 및 실링 강도 점검 교대별 실시",
-       "implemented_at": "2025-08-05T20:31:39+09:00"
       },
       {
-       "category": "INSPECTION",
-       "description": "출하검사에 진공 유지·HIC 확인 항목 추가",
-       "implemented_at": "2025-07-28T15:21:23+09:00"
+       "category": "PROCESS_EQUIPMENT",
+       "description": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+       "implemented_at": "2025-06-08T19:45:45+09:00"
       }
      ]
     },
     {
-     "rma_id": "RMA-06769",
-     "opened_at": "2025-09-23T08:35:53+09:00",
-     "minor_code": "ELEC03",
+     "rma_id": "RMA-07085",
+     "opened_at": "2025-10-02T08:30:22+09:00",
+     "minor_code": "ELEC01",
      "cause_code": "DESMEAR_INSUFFICIENT",
      "process_id": "DESMEAR",
      "equipment_id": "DSM-02",
      "certainty": "CONFIRMED",
-     "similarity": 0.6,
-     "snippet": "S05 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-SSD8H-E3 (D/C 2524, 라벨…",
+     "similarity": 0.59,
+     "snippet": "긴급 품질 이슈 공유드립니다(S08). P/N PCB-SSD8H-E3 (Lot LT-00986, D/C 25…",
      "corrective_actions": [
+      {
+       "category": "SYSTEM",
+       "description": "PFMEA '디스미어 부족' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
+       "implemented_at": "2025-08-11T11:55:55+09:00"
+      },
       {
        "category": "PROCESS_EQUIPMENT",
        "description": "디스미어 용액 수명 관리(처리 면적 기준 교체) 및 디스미어율 Lot별 측정",
@@ -306,50 +288,68 @@
        "category": "INSPECTION",
        "description": "해당 특성 샘플 시험 Lot별 실시로 환원",
        "implemented_at": "2025-07-25T15:14:30+09:00"
-      },
-      {
-       "category": "SYSTEM",
-       "description": "PFMEA '디스미어 부족' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
-       "implemented_at": "2025-08-11T11:55:55+09:00"
       }
      ]
     },
     {
-     "rma_id": "RMA-06393",
-     "opened_at": "2025-09-09T08:53:37+09:00",
-     "minor_code": "ELEC05",
-     "cause_code": "IONIC_CONTAMINATION",
-     "process_id": "CLEAN",
-     "equipment_id": "CLN-01",
+     "rma_id": "RMA-05145",
+     "opened_at": "2025-08-01T08:39:15+09:00",
+     "minor_code": "ELEC01",
+     "cause_code": "DESMEAR_INSUFFICIENT",
+     "process_id": "DESMEAR",
+     "equipment_id": "DSM-02",
      "certainty": "CONFIRMED",
-     "similarity": 0.59,
-     "snippet": "A01 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-ECU6-A1 (D/C 2512, 라벨 …",
+     "similarity": 0.58,
+     "snippet": "[불량 통보] S05 P/N PCB-SSD8H-E3 (Lot LT-01010, D/C 2525) ICT·기능…",
      "corrective_actions": [
       {
+       "category": "SYSTEM",
+       "description": "PFMEA '디스미어 부족' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
+       "implemented_at": "2025-08-11T11:55:55+09:00"
+      },
+      {
        "category": "PROCESS_EQUIPMENT",
-       "description": "이온교환 수지 교체 기준(전도도) 및 전도도 이탈 시 라인 정지",
-       "implemented_at": "2025-04-28T19:36:21+09:00"
+       "description": "디스미어 용액 수명 관리(처리 면적 기준 교체) 및 디스미어율 Lot별 측정",
+       "implemented_at": "2025-07-30T15:29:27+09:00"
       },
       {
        "category": "INSPECTION",
        "description": "해당 특성 샘플 시험 Lot별 실시로 환원",
-       "implemented_at": "2025-04-25T04:44:50+09:00"
+       "implemented_at": "2025-07-25T15:14:30+09:00"
+      }
+     ]
+    },
+    {
+     "rma_id": "RMA-03403",
+     "opened_at": "2025-06-21T08:34:28+09:00",
+     "minor_code": "ELEC01",
+     "cause_code": "HANDLING_SCRATCH",
+     "process_id": "OL_IMG",
+     "equipment_id": "OLI-02",
+     "certainty": "CONFIRMED",
+     "similarity": 0.58,
+     "snippet": "S05 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-SSD8H-E3 (D/C 2519, 라벨…",
+     "corrective_actions": [
+      {
+       "category": "INSPECTION",
+       "description": "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화",
+       "implemented_at": "2025-05-29T18:28:16+09:00"
       },
       {
-       "category": "SYSTEM",
-       "description": "PFMEA '최종 세척 불량(이온 오염)' 발생도·검출도 재평가, 유사 설비·제품 수평 전개",
-       "implemented_at": "2025-05-09T08:39:15+09:00"
+       "category": "PROCESS_EQUIPMENT",
+       "description": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+       "implemented_at": "2025-06-08T19:45:45+09:00"
       }
      ]
     }
    ],
    "drafts": {
-    "customer_reply": "S05 품질 담당자님, PCB-SSD8H-E3 Lot LT-01050의 오픈(단선) 불량 2건 접수 확인했습니다. 현재 디스미어·무전해 동도금 공정의 디스미어 부족을 유력 원인으로 보고 확인 중입니다. 회송 시료와 비교 시료를 대상으로 분석을 진행하겠습니다. 동일 Lot 재고는 출하 보류 후 선별 조치를 검토하겠으며, 결과 확인되는 대로 회신드리겠습니다.",
+    "customer_reply": "S05 품질 담당자님, PCB-SSD8H-E3 (Lot LT-01050) 오픈(단선) 불량 통보를 확인했습니다. 현재 디스미어·무전해 동도금 공정의 디스미어 부족을 유력 원인으로 보고 있으나, 아직 확정된 사항은 아닙니다. 회송 시료와 비교 시료 분석을 진행하겠으며, 동일 Lot 재고는 출하 보류 후 선별 검토하겠습니다. 분석 결과는 확인되는 대로 다시 회신드리겠습니다.",
     "improvement": {
      "process": [
       {
        "cause_code": "DESMEAR_INSUFFICIENT",
-       "action": "DSM-02 디스미어·무전해 동도금 공정은 디스미어 용액 수명 관리를 Lot 기준으로 강화하시고, 처리 면적 기준 교체가 지켜지도록 운영해 주십시오. 또한 Lot별 디스미어율을 측정하여 디스미어 부족이 재발하지 않도록 관리해 주십시오.",
+       "action": "DSM-02의 디스미어 용액은 처리 면적 기준으로 수명 관리를 하시고, Lot별로 디스미어율을 측정해 관리하시기 바랍니다. 특히 해당 장비는 과망간산 용액 처리 면적이 2,100㎡에서 교체된 기록이 있어, 권장 교체 기준을 넘지 않도록 운용하시기 바랍니다.",
        "standard_action": "디스미어 용액 수명 관리(처리 면적 기준 교체) 및 디스미어율 Lot별 측정",
        "owner_dept": "공정기술팀"
       }
@@ -357,7 +357,7 @@
      "inspection": [
       {
        "escape_code": "ESC_FQC_SAMPLING",
-       "action": "FQC-01에서는 해당 특성의 샘플 시험을 Lot별로 실시하도록 환원해 주십시오. 샘플링 빈도와 수량 부족이 유출 원인 후보인 만큼, Lot별 검사로 확인되도록 운영 기준을 맞춰 주십시오.",
+       "action": "FQC-01에서는 해당 특성의 샘플 시험을 Lot별로 실시하도록 환원하시기 바랍니다. 샘플링 빈도와 수량이 부족했던 유출 원인 후보에 맞춰 Lot별 검사 적용 여부를 분명히 관리하시기 바랍니다.",
        "standard_action": "해당 특성 샘플 시험 Lot별 실시로 환원"
       }
      ]
@@ -374,7 +374,7 @@
      "intake"
     ],
     "llm_used": false,
-    "elapsed_ms": 3
+    "elapsed_ms": 7
    },
    {
     "step": 2,
@@ -384,7 +384,7 @@
      "triage_rules"
     ],
     "llm_used": false,
-    "elapsed_ms": 1
+    "elapsed_ms": 2
    },
    {
     "step": 3,
@@ -398,7 +398,7 @@
      "material_usage"
     ],
     "llm_used": false,
-    "elapsed_ms": 5
+    "elapsed_ms": 9
    },
    {
     "step": 4,
@@ -410,7 +410,7 @@
      "process_signals"
     ],
     "llm_used": true,
-    "elapsed_ms": 2805
+    "elapsed_ms": 3145
    },
    {
     "step": 5,
@@ -421,7 +421,7 @@
      "item_lab_tests"
     ],
     "llm_used": true,
-    "elapsed_ms": 1812
+    "elapsed_ms": 1582
    },
    {
     "step": 6,
@@ -433,7 +433,7 @@
      "standard_actions"
     ],
     "llm_used": true,
-    "elapsed_ms": 1663
+    "elapsed_ms": 1952
    },
    {
     "step": 7,
@@ -443,7 +443,7 @@
      "reply_template"
     ],
     "llm_used": true,
-    "elapsed_ms": 1573
+    "elapsed_ms": 1730
    }
   ],
   "warnings": [],
@@ -453,6 +453,6 @@
    "prompt": "agents-0.4",
    "rules": "pcb-v4"
   },
-  "elapsed_ms": 7861
+  "elapsed_ms": 8427
  }
 }
