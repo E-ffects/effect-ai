@@ -89,7 +89,7 @@ orchestrator ─┬─ QA: 분석 수준 ────┐
 - 약한 곳: 불량 미재현(ELEC04·DIM01, 분석 시작 시점엔 반송품 시험 결과가 없음), 오픈(ELEC01, 취급 스크래치와 재검 오처리처럼 단발 원인끼리 구분이 어려움), 정보 부족(INSUFFICIENT_INFO). 자세한 결과는 `results/`를 본다.
 
 ## 재발 판정과 후보 Lot (2026-11-19, v5)
-- **재발 판정** (`result.recurrence_check`, QA 5단계): 1순위 원인에 시행된 발생 원인 조치와 Lot 생산 시점을 비교해 `RECURRENCE`, `PRE_ACTION_PRODUCT`, `PENDING_CAUSE_REVIEW`, `NOT_APPLICABLE` 중 하나를 낸다. 정답 `recurrence_review` 2,606건과 일치 90.1%, 재발 재현율 82.0%, 검토 대상이 아닌 반품까지 포함한 재발 정밀도 73.2% (`scripts/eval_recurrence.py`, `results/20261119_recurrence_v5.md`). 원인분석이 틀리면 재발 판정도 틀리므로, 1순위 원인이 이 Lot에 미친 근거(원인 공정의 조건 이탈, 조치하지 않은 설비의 이상, 자재)가 없으면 `PENDING_CAUSE_REVIEW`로 보낸다. 규칙은 2025-07~09에서 고르고 10월 이후로 확인했다.
+- **재발 판정** (`result.recurrence_check`, QA 5단계): 1순위 원인에 시행된 발생 원인 조치와 Lot 생산 시점을 비교해 `RECURRENCE`, `PRE_ACTION_PRODUCT`, `PENDING_CAUSE_REVIEW`, `NOT_APPLICABLE` 중 하나를 낸다. 정답 `recurrence_review` 2,606건과 일치 90.1%, 재발 재현율 82.0%, 검토 대상이 아닌 반품까지 포함한 재발 정밀도 73.2%(분석 시점에 원인이 알려진 반품만 보면 81.1%) (`scripts/eval_recurrence.py`, `results/20261119_recurrence_v5.md`). 원인분석이 틀리면 재발 판정도 틀리므로, 1순위 원인이 이 Lot에 미친 근거(원인 공정의 조건 이탈, 조치하지 않은 설비의 이상, 자재)가 없으면 `PENDING_CAUSE_REVIEW`로 보낸다. 규칙은 2025-07~09에서 고르고 10월 이후로 확인했다.
 - **후보 Lot** (`result.candidate_lots`, 제조 6단계): 반품 Lot과 같은 생산 설비를 앞뒤 24시간 안에 썼거나 같은 자재 Lot을 쓴 다른 Lot, 공통점, 출하 여부, 반품 수. 적중률은 재지 않는다.
 
 ## CS 분류 결과 (2026-11-18, 2025-10-01 이후 접수 2,953건, 정답은 접수 시 CS 소분류)
