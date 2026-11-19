@@ -46,6 +46,19 @@ def main():
         truth = by_action.get(ca) or list(by_action.values())[-1]
         pairs[(truth, got["status"])] += 1
         statuses[got["status"]] += 1
+    # returns the data does not review for recurrence (e.g. sporadic causes): any verdict other than NOT_APPLICABLE there
+    # is a false alarm the table above cannot show
+    others = Counter()
+    for (item, rma_id) in conn.execute("""select i.rma_item_id, i.rma_id from rma_item i join rma_claim r using(rma_id)
+                                          where r.opened_at >= '2025-07-01' order by r.opened_at""").fetchall():
+        if item in reviews:
+            continue
+        store = AsOfStore(conn, analysis_start(conn, rma_id), lib, subject=rma_id)
+        claim = store.claim(rma_id)
+        lot = manufacturing.trace(masters, store, base, claim)
+        cands = cause_analysis.rank_causes(masters, store, claim, lot, 3)
+        review = qa.review(masters, store, claim, cands, qa.triage(store, claim))
+        others[qa.recurrence_check(masters, store, claim, lot, cands, review)["status"]] += 1
     n = sum(pairs.values())
     labels = ["RECURRENCE", "PRE_ACTION_PRODUCT", "PENDING_CAUSE_REVIEW"]
     got_labels = labels + ["NOT_APPLICABLE"]
@@ -60,6 +73,14 @@ def main():
         tot = sum(pairs[(t, g)] for g in got_labels)
         if tot:
             lines.append(f"\n- {t} 재현율 {pairs[(t, t)] / tot:.1%}")
+    m = sum(others.values())
+    said = sum(pairs[(t, "RECURRENCE")] for t in labels) + others["RECURRENCE"]
+    if said:
+        lines.append(f"\n- **RECURRENCE 정밀도** (검토 대상이 아닌 반품까지 포함): {pairs[('RECURRENCE', 'RECURRENCE')] / said:.1%} "
+                     f"({pairs[('RECURRENCE', 'RECURRENCE')]:,} / {said:,})")
+    lines += ["", f"검토 대상이 아닌 반품({m:,}건, 2025-07 이후 접수): " +
+              ", ".join(f"{k} {v:,}" for k, v in others.most_common()) +
+              f". NOT_APPLICABLE이 아닌 판정(잘못 붙인 판정) {1 - others['NOT_APPLICABLE'] / m:.1%}" if m else ""]
     text = "\n".join(lines) + "\n"
     print(text)
     if a.out:

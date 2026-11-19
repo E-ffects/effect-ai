@@ -123,8 +123,11 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
     uses the same rule: lot started after implemented_at and the same cause).
       RECURRENCE            lot started after the action, same cause
       PRE_ACTION_PRODUCT    lot started before the action: leftover product, not a recurrence
-      PENDING_CAUSE_REVIEW  the symptom is not confirmed yet (INSUFFICIENT_INFO / UNCLASSIFIED): decide after it is
-      NOT_APPLICABLE        no cause candidate, no implemented action on it, or no lot to date
+      PENDING_CAUSE_REVIEW  the symptom is not confirmed yet (INSUFFICIENT_INFO / UNCLASSIFIED), or the lot started after
+                            the action but shows no production evidence of the leading cause (likely a wrong cause:
+                            this halved false RECURRENCE calls, 771 -> 352, for 32 fewer true ones; results/)
+      NOT_APPLICABLE        no cause candidate, a sporadic leading cause (no machine or material pinned down),
+                            no implemented action on it, or no lot to date
     Whether the lot went through the action's scope (machine or material lot) does not change the verdict; it explains it
     (outside the scope = the fix was not rolled out there).
     """
@@ -132,6 +135,11 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
     if not top:
         return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
                 "reason": "원인 후보가 없어 재발 여부를 판정하지 않습니다."}
+    # Recurrence is tracked for systemic causes only. The data never reviews returns of sporadic causes; at analysis time
+    # the sign of a sporadic cause is a leading candidate with no machine or material pinned down.
+    if not top.get("equipment_id") and top.get("cause_category") != "MATERIAL":
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+                "reason": f"1순위 원인 {top['cause_name']}은(는) 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다."}
     # only actions aimed at a machine or material lot are tracked for recurrence (quarterly "local" fixes are not)
     actions = [a for a in store.occurrence_actions(top["cause_code"])
                if a["implemented_at"] and (a["scope"].get("equipment") or a["scope"].get("material_lots"))]
@@ -169,7 +177,12 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
               "symptom_confirmed": symptom_known, "lot_id": lot_id, "lot_started_at": lot["started_at"],
               "produced_after_action": after, "in_action_scope": in_scope}
     day, scope_text = action["implemented_at"][:10], _scope_text(scope)
-    if not symptom_known:
+    production_evidence = any(e["type"] in PRODUCTION_EVIDENCE + ("SUPPLIER",) for e in top.get("evidence", []))
+    if after and symptom_known and not production_evidence:
+        status = "PENDING_CAUSE_REVIEW"
+        reason = (f"Lot {lot_id}은(는) 같은 원인의 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐지만, 이 Lot에서 "
+                  f"{top['cause_name']}의 생산 기록 근거(공정 신호·설비 이벤트·자재)가 없어 원인부터 다시 확인해야 합니다.")
+    elif not symptom_known:
         status = "PENDING_CAUSE_REVIEW"
         reason = (f"과거 조치({action['corrective_action_id']}, {day} 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 "
                   "고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.")
