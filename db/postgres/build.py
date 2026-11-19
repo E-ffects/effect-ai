@@ -13,7 +13,7 @@ Types are kept as in SQLite so values come back unchanged: TEXT -> text (timesta
 JSON stays text), INTEGER -> bigint, REAL -> double precision. Converting to timestamptz/jsonb/boolean is a separate
 decision for the backend schema (see README.md).
 
-Load:  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f data/postgres_v4/load.sql   (run from inside the output folder)
+Load:  psql "$RMA_DATABASE_URL" -v ON_ERROR_STOP=1 -f data/postgres_v4/load.sql   (run from inside the output folder)
 """
 import json
 import shutil

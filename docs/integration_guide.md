@@ -13,7 +13,7 @@ git checkout feature/ai-baseline
 pip install -r requirements.txt
 cp .env.example .env
 ```
-- **데이터:** 팀 PostgreSQL을 쓰면 `DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v5.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v4_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
+- **데이터:** 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v5.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v4_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
 - **확인:** `python3 -m pytest -q`가 모두 통과하면 준비 끝이다(LLM은 부르지 않는다).
 
 ## 2. `.env` 설정
@@ -25,7 +25,7 @@ cp .env.example .env
 | `OPENAI_API_KEY` | LLM 쓸 때 | OpenAI 키 | 팀 키를 각자 `.env`에 |
 | `LANGSMITH_API_KEY` | 추적 쓸 때 | LangSmith 키 | 이상윤 |
 | `LANGSMITH_PROJECT` | 선택 | `effect-ai` | 이상윤 |
-| `DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
+| `RMA_DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
 | `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v5.sqlite`) | — |
 
 - **사용 금지 모델:** gpt-6-astra, gpt-6.1-sol, gpt-6-sol, gpt-5.5-pro. 설정해도 쓰지 않고 템플릿으로 동작한다.
@@ -126,20 +126,21 @@ def get_analysis(analysis_id: str):
 ### 바로 해 볼 값
 | rma_id | 내용 |
 |---|---|
-| `RMA-08743` | 명세 3-3의 예시. 차량 고객 L3, 1순위 외층 에칭 잔동(OLE-02), 유출 ET-02 |
+| `RMA-08927` | 명세 3-3의 예시(v5). 차량 고객 L3, 1순위 외층 에칭 잔동(OLE-02), 유출 ET-02 |
+| `RMA-08218` | 재발 판정 `RECURRENCE` (디스미어 부족, 조치 범위 밖 DSM-01) |
 | `RMA-99999` | 없는 접수 → `CLAIM_NOT_FOUND` |
-| `RMA-08743` + `as_of="2025-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
+| `RMA-08927` + `as_of="2025-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
 
 ## 4. 프론트 연결 (윤서정)
-화면은 AI API를 `/api/ai/...`로 부른다. 프록시가 `/api/ai/`만 FastAPI(`/ai/v1/`)로 넘기고, 나머지 `/api/`는 지금처럼 백엔드로 보낸다. 경로 대응은 명세 3-0.
+화면은 AI API를 `/api/ai/...`로 부른다. 포트는 AI 서버 8080, Spring 8000이다. 프록시가 `/api/ai/`만 FastAPI(`/ai/v1/`)로 넘기고, 나머지 `/api/`는 지금처럼 백엔드로 보낸다. 경로 대응은 명세 3-0.
 
 **`vite.config.js`** (`/api/ai`를 `/api`보다 먼저)
 ```js
 server: {
   host: true, port: 5173,
   proxy: {
-    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8000', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
-    '/api': process.env.API_TARGET || 'http://127.0.0.1:8080',
+    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8080', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
+    '/api': process.env.API_TARGET || 'http://127.0.0.1:8000',
   },
 },
 ```
@@ -147,7 +148,7 @@ server: {
 ```nginx
 location /api/ai/ {
     resolver 127.0.0.11 valid=10s ipv6=off;
-    set $ai http://ai:8000;
+    set $ai http://ai:8080;
     rewrite ^/api/ai/(.*)$ /ai/v1/$1 break;
     proxy_pass $ai;
     proxy_read_timeout 60s;

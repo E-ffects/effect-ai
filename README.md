@@ -6,7 +6,7 @@ E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 에이전트 5개(CS, �
 ```bash
 pip install -r requirements.txt
 ```
-`data/pcb_rma_v5.sqlite`가 필요하다(없으면 v4). 팀 PostgreSQL을 쓰면 `DATABASE_URL`만 넣는다. 받는 방법은 `data/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
+`data/pcb_rma_v5.sqlite`가 필요하다(없으면 v4). 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다. 받는 방법은 `data/README.md`를 본다. 데이터 파일, `.env`, API 키는 커밋하지 않는다(`.gitignore`에 등록됨).
 
 ## 구조
 | 파일 | 역할 |
@@ -87,6 +87,10 @@ orchestrator ─┬─ QA: 분석 수준 ────┐
 - 재발 사건별 원인@1: P04R 90.6%, P05R 78.7%, P12R 70.0%, P09R(자재, 신호 없음) 12.5%. 헛신호가 걸친 Lot은 80.2%로 끌려가지 않았다.
 - 사건성 원인(과거 사례가 특정 장비·자재 Lot을 가리킴)인데 이 Lot에 신호도, 같은 장비·자재도 없으면 점수를 깎는다(0.8, 같은 장비만 지났으면 0.5). 값은 2025-07~09에서 고르고 2025-10 이후에 그대로 적용했다. 다른 사건 원인@1이 54.7% → 69.0%로 올랐다.
 - 약한 곳: 불량 미재현(ELEC04·DIM01, 분석 시작 시점엔 반송품 시험 결과가 없음), 오픈(ELEC01, 취급 스크래치와 재검 오처리처럼 단발 원인끼리 구분이 어려움), 정보 부족(INSUFFICIENT_INFO). 자세한 결과는 `results/`를 본다.
+
+## 재발 판정과 후보 Lot (2026-11-19, v5)
+- **재발 판정** (`result.recurrence_check`, QA 5단계): 1순위 원인에 시행된 발생 원인 조치와 Lot 생산 시점을 비교해 `RECURRENCE`, `PRE_ACTION_PRODUCT`, `PENDING_CAUSE_REVIEW`, `NOT_APPLICABLE` 중 하나를 낸다. 정답 `recurrence_review` 2,606건과 일치 91.4%, 재발 재현율 86.5% (`scripts/eval_recurrence.py`, `results/20261119_recurrence_v5.md`).
+- **후보 Lot** (`result.candidate_lots`, 제조 6단계): 반품 Lot과 같은 생산 설비를 앞뒤 24시간 안에 썼거나 같은 자재 Lot을 쓴 다른 Lot, 공통점, 출하 여부, 반품 수. 적중률은 재지 않는다.
 
 ## CS 분류 결과 (2026-11-18, 2025-10-01 이후 접수 2,953건, 정답은 접수 시 CS 소분류)
 | 방식 | 정확도 | 정보 부족 판정 정밀도 / 재현율 |

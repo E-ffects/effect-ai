@@ -15,12 +15,12 @@ SQLite로 배포한 PCB RMA 데이터(v4, v5)를 PostgreSQL에 그대로 옮기�
 python db/postgres/build.py data/pcb_rma_v5.sqlite data/postgres_v5
 
 # 2. 빈 데이터베이스에 적재 (psql 필요, 약 10초)
-cd data/postgres_v5 && psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f load.sql && cd -
+cd data/postgres_v5 && psql "$RMA_DATABASE_URL" -v ON_ERROR_STOP=1 -f load.sql && cd -
 
 # 3. 검증 (약 20초)
-python db/postgres/verify.py data/pcb_rma_v5.sqlite "$DATABASE_URL"
+python db/postgres/verify.py data/pcb_rma_v5.sqlite "$RMA_DATABASE_URL"
 ```
-- `DATABASE_URL` 예: `postgresql://rma@localhost:5432/rma`. 비밀번호는 `PGPASSWORD`나 `~/.pgpass`로 넘긴다. 명령줄이나 git에 남기지 않는다.
+- `RMA_DATABASE_URL` 예: `postgresql://rma@localhost:5432/rma`. 비밀번호는 `PGPASSWORD`나 `~/.pgpass`로 넘긴다. 명령줄이나 git에 남기지 않는다.
 - Docker로 PostgreSQL을 띄웠다면 패키지 폴더를 컨테이너에 마운트하거나 `docker cp`로 넣고 컨테이너 안의 `psql`로 실행한다.
 
 ## 적재 결과 (2026-11-19, 로컬 PostgreSQL 17)
@@ -37,7 +37,7 @@ python db/postgres/verify.py data/pcb_rma_v5.sqlite "$DATABASE_URL"
 - 값을 일부러 하나 바꾸면 `verify.py`가 그 테이블을 `DIFFERENT`로 잡는 것도 확인했다.
 
 ## AI 에이전트가 이 DB를 읽기
-`.env`(또는 컨테이너 환경변수)에 `DATABASE_URL=postgresql://...`를 넣으면 `rma_agent`가 SQLite 대신 이 DB를 읽는다(읽기 전용).
+`.env`(또는 컨테이너 환경변수)에 `RMA_DATABASE_URL=postgresql://...`를 넣으면 `rma_agent`가 SQLite 대신 이 DB를 읽는다(읽기 전용).
 - 확인 (2026-11-19, 로컬 PostgreSQL 17)
   - v5: 테스트 63개 통과, 원인분석 평가 2,537건의 지표 6개가 SQLite와 같다.
   - v4: 테스트 61개 통과, 원인분석 평가 1,907건이 같고, 분석 응답·유사 사례·분류 20건도 글자까지 같다.

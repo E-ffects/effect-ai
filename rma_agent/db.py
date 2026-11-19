@@ -1,6 +1,6 @@
 """Database connection.
 
-- DATABASE_URL set (postgresql://...): read the team's PostgreSQL, loaded with db/postgres (same tables and values).
+- RMA_DATABASE_URL set (postgresql://...): read the team's PostgreSQL, loaded with db/postgres (same tables and values).
 - Otherwise the local SQLite: RMA_DB or the argument, default data/pcb_rma_v5.sqlite (the team's dataset from
   2026-11-19; v4 if v5 is absent).
 
@@ -18,18 +18,18 @@ DEFAULT_DB = next((DATA_DIR / f"pcb_rma_{v}.sqlite" for v in ("v5", "v4") if (DA
 
 
 def connect(path=None, threads=False):
-    """Open the database read-only. DATABASE_URL (PostgreSQL) is used unless a SQLite path is passed.
+    """Open the database read-only. RMA_DATABASE_URL (PostgreSQL) is used unless a SQLite path is passed.
 
     threads=True lets parallel graph nodes share the connection (read-only, so this is safe).
     """
-    url = os.environ.get("DATABASE_URL")
+    url = os.environ.get("RMA_DATABASE_URL")
     if url and path is None:
         return PgConnection(url)
     path = Path(path or os.environ.get("RMA_DB") or DEFAULT_DB)
     if not path.exists():
         raise FileNotFoundError(
             f"{path} not found. Extract pcb_rma.sqlite from PCB_RMA_dataset_v5_full.zip into data/pcb_rma_v5.sqlite, "
-            "or set DATABASE_URL to the PostgreSQL database")
+            "or set RMA_DATABASE_URL to the PostgreSQL database")
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=not threads)
     conn.row_factory = sqlite3.Row
     return conn

@@ -96,8 +96,8 @@ def pct(value):
 def _source(args):
     import os
     from .db import DEFAULT_DB
-    if os.environ.get("DATABASE_URL") and not args.db:
-        return "PostgreSQL (DATABASE_URL)"
+    if os.environ.get("RMA_DATABASE_URL") and not args.db:
+        return "PostgreSQL (RMA_DATABASE_URL)"
     return Path(args.db or os.environ.get("RMA_DB") or DEFAULT_DB).name
 
 

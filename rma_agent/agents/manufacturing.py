@@ -5,7 +5,7 @@ escapes()      after cause analysis: why the defect was not caught (past escape 
                this lot's inspection equipment and its detection rate versus peers)
 improvement()  standard actions for the top cause (process) and the top escape (inspection criteria)
 """
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
 from langsmith import traceable
@@ -27,6 +27,84 @@ def trace(masters, store, baseline, claim):
         return {"lot_id": None, "steps": [], "inspections": {}, "materials": []}
     return {"lot_id": lot_id, "steps": process_signals(store, baseline, lot_id),
             "inspections": lot_inspections(store, lot_id), "materials": store.material_usage(lot_id)}
+
+
+SHARED_WINDOW_HOURS = 24   # "same time window": the other lot ran on the same machine within this many hours
+CANDIDATE_LOT_LIMIT = 20
+
+
+def _hours(a, b):
+    return abs((datetime.fromisoformat(a) - datetime.fromisoformat(b)).total_seconds()) / 3600
+
+
+@traceable(name="candidate_lots", run_type="tool", process_inputs=_hide)
+def candidate_lots(masters, store, claim, lot_trace, candidates, limit=CANDIDATE_LOT_LIMIT):
+    """Other lots that shared a production machine (within SHARED_WINDOW_HOURS) or a material lot with the returned lot.
+
+    A list for QA to check, not a prediction: each lot shows what it shared, whether it has shipped and how many returns
+    it already has (all as of as_of). Inspection steps are left out (sharing a tester is not a production commonality).
+    Lots sharing the leading cause's machine or material come first. Returns (items, total found).
+    """
+    lot_id = lot_trace.get("lot_id")
+    if not lot_id:
+        return [], 0
+    procs = masters["processes"]
+    top = candidates[0] if candidates else None
+    shared = defaultdict(list)
+    for step in lot_trace["steps"]:
+        if procs.get(step["process_id"], {}).get("is_inspection"):
+            continue
+        start = (datetime.fromisoformat(step["started_at"]) - timedelta(hours=SHARED_WINDOW_HOURS)).isoformat()
+        end = (datetime.fromisoformat(step["started_at"]) + timedelta(hours=SHARED_WINDOW_HOURS)).isoformat()
+        for run in store.equipment_runs(step["equipment_id"], start, end, step["process_id"]):
+            if run["lot_id"] == lot_id:
+                continue
+            gap = round(_hours(run["started_at"], step["started_at"]), 1)
+            key = ("EQUIPMENT", step["equipment_id"], step["process_id"])
+            if any((x["type"], x.get("equipment_id"), x.get("process_id")) == key for x in shared[run["lot_id"]]):
+                continue  # one entry per machine; several loads on it count once
+            shared[run["lot_id"]].append({
+                "type": "EQUIPMENT", "process_id": step["process_id"],
+                "process_name": procs.get(step["process_id"], {}).get("process_name", step["process_id"]),
+                "equipment_id": step["equipment_id"], "this_lot_at": step["started_at"], "other_lot_at": run["started_at"],
+                "gap_hours": gap})
+    materials = {m["material_lot_id"]: m for m in lot_trace["materials"]}
+    for use in store.material_lot_users(materials):
+        if use["lot_id"] == lot_id or any(x.get("material_lot_id") == use["material_lot_id"] for x in shared[use["lot_id"]]):
+            continue
+        shared[use["lot_id"]].append({"type": "MATERIAL", "material_lot_id": use["material_lot_id"],
+                                      "material_type": use["material_type"], "supplier_id": use["supplier_id"]})
+    if not shared:
+        return [], 0
+    info, ships, claims = store.lots(shared), store.lot_shipments(shared), store.lot_claim_counts(shared)
+
+    def matches_top(items):
+        if not top:
+            return False
+        if top.get("cause_category") == "MATERIAL":
+            return any(x["type"] == "MATERIAL" for x in items)
+        return bool(top.get("equipment_id")) and any(x.get("equipment_id") == top["equipment_id"] for x in items)
+
+    rows = []
+    for other, items in shared.items():
+        if other not in info:
+            continue
+        first_ship, boards = ships.get(other, (None, 0))
+        gaps = [x["gap_hours"] for x in items if x["type"] == "EQUIPMENT"]
+        rows.append({"lot_id": other, "spec_id": info[other]["spec_id"], "started_at": info[other]["started_at"],
+                     "completed_at": info[other]["completed_at"], "shared": items, "shared_count": len(items),
+                     "matches_top_cause": matches_top(items), "shipped": first_ship is not None,
+                     "first_shipped_at": first_ship, "shipped_boards": boards, "known_returns": claims.get(other, 0),
+                     "_gap": min(gaps) if gaps else SHARED_WINDOW_HOURS + 1})
+    rows.sort(key=lambda r: (not r["matches_top_cause"], -r["shared_count"], r["_gap"], r["lot_id"]))
+    if top:  # the leading cause's machine or material first inside each lot
+        first = lambda x: not (x.get("equipment_id") == top.get("equipment_id") or
+                               (top.get("cause_category") == "MATERIAL" and x["type"] == "MATERIAL"))
+        for r in rows:
+            r["shared"].sort(key=first)
+    for r in rows:
+        del r["_gap"]
+    return rows[:limit], len(rows)
 
 
 @traceable(name="escape_analysis", run_type="tool", process_inputs=_hide)

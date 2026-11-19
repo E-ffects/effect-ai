@@ -288,6 +288,76 @@ class AsOfStore:
                 row["implemented_at"] = None
         return rows
 
+    # ---------- other lots that share something with a lot (candidate lots), recurrence of past actions
+    def equipment_runs(self, equipment_id, start, end, process_id=None):
+        """Process runs on one machine that started in [start, end] and ended by as_of."""
+        sql = """select lot_id, process_id, equipment_id, load_no, started_at, ended_at from process_run
+                 where equipment_id=? and started_at>=? and started_at<=? and ended_at<=?"""
+        params = [equipment_id, start, end, self.as_of]
+        if process_id:
+            sql += " and process_id=?"
+            params.append(process_id)
+        return self._rows(sql + " order by started_at, lot_id", params, "ended_at")
+
+    def material_lot_users(self, material_lot_ids):
+        ids = sorted(set(material_lot_ids))
+        if not ids:
+            return []
+        return self._rows(f"""select u.lot_id, u.material_lot_id, u.material_type, m.supplier_id, u.issued_at
+                               from material_usage u join material_lot m using(material_lot_id)
+                               where u.material_lot_id in ({','.join('?' * len(ids))}) and u.issued_at<=?
+                               order by u.issued_at, u.lot_id""", (*ids, self.as_of), "issued_at")
+
+    def lots(self, lot_ids):
+        """Production lots started by as_of: spec and start; completion only once it happened."""
+        ids = sorted(set(lot_ids))
+        if not ids:
+            return {}
+        rows = self._rows(f"""select lot_id, spec_id, started_at, completed_at from production_lot
+                              where lot_id in ({','.join('?' * len(ids))}) and started_at<=?""", (*ids, self.as_of), "started_at")
+        for row in rows:
+            if row["completed_at"] and row["completed_at"] > self.as_of:
+                row["completed_at"] = None
+        return {r["lot_id"]: r for r in rows}
+
+    def lot_shipments(self, lot_ids):
+        """First shipment time and boards shipped by as_of, per lot."""
+        ids = sorted(set(lot_ids))
+        if not ids:
+            return {}
+        rows = self._rows(f"""select sl.lot_id, s.shipped_at, sl.board_qty from shipment_lot sl join shipment s using(shipment_id)
+                              where sl.lot_id in ({','.join('?' * len(ids))}) and s.shipped_at<=?""", (*ids, self.as_of), "shipped_at")
+        out = {}
+        for r in rows:
+            first, qty = out.get(r["lot_id"], (None, 0))
+            out[r["lot_id"]] = (min(first, r["shipped_at"]) if first else r["shipped_at"], qty + (r["board_qty"] or 0))
+        return out
+
+    def lot_claim_counts(self, lot_ids):
+        """Returns opened by as_of per lot (the analysed return excluded)."""
+        ids = sorted(set(lot_ids))
+        if not ids:
+            return {}
+        rows = self._rows(f"""select i.lot_id, r.rma_id, r.opened_at from rma_item i join rma_claim r using(rma_id)
+                              where i.lot_id in ({','.join('?' * len(ids))}) and r.opened_at<=?""", (*ids, self.as_of), "opened_at")
+        out = defaultdict(int)
+        for r in rows:
+            if r["rma_id"] != self.subject:
+                out[r["lot_id"]] += 1
+        return dict(out)
+
+    def occurrence_actions(self, cause_code):
+        """Corrective actions on the occurrence of a cause, chosen by as_of (implemented_at hidden until it happens)."""
+        rows = self._rows("""select corrective_action_id, investigation_id, action_category, description, cause_code, scope_json,
+                                    selected_at, implemented_at
+                             from corrective_action where action_role='OCCURRENCE' and cause_code=? and selected_at<=?
+                             order by selected_at, corrective_action_id""", (cause_code, self.as_of), "selected_at")
+        for row in rows:
+            if row["implemented_at"] and row["implemented_at"] > self.as_of:
+                row["implemented_at"] = None
+            row["scope"] = json.loads(row.pop("scope_json") or "{}")
+        return rows
+
     def intake(self, rma_item_id):
         """CS classification at intake: label and the phrases it was based on."""
         rows = self._rows("""select intake_label, evidence_spans_json, created_at from symptom_assessment

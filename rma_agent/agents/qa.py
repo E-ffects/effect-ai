@@ -106,3 +106,82 @@ def note_with_llm(review_result, candidates, outcome):
     result = llm.write("review_note", REVIEW, facts, _ReviewNote, lambda r: [r["review_note"]], outcome)
     if result:
         review_result["review_note"] = result["review_note"]
+
+
+def _scope_text(scope):
+    if scope.get("equipment"):
+        return "설비 " + ", ".join(scope["equipment"])
+    if scope.get("material_lots"):
+        return f"공급사 {scope.get('supplier')}의 자재 Lot " + ", ".join(scope["material_lots"])
+    return None
+
+
+def recurrence_check(masters, store, claim, lot_trace, candidates, review):
+    """After cause analysis: is this return a real recurrence after the corrective action, or a product made before it?
+
+    Compares the leading cause with the latest occurrence action on that cause implemented by as_of (recurrence_review
+    uses the same rule: lot started after implemented_at and the same cause).
+      RECURRENCE            lot started after the action, same cause
+      PRE_ACTION_PRODUCT    lot started before the action: leftover product, not a recurrence
+      PENDING_CAUSE_REVIEW  the symptom is not confirmed yet (INSUFFICIENT_INFO / UNCLASSIFIED): decide after it is
+      NOT_APPLICABLE        no cause candidate, no implemented action on it, or no lot to date
+    Whether the lot went through the action's scope (machine or material lot) does not change the verdict; it explains it
+    (outside the scope = the fix was not rolled out there).
+    """
+    top = candidates[0] if candidates else None
+    if not top:
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+                "reason": "원인 후보가 없어 재발 여부를 판정하지 않습니다."}
+    # only actions aimed at a machine or material lot are tracked for recurrence (quarterly "local" fixes are not)
+    actions = [a for a in store.occurrence_actions(top["cause_code"])
+               if a["implemented_at"] and (a["scope"].get("equipment") or a["scope"].get("material_lots"))]
+    if not actions:
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+                "reason": f"1순위 원인 {top['cause_name']}에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."}
+    lot_id = lot_trace.get("lot_id")
+    lot = store.lots([lot_id]).get(lot_id) if lot_id else None
+    if not lot:
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+                "reason": "Lot을 알 수 없어 조치 시행일과 생산 시점을 비교할 수 없습니다."}
+    equipment = {st["equipment_id"] for st in lot_trace["steps"]}
+    material_lots = {m["material_lot_id"] for m in lot_trace["materials"]}
+
+    def in_scope_of(a):
+        if a["scope"].get("equipment"):
+            return bool(equipment & set(a["scope"]["equipment"]))
+        if a["scope"].get("material_lots"):
+            return bool(material_lots & set(a["scope"]["material_lots"]))
+        return None
+
+    # Any tracked action implemented before this lot started means the cause came back after a fix (recurrence).
+    # Show the action whose scope covers this lot first, then the latest.
+    before = [a for a in actions if lot["started_at"] >= a["implemented_at"]]
+    pool = before or actions
+    action = max(pool, key=lambda a: (bool(in_scope_of(a)), a["implemented_at"], a["corrective_action_id"]))
+    public_action = {k: action[k] for k in ("corrective_action_id", "investigation_id", "description", "implemented_at", "scope")}
+    scope = action["scope"]
+    in_scope = in_scope_of(action)
+    # Pending only when the symptom itself is unknown: missing lab evidence is normal at analysis start
+    # (requiring it sent 76 returns to PENDING with none right, results/20261119_recurrence_v5.md).
+    symptom_known = claim.get("intake_label") not in ("INSUFFICIENT_INFO", "UNCLASSIFIED", None)
+    after = bool(before)
+    checks = {"cause_code": top["cause_code"], "cause_name": top["cause_name"], "cause_match": True,
+              "symptom_confirmed": symptom_known, "lot_id": lot_id, "lot_started_at": lot["started_at"],
+              "produced_after_action": after, "in_action_scope": in_scope}
+    day, scope_text = action["implemented_at"][:10], _scope_text(scope)
+    if not symptom_known:
+        status = "PENDING_CAUSE_REVIEW"
+        reason = (f"과거 조치({action['corrective_action_id']}, {day} 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 "
+                  "고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.")
+    elif after:
+        status = "RECURRENCE"
+        reason = f"Lot {lot_id}은(는) 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐고 원인이 같습니다."
+        if in_scope is False and scope_text:
+            reason += f" 조치 범위({scope_text}) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다."
+        elif in_scope:
+            reason += " 조치가 적용된 범위 안에서 다시 발생해, 조치 효과를 다시 확인해야 합니다."
+    else:
+        status = "PRE_ACTION_PRODUCT"
+        reason = (f"Lot {lot_id}은(는) 조치 {action['corrective_action_id']}({day} 시행) 전에 생산된 제품입니다. "
+                  "재발이 아니라 조치 전 생산품의 반품입니다.")
+    return {"status": status, "corrective_action": public_action, "checks": checks, "reason": reason}

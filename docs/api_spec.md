@@ -138,7 +138,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 ## 3. API
 
 - 기본 주소: `http://{ai-host}/ai/v1`. 화면은 `/api/ai/...`로 부르고 프록시가 이 주소로 넘긴다(3-0).
-- 공통 헤더: `Content-Type: application/json`. `X-Request-Id`는 있으면 로그에 쓴다(선택). 화면이 보내는 `Authorization` 헤더는 지금은 확인하지 않는다.
+- 공통 헤더: `Content-Type: application/json`. `X-Request-Id`는 있으면 로그에 쓴다(선택). **`Authorization` 헤더의 Spring 토큰(JWT)을 AI 서버가 Spring과 같은 `jwt.secret`으로 검증한다.** 고객대응관리자(CS) 역할이면 원인·설비·Lot 정보를 빼고 보낸다(검증과 필터링은 AI 서버가 하고, `rma_agent` 함수의 입출력은 그대로다).
 - 시각: ISO 8601, `+09:00`
 - **기준 시각 `as_of`:** 생략하면 서버 설정값을 쓴다. 시연 기본값은 `2025-12-31T23:59:00+09:00`. AI는 이 시각 이전에 알 수 있었던 데이터만 쓴다.
 
@@ -155,8 +155,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 
 ### 3-0. 호출 경로 (지금: 화면 직접 호출)
 ```
-브라우저 ── /api/ai/classify ──▶ 프록시(Vite 개발 서버, nginx) ── /ai/v1/classify ──▶ FastAPI (effect-ai)
-        └─ /api/...(그 밖) ──────▶ 프록시 ────────────────────────────────────────▶ 백엔드 (Spring)
+브라우저 ── /api/ai/classify ──▶ 프록시(Vite 개발 서버, nginx) ── /ai/v1/classify ──▶ AI 서버 (FastAPI :8080, 별도 저장소) → rma_agent
+        └─ /api/...(그 밖) ──────▶ 프록시 ────────────────────────────────────────▶ 백엔드 (Spring :8000)
 ```
 | 화면이 부르는 경로 | FastAPI 경로 |
 |---|---|
@@ -166,15 +166,16 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 | `GET /api/ai/claims/{rma_id}/similar` | `GET /ai/v1/claims/{rma_id}/similar` |
 | `GET /api/ai/health` | `GET /ai/v1/health` |
 
+- 포트: **AI 서버 8080, Spring 8000** (2026-11-19 팀 결정).
 - `/cases/refresh`는 화면이 아니라 승인 저장 쪽(Spring 또는 운영자)이 부른다.
 - **Vite 개발 서버** (`vite.config.js`): `/api/ai` 규칙을 `/api`보다 **먼저** 둔다.
   ```js
   proxy: {
-    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8000', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
-    '/api': process.env.API_TARGET || 'http://127.0.0.1:8080',
+    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8080', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
+    '/api': process.env.API_TARGET || 'http://127.0.0.1:8000',
   }
   ```
-- **nginx** (`nginx.conf`): `location /api/ai/ { proxy_pass http://ai:8000/ai/v1/; proxy_read_timeout 60s; }`를 `location /api/` 위에 둔다.
+- **nginx** (`nginx.conf`): `location /api/ai/ { proxy_pass http://ai:8080/ai/v1/; proxy_read_timeout 60s; }`를 `location /api/` 위에 둔다.
 - **임시 구조의 한계:** 분석 결과는 FastAPI 메모리에만 있다(재시작하면 사라짐). 채택·기각·승인 저장과 `ai_analysis` 테이블은 Spring이 붙은 뒤 5장대로 한다.
 
 ### 3-1. `POST /classify`
@@ -373,6 +374,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
         ]
       }
     ],
+    "candidate_lots": {"window_hours": 24, "total": 62, "items": [{"lot_id": "LT-01602", "spec_id": "SEMI-SSD8H", "started_at": "2025-10-16T10:15:45+09:00", "completed_at": "2025-10-24T07:52:46+09:00", "shared": [{"type": "EQUIPMENT", "process_id": "OL_ETCH", "process_name": "외층 에칭", "equipment_id": "OLE-02", "this_lot_at": "2025-10-21T02:20:29+09:00", "other_lot_at": "2025-10-20T07:19:59+09:00", "gap_hours": 19.0}], "shared_count": 16, "matches_top_cause": true, "shipped": true, "first_shipped_at": "2025-10-25T08:45:59+09:00", "shipped_boards": 4278, "known_returns": 0}]},
+    "recurrence_check": {"status": "NOT_APPLICABLE", "corrective_action": null, "checks": null, "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."},
     "similar_cases": [
       {"rma_id": "RMA-08576", "opened_at": "2025-11-13T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.81, "snippet": "ICT·기능검사에서 쇼트 판정이 나오며 육안상 잔동이 의심됩니다", "corrective_actions": []},
       {"rma_id": "RMA-08427", "opened_at": "2025-11-08T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.78, "snippet": "ICT·기능검사에서 인접 패턴 간 쇼트가 발생했습니다", "corrective_actions": []},
@@ -417,6 +420,210 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 - `cause_candidates[].other_equipment`: 이 Lot이 같은 공정을 여러 장비로 나눠 지났을 때 나머지 장비 목록(신호 강한 순). 보통 빈 배열이다.
 - 자재 원인이면 `process_id`는 `"MATERIAL"`이고, `evidence`에 문제 자재 Lot이 들어간다.
 - 같은 원인이 한 번도 확정된 적이 없어서 근거가 될 과거 사례가 없으면, 후보는 비어 있고 `warnings`에 `NO_CONFIRMED_CASE`가 들어간다.
+
+#### 후보 Lot (`result.candidate_lots`)
+반품 Lot과 **같은 생산 설비를 앞뒤 24시간 안에 썼거나, 같은 자재 Lot을 쓴** 다른 Lot 목록이다. QA가 확인할 목록이며 예측(적중률)이 아니다. 6단계 제조 에이전트가 원인 순위 뒤에 만든다.
+- 검사 공정(E-Test, AOI, FQC, OQC 등)은 공통점에서 뺀다. 검사기를 같이 쓴 것은 생산 공통점이 아니다.
+- 순서: 1순위 원인의 설비(자재 원인이면 자재 Lot)를 공유한 Lot → 공통점 수 → 가장 가까운 시간 차. 각 Lot의 `shared`도 1순위 원인의 설비·자재가 먼저 온다.
+- 모든 값은 `as_of` 시점에 알 수 있는 것만 쓴다(출하, 반품 수 포함).
+
+| 필드 | 뜻 |
+|---|---|
+| `window_hours` | "같은 시간대"의 기준(24) |
+| `total` | 공통점이 있는 Lot 전체 수. `items`는 앞에서 최대 20개 |
+| `items[].lot_id`, `spec_id`, `started_at`, `completed_at` | 다른 Lot과 생산 기간(`completed_at`은 `as_of` 전에 끝났을 때만) |
+| `items[].shared[]` | 공통점. `type`이 `EQUIPMENT`면 `process_id`, `process_name`, `equipment_id`, `this_lot_at`(반품 Lot 투입), `other_lot_at`, `gap_hours`. `MATERIAL`이면 `material_lot_id`, `material_type`, `supplier_id` |
+| `items[].shared_count` | 공통점 수 |
+| `items[].matches_top_cause` | 1순위 원인의 설비(자재 원인이면 자재 Lot)를 공유했는가 |
+| `items[].shipped`, `first_shipped_at`, `shipped_boards` | `as_of`까지 출하 여부, 첫 출하 시각, 출하 수량 |
+| `items[].known_returns` | 그 Lot에서 `as_of`까지 들어온 반품 수(이 반품 제외) |
+
+예시 (RMA-08927, 실제 출력에서 `items` 2개와 각 `shared` 2개만 보임):
+```json
+{
+  "window_hours": 24,
+  "total": 62,
+  "items": [
+    {
+      "lot_id": "LT-01602",
+      "spec_id": "SEMI-SSD8H",
+      "started_at": "2025-10-16T10:15:45+09:00",
+      "completed_at": "2025-10-24T07:52:46+09:00",
+      "shared": [
+        {
+          "type": "EQUIPMENT",
+          "process_id": "OL_ETCH",
+          "process_name": "외층 에칭",
+          "equipment_id": "OLE-02",
+          "this_lot_at": "2025-10-21T02:20:29+09:00",
+          "other_lot_at": "2025-10-20T07:19:59+09:00",
+          "gap_hours": 19.0
+        },
+        {
+          "type": "EQUIPMENT",
+          "process_id": "IL_ETCH",
+          "process_name": "내층 에칭·박리",
+          "equipment_id": "ILE-01",
+          "this_lot_at": "2025-10-17T21:05:37+09:00",
+          "other_lot_at": "2025-10-17T05:45:14+09:00",
+          "gap_hours": 15.3
+        }
+      ],
+      "shared_count": 16,
+      "matches_top_cause": true,
+      "shipped": true,
+      "first_shipped_at": "2025-10-25T08:45:59+09:00",
+      "shipped_boards": 4278,
+      "known_returns": 0
+    },
+    {
+      "lot_id": "LT-01599",
+      "spec_id": "AUTO-ECU6",
+      "started_at": "2025-10-16T15:31:18+09:00",
+      "completed_at": "2025-10-25T06:00:15+09:00",
+      "shared": [
+        {
+          "type": "EQUIPMENT",
+          "process_id": "OL_ETCH",
+          "process_name": "외층 에칭",
+          "equipment_id": "OLE-02",
+          "this_lot_at": "2025-10-21T02:20:29+09:00",
+          "other_lot_at": "2025-10-21T03:44:43+09:00",
+          "gap_hours": 1.4
+        },
+        {
+          "type": "EQUIPMENT",
+          "process_id": "IL_IMG",
+          "process_name": "내층 D/F 라미·노광·현상",
+          "equipment_id": "ILI-01",
+          "this_lot_at": "2025-10-17T12:31:00+09:00",
+          "other_lot_at": "2025-10-16T20:46:12+09:00",
+          "gap_hours": 15.7
+        }
+      ],
+      "shared_count": 15,
+      "matches_top_cause": true,
+      "shipped": true,
+      "first_shipped_at": "2025-10-27T09:42:44+09:00",
+      "shipped_boards": 2257,
+      "known_returns": 5
+    }
+  ]
+}
+```
+
+#### 재발 판정 (`result.recurrence_check`)
+원인 분석 다음 단계(5단계 QA)에서, 1순위 원인에 대해 **분석 시점까지 시행된 발생 원인 조치**(`corrective_action`, 설비 또는 자재 Lot이 정해진 것)와 이 Lot을 비교한다. 정답 데이터 `recurrence_review`와 같은 규칙이다.
+
+| `status` | 조건 |
+|---|---|
+| `RECURRENCE` | 이 Lot의 생산 시작이 같은 원인의 조치 시행(`implemented_at`) 이후 |
+| `PRE_ACTION_PRODUCT` | 이 Lot이 모든 조치보다 먼저 생산됨. 재발이 아니라 조치 전 생산품 |
+| `PENDING_CAUSE_REVIEW` | 접수 증상이 아직 확인되지 않음(정보 부족·분류 불가). 고객 회신 뒤 다시 판정 |
+| `NOT_APPLICABLE` | 원인 후보가 없거나, 그 원인에 시행된 조치가 없거나, Lot을 모름 |
+
+- **조치 범위(`checks.in_action_scope`)는 판정을 바꾸지 않고 이유를 설명한다.** 범위 밖에서 재발하면 "수평 전개 누락", 범위 안에서 재발하면 "조치 효과 재확인"으로 쓴다.
+- 비교할 조치는 이 Lot이 범위 안에 있는 조치를 먼저, 그다음 최근 조치를 고른다.
+- 정확도 (v5, `recurrence_review` 2,606건, 반품별 분석 시작 시점): 일치 91.4%, 재발 재현율 86.5%. 정답은 나중에 확정된 원인을 쓰고, 에이전트는 분석 시점의 1순위 원인을 쓴다(`results/20261119_recurrence_v5.md`).
+
+| 필드 | 뜻 |
+|---|---|
+| `corrective_action` | 비교한 조치: `corrective_action_id`, `investigation_id`, `description`, `implemented_at`, `scope`(`equipment` 또는 `supplier`·`material_lots`) |
+| `checks.cause_code`, `cause_name` | 비교에 쓴 1순위 원인 |
+| `checks.symptom_confirmed` | 접수 증상이 확인됐는가 |
+| `checks.lot_id`, `lot_started_at`, `produced_after_action` | 이 Lot의 생산 시작과 조치 이후 생산 여부 |
+| `checks.in_action_scope` | 이 Lot이 조치 범위의 설비를 거쳤거나 자재 Lot을 썼는가(범위가 없으면 `null`) |
+| `reason` | 화면에 그대로 보여 줄 한 문장 |
+
+예시 4가지 (v5 실제 출력, `//` 줄은 설명):
+```jsonc
+// RECURRENCE: RMA-08218 (디스미어 부족 재발, 조치는 DSM-02에만, 재발은 DSM-01)
+{
+  "status": "RECURRENCE",
+  "corrective_action": {
+    "corrective_action_id": "CA-000023",
+    "investigation_id": "INV-25-0009",
+    "description": "DSM-02 과망간산 용액 교체 기준(처리 면적 1,500㎡) 적용",
+    "implemented_at": "2025-07-30T02:35:44+09:00",
+    "scope": {
+      "equipment": [
+        "DSM-02"
+      ]
+    }
+  },
+  "checks": {
+    "cause_code": "DESMEAR_INSUFFICIENT",
+    "cause_name": "디스미어 부족",
+    "cause_match": true,
+    "symptom_confirmed": true,
+    "lot_id": "LT-01550",
+    "lot_started_at": "2025-10-04T19:43:28+09:00",
+    "produced_after_action": true,
+    "in_action_scope": false
+  },
+  "reason": "Lot LT-01550은(는) 조치 CA-000023(2025-07-30 시행) 이후에 생산됐고 원인이 같습니다. 조치 범위(설비 DSM-02) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다."
+}
+// PRE_ACTION_PRODUCT: RMA-07085 (드릴 비트, 조치 전에 생산된 Lot)
+{
+  "status": "PRE_ACTION_PRODUCT",
+  "corrective_action": {
+    "corrective_action_id": "CA-000001",
+    "investigation_id": "INV-25-0001",
+    "description": "DRL-03 비트 수명 카운터 인터록 적용 및 카운터 리셋 로직 수정",
+    "implemented_at": "2025-04-16T07:51:15+09:00",
+    "scope": {
+      "equipment": [
+        "DRL-03"
+      ]
+    }
+  },
+  "checks": {
+    "cause_code": "DRILL_BIT_WEAR",
+    "cause_name": "드릴 비트 수명 초과",
+    "cause_match": true,
+    "symptom_confirmed": true,
+    "lot_id": "LT-00545",
+    "lot_started_at": "2025-03-03T19:18:57+09:00",
+    "produced_after_action": false,
+    "in_action_scope": true
+  },
+  "reason": "Lot LT-00545은(는) 조치 CA-000001(2025-04-16 시행) 전에 생산된 제품입니다. 재발이 아니라 조치 전 생산품의 반품입니다."
+}
+// PENDING_CAUSE_REVIEW: RMA-07936 (정보 부족 접수)
+{
+  "status": "PENDING_CAUSE_REVIEW",
+  "corrective_action": {
+    "corrective_action_id": "CA-000038",
+    "investigation_id": "INV-25-0015",
+    "description": "보전 후 원점 확인 체크리스트 및 초품 승인 필수화",
+    "implemented_at": "2025-10-07T02:35:27+09:00",
+    "scope": {
+      "equipment": [
+        "RTR-02"
+      ],
+      "products": "ALL"
+    }
+  },
+  "checks": {
+    "cause_code": "ROUT_OFFSET",
+    "cause_name": "라우터 원점 편차",
+    "cause_match": true,
+    "symptom_confirmed": false,
+    "lot_id": "LT-01345",
+    "lot_started_at": "2025-08-22T19:56:01+09:00",
+    "produced_after_action": false,
+    "in_action_scope": true
+  },
+  "reason": "과거 조치(CA-000038, 2025-10-07 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다."
+}
+// NOT_APPLICABLE: RMA-08927 (외층 에칭 잔동, 분석 시점까지 시행된 조치 없음)
+{
+  "status": "NOT_APPLICABLE",
+  "corrective_action": null,
+  "checks": null,
+  "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."
+}
+```
 
 ### 3-4. `GET /claims/{rma_id}/similar?as_of=...&limit=5`
 **응답 200**

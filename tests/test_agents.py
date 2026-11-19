@@ -27,7 +27,7 @@ def test_response_fields(example):
     assert out["status"] == "SUCCEEDED" and out["as_of"] == "2025-11-20T12:41:37+09:00"
     result = out["result"]
     assert set(result) == {"classification", "qa_review", "trace_summary", "cause_candidates",
-                           "escape_candidates", "similar_cases", "drafts"}
+                           "escape_candidates", "candidate_lots", "recurrence_check", "similar_cases", "drafts"}
     for c in result["cause_candidates"]:
         assert {"rank", "status", "source", "cause_code", "process_id", "equipment_id", "score", "explanation",
                 "evidence"} <= set(c)
@@ -129,3 +129,33 @@ def test_reply_names_the_leading_cause_when_classified(example):
     out, _ = example
     assert out["result"]["cause_candidates"][0]["cause_name"] in out["result"]["drafts"]["customer_reply"]
     assert "SYMPTOM_NOT_CONFIRMED" not in out["warnings"]
+
+
+def test_candidate_lots_share_something_known_by_as_of(example):
+    out, _ = example
+    lots = out["result"]["candidate_lots"]
+    assert lots["window_hours"] == 24 and lots["total"] >= len(lots["items"]) > 0 and len(lots["items"]) <= 20
+    first = lots["items"][0]
+    assert first["matches_top_cause"] and first["shared"][0]["equipment_id"] == "OLE-02"  # leading cause's machine first
+    for lot in lots["items"]:
+        assert lot["lot_id"] != out["result"]["trace_summary"]["lot_id"] and lot["shared_count"] == len(lot["shared"])
+        assert lot["started_at"] <= out["as_of"]
+        assert lot["first_shipped_at"] is None or lot["first_shipped_at"] <= out["as_of"]
+        for x in lot["shared"]:
+            assert x["type"] in ("EQUIPMENT", "MATERIAL")
+            if x["type"] == "EQUIPMENT":
+                assert x["gap_hours"] <= 24
+
+
+def test_recurrence_outside_the_action_scope():
+    """P04R (v5): desmear fix applied on DSM-02 only; the cause came back on DSM-01."""
+    rc = run_analysis("RMA-08218")["result"]["recurrence_check"]
+    assert rc["status"] == "RECURRENCE"
+    assert rc["corrective_action"]["scope"] == {"equipment": ["DSM-02"]}
+    assert rc["checks"]["produced_after_action"] and rc["checks"]["in_action_scope"] is False
+    assert "수평 전개" in rc["reason"]
+
+
+def test_no_recurrence_verdict_without_a_tracked_action(example):
+    out, _ = example  # outer-layer etch residue had no implemented action at this as_of
+    assert out["result"]["recurrence_check"]["status"] == "NOT_APPLICABLE"

@@ -42,6 +42,8 @@ class AnalysisState(TypedDict, total=False):
     similar: list
     escapes: list
     qa_review: dict
+    recurrence: dict
+    candidate_lots: dict
     improvement: dict
     customer_reply: str
     trace: Annotated[list, operator.add]
@@ -113,21 +115,27 @@ def cause_node(state, rt, store, outcome):
 @_agent(5, "QA")
 def qa_review(state, rt, store, outcome):
     review = qa.review(rt.masters, store, state["claim"], state["candidates"], state["triage"])
+    recurrence = qa.recurrence_check(rt.masters, store, state["claim"], state["lot_trace"], state["candidates"], review)
     before = outcome.n_used
     qa.note_with_llm(review, state["candidates"], outcome)
-    action = "후보별 근거 검토" + (", 사람 승인 요청 (L3)" if review["needs_approval"] else ", QA 확인 대상")
-    return {"qa_review": review}, action, ["causal_requirements", "item_lab_tests"], outcome.n_used > before
+    action = ("후보별 근거 검토" + (", 사람 승인 요청 (L3)" if review["needs_approval"] else ", QA 확인 대상")
+              + f", 재발 판정 {recurrence['status']}")
+    return ({"qa_review": review, "recurrence": recurrence}, action,
+            ["causal_requirements", "item_lab_tests", "recurrence_check"], outcome.n_used > before)
 
 
 @_agent(6, "MANUFACTURING")
 def mfg_improvement(state, rt, store, outcome):
     escape_list = manufacturing.escapes(rt.masters, store, state["claim"], state["lot_trace"], state["candidates"])
+    lots, total = manufacturing.candidate_lots(rt.masters, store, state["claim"], state["lot_trace"], state["candidates"])
     plan = manufacturing.improvement(rt.masters, state["candidates"], escape_list)
     before = outcome.n_used
     manufacturing.improve_with_llm(plan, state["candidates"], escape_list, outcome)
     targets = [c["cause_code"] for c in state["candidates"][:1]] + [e["escape_code"] for e in escape_list]
-    return ({"escapes": escape_list, "improvement": plan},
-            f"공정·검사 개선안 초안 ({', '.join(targets) or '대상 없음'})", ["escape_assessment", "detection_rate", "standard_actions"],
+    candidate = {"window_hours": manufacturing.SHARED_WINDOW_HOURS, "total": total, "items": lots}
+    return ({"escapes": escape_list, "improvement": plan, "candidate_lots": candidate},
+            f"공정·검사 개선안 초안 ({', '.join(targets) or '대상 없음'}), 공통점 있는 다른 Lot {total}개",
+            ["escape_assessment", "detection_rate", "standard_actions", "candidate_lots"],
             outcome.n_used > before)
 
 
@@ -245,6 +253,8 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
                               "part_no": claim.get("reported_part_no")},
             "cause_candidates": [_public(c) for c in state["candidates"]],
             "escape_candidates": state["escapes"],
+            "candidate_lots": state["candidate_lots"],
+            "recurrence_check": state["recurrence"],
             "similar_cases": state["similar"],
             "drafts": {"customer_reply": state["customer_reply"], "improvement": state["improvement"]},
         },
