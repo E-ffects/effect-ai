@@ -105,11 +105,12 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | 상태 | 값 | 출처·저장 |
 |---|---|---|
 | `cs_status` | `OPEN` / `RESPONDED` / `CLOSED` | `rma_claim.cs_status` (데이터 값 그대로) |
-| `qa_status` | `TRIAGED` / `ANALYZING` / `CAUSE_DECIDED` / `CLOSED`. 새 접수의 QA 판정 전은 `null` | `rma_claim.qa_status` (데이터 값 그대로) |
+| `qa_status` | `RECEIVED` / `TRIAGED` / `ANALYZING` / `CAUSE_DECIDED` / `CLOSED`. `RECEIVED`는 새 접수의 QA 판정 전(새 값, 원본 데이터에는 없음) | `rma_claim.qa_status`. 이 컬럼은 비울 수 없어서(NOT NULL) 판정 전에도 값을 넣는다. 스키마 변경 없음 |
 | `analysis_state` | `NOT_REQUESTED` / `QUEUED` / `RUNNING` / `SUCCEEDED` / `PARTIAL` / `FAILED` | AI 작업 상태(2-2). Spring `ai_analysis`에 저장 |
 | `approval_status` | `NOT_REQUIRED` / `WAITING` / `APPROVED` / `REJECTED` / `CONFIRMED` | Spring이 새로 관리 |
 
-- 새 접수 흐름: 접수 → 분류(`POST /classify`) + **QA 판정안(`POST /triage`, 3-7)** → 품질관리자 확인 → Spring이 `qa_triage` 저장(`qa_status = TRIAGED`) → 원인분석(`POST /analyses`). 원인분석은 `qa_triage`가 있어야 시작할 수 있다.
+- 새 접수 흐름: 접수(`rma_claim` 저장, `qa_status = RECEIVED`) → 분류(`POST /classify`) + **QA 판정안(`POST /triage`, 3-7)** → 품질관리자 확인·확정 → Spring이 `qa_triage` 저장, `qa_status = TRIAGED` → 원인분석(`POST /analyses`). 판정안은 저장하지 않고, 확정할 때만 `qa_triage`에 넣는다. 원인분석은 `qa_triage`가 있어야 시작할 수 있다.
+- AI는 `qa_status`를 읽지 않는다. 판정 전후는 `qa_triage` 행이 있는지로 판단한다.
 - `PARTIAL`: 원인 순위·근거는 정상이고 LLM 문장만 빠졌다(`warnings: ["LLM_UNAVAILABLE"]`).
 - `approval_status`: L3는 `WAITING` → `APPROVED`/`REJECTED`, L1·L2는 QA 확인 시 `CONFIRMED`. 분석 전은 `NOT_REQUIRED`. 승인·확정 뒤 Spring이 `POST /cases/refresh`를 부른다.
 
