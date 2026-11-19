@@ -102,6 +102,8 @@ def cause_node(state, rt, store, outcome):
     cause_analysis.explain_with_llm(candidates, state["claim"], state["classification"], outcome)
     similar = cause_analysis.similar_case_items(rt.masters, store, state["claim"])
     warnings = [] if candidates else ["NO_CONFIRMED_CASE"]
+    if state["classification"].get("minor_code") in cs.NOT_CLASSIFIED:
+        warnings.append("SYMPTOM_NOT_CONFIRMED")  # candidates are for reference until the customer answers
     top = ", ".join(c["cause_code"] for c in candidates) or "없음"
     return ({"candidates": candidates, "similar": similar, "warnings": warnings},
             f"이전 사례 {len(store.past_cases(state['claim'].get('intake_label')))}건으로 원인 후보 순위: {top}",

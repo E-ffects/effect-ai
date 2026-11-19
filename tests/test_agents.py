@@ -110,3 +110,22 @@ def test_evidence_spans_come_from_the_customer_text():
     out = run_analysis(rma_id)
     text = conn.execute("select raw_text from rma_claim where rma_id=?", (rma_id,)).fetchone()[0]
     assert all(s in text for s in out["result"]["classification"]["evidence_spans"])
+
+
+def test_reply_asks_the_customer_when_symptom_is_not_classified():
+    """INSUFFICIENT_INFO: the reply asks what happened and names no cause; candidates are flagged as provisional."""
+    from rma_agent.agents.classifier import DEFAULT_QUESTION
+    conn = get_runtime().conn
+    rma_id = conn.execute("""select i.rma_id from rma_item i join symptom_assessment s using(rma_item_id)
+                             where s.intake_label='INSUFFICIENT_INFO' order by i.rma_id limit 1""").fetchone()[0]
+    out = run_analysis(rma_id)
+    reply = out["result"]["drafts"]["customer_reply"]
+    assert DEFAULT_QUESTION in reply
+    assert not any(c["cause_name"] in reply for c in out["result"]["cause_candidates"])
+    assert "SYMPTOM_NOT_CONFIRMED" in out["warnings"]
+
+
+def test_reply_names_the_leading_cause_when_classified(example):
+    out, _ = example
+    assert out["result"]["cause_candidates"][0]["cause_name"] in out["result"]["drafts"]["customer_reply"]
+    assert "SYMPTOM_NOT_CONFIRMED" not in out["warnings"]

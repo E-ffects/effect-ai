@@ -20,7 +20,7 @@
   "major_name": null,
   "minor_code": null,
   "minor_name": null,
-  "confidence": 0.95,
+  "confidence": 0.97,
   "evidence_spans": [
    "SMT 리플로 공정에서 외관 NG가 발생했습니다.",
    "리플로 2회 통과 후 확인되었습니다."
@@ -31,18 +31,18 @@
    {
     "minor_code": "STRC01",
     "minor_name": "리플로 후 블리스터",
-    "confidence": 0.03
+    "confidence": 0.02
    },
    {
     "minor_code": "APPR03",
     "minor_name": "이물·오염·변색",
-    "confidence": 0.02
+    "confidence": 0.01
    }
   ],
   "follow_up_questions": [
-   "외관 NG의 구체적인 현상을 알려주시겠습니까? 부풀음, 들뜸, 이물, 변색, 스크래치 등 불량 형태와 발생 위치를 확인 부탁드립니다."
+   "외관 NG의 구체적인 현상을 알려주실 수 있습니까? 예를 들어 부풂, 들뜸, 이물, 변색, 스크래치 중 어떤 증상인지와 발생 위치를 확인 부탁드립니다."
   ],
-  "elapsed_ms": 1690,
+  "elapsed_ms": 1730,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  }

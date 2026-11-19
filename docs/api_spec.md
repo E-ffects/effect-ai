@@ -411,7 +411,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 - 단발 불량처럼 장비를 특정할 수 없으면 `equipment_id`는 `null`이다. 화면에는 "특정 불가(단발)"로 표시한다.
 - `drafts.improvement.*[].standard_action`: 기준 테이블의 표준 조치 원문. `action`은 제조 에이전트가 이 Lot 근거에 맞춰 구체화한 문장(LLM이 꺼져 있으면 표준 조치와 같다).
 - `trace[].llm_used`: 그 단계의 문장을 LLM이 썼으면 `true`. `model_versions.llm`이 `null`이면 LLM 없이 템플릿 문장이다.
-- `warnings`: `LLM_UNAVAILABLE`(LLM 호출 실패, 상태 `PARTIAL`, 템플릿 문장 사용), `LLM_OUTPUT_REJECTED`(LLM 문장에 근거에 없는 숫자가 있어 템플릿 사용), `NO_CONFIRMED_CASE`, `NO_LOT`, `MODE_A_NOT_READY`.
+- `warnings`: `LLM_UNAVAILABLE`(LLM 호출 실패, 상태 `PARTIAL`, 템플릿 문장 사용), `LLM_OUTPUT_REJECTED`(LLM 문장에 근거에 없는 숫자가 있어 템플릿 사용), `NO_CONFIRMED_CASE`, `NO_LOT`, `MODE_A_NOT_READY`, `SYMPTOM_NOT_CONFIRMED`(접수 증상이 정보 부족·분류 불가. 원인 후보는 참고용이고, 고객 회신 초안은 원인 대신 재질의를 담는다).
 - `cause_candidates[].other_equipment`: 이 Lot이 같은 공정을 여러 장비로 나눠 지났을 때 나머지 장비 목록(신호 강한 순). 보통 빈 배열이다.
 - 자재 원인이면 `process_id`는 `"MATERIAL"`이고, `evidence`에 문제 자재 Lot이 들어간다.
 - 같은 원인이 한 번도 확정된 적이 없어서 근거가 될 과거 사례가 없으면, 후보는 비어 있고 `warnings`에 `NO_CONFIRMED_CASE`가 들어간다.
