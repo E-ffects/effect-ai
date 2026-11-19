@@ -2,7 +2,7 @@
 
 - 작성: 2026-11-18 (AI/DATA 유희범)
 - 대상: 백엔드(Spring Boot), 프론트(Vue), 인프라
-- 데이터: PCB RMA v4 (기준 시점 2025-12-31)
+- 데이터: PCB RMA v5 (기준 시점 2025-12-31. 2026-11-19부터 팀 공식, 이전은 v4)
 - 상태: **초안.** 3장 API와 5장 저장 책임을 팀이 확인하면 v1.0으로 확정한다.
 
 ## 요약
@@ -181,12 +181,12 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 **요청**
 ```json
 {
-  "rma_id": "RMA-08743",
+  "rma_id": "RMA-08927",
   "raw_text": "A01 수입검사 담당입니다. P/N PCB-ECU6-A1 (Lot LT-01603) SMT 리플로 공정에서 미세 패턴 사이 브리지 형태의 쇼트가 보입니다. 투입 1,750pcs 중 26pcs 불량입니다. 불량 샘플 4pcs 회송 예정입니다. 동일 Lot 재고 확인과 선별 여부를 회신 바랍니다.",
   "detection_stage": "SMT_REFLOW",
   "reported_part_no": "PCB-ECU6-A1",
   "customer_id": "A01",
-  "as_of": "2025-11-20T14:40:46+09:00"
+  "as_of": "2025-11-20T12:41:37+09:00"
 }
 ```
 `rma_id`는 선택이다. 접수 등록 전 미리보기에서는 원문만 보내도 된다.
@@ -247,8 +247,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 **요청**
 ```json
 {
-  "rma_id": "RMA-08743",
-  "as_of": "2025-11-20T14:40:46+09:00",
+  "rma_id": "RMA-08927",
+  "as_of": "2025-11-20T12:41:37+09:00",
   "options": {"top_k": 3, "include_drafts": true, "mode": "B"}
 }
 ```
@@ -259,7 +259,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 ```json
 {
   "analysis_id": "ana-20251120-08743-01",
-  "rma_id": "RMA-08743",
+  "rma_id": "RMA-08927",
   "status": "QUEUED",
   "created_at": "2025-11-20T14:40:47+09:00",
   "poll_after_ms": 1000
@@ -267,23 +267,25 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 ```
 
 ### 3-3. `GET /analyses/{analysis_id}`
+> 예시는 v5 데이터의 RMA-08927(차량 고객 A01, Lot LT-01603, 쇼트, 외층 에칭 잔동)이다. 점수·문장 같은 값은 설명용이고, 실제 응답 전체는 effect-ai `samples/RMA-08927.json`에 있다.
+
 **응답 200: 실행 중**
 ```json
 {
   "analysis_id": "ana-20251120-08743-01",
-  "rma_id": "RMA-08743",
+  "rma_id": "RMA-08927",
   "status": "RUNNING",
   "progress": {"current_agent": "MANUFACTURING", "steps_done": 2, "steps_total": 7},
   "result": null
 }
 ```
 
-**응답 200: 완료** (B안, 실제 v4 데이터 기준)
+**응답 200: 완료** (B안, v5 데이터 기준 예시)
 ```json
 {
   "analysis_id": "ana-20251120-08743-01",
-  "rma_id": "RMA-08743",
-  "as_of": "2025-11-20T14:40:46+09:00",
+  "rma_id": "RMA-08927",
+  "as_of": "2025-11-20T12:41:37+09:00",
   "mode": "B",
   "status": "SUCCEEDED",
   "result": {
@@ -420,8 +422,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 **응답 200**
 ```json
 {
-  "rma_id": "RMA-08743",
-  "as_of": "2025-11-20T14:40:46+09:00",
+  "rma_id": "RMA-08927",
+  "as_of": "2025-11-20T12:41:37+09:00",
   "items": [
     {"rma_id": "RMA-08576", "opened_at": "2025-11-13T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.81, "snippet": "ICT·기능검사에서 쇼트 판정이 나오며 육안상 잔동이 의심됩니다", "corrective_actions": []}
   ]
@@ -435,11 +437,11 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 
 **요청**
 ```json
-{"rma_id": "RMA-08743", "analysis_id": "ana-20251120-08743-01", "decision": "APPROVED", "decided_at": "2025-11-21T10:12:00+09:00"}
+{"rma_id": "RMA-08927", "analysis_id": "ana-20251120-08743-01", "decision": "APPROVED", "decided_at": "2025-11-21T10:12:00+09:00"}
 ```
 **응답 200**
 ```json
-{"rma_id": "RMA-08743", "indexed": true, "case_count": 9924}
+{"rma_id": "RMA-08927", "indexed": true, "case_count": 9924}
 ```
 
 ### 3-6. `GET /health`
@@ -481,7 +483,7 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 | 확정 원인 (사례 저장소의 원천) | **Spring** | 채택된 후보를 `cause_assessment` / `claim_cause`와 같은 형식으로 저장 → `/cases/refresh` 호출 |
 | 분석 작업의 진행 상태 | **AI** (메모리 또는 Redis) | `analysis_id`로 조회. 완료 결과는 Spring이 받아서 저장 |
 | 검색 색인 (임베딩) | **AI** | DB에서 다시 만들 수 있음 |
-| PCB v4 원천 데이터 | 적재 후 **읽기 전용** | 테이블 45개 |
+| PCB v5 원천 데이터 | 적재 후 **읽기 전용** | 테이블 46개 |
 
 AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준다.
 

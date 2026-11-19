@@ -18,13 +18,13 @@ def sample_claims(n=25, seed=11):
 @pytest.fixture(scope="module")
 def example():
     progress = []
-    out = run_analysis("RMA-08743", on_progress=lambda agent, done, total: progress.append((agent, done, total)))
+    out = run_analysis("RMA-08927", on_progress=lambda agent, done, total: progress.append((agent, done, total)))
     return out, progress
 
 
 def test_response_fields(example):
     out, _ = example
-    assert out["status"] == "SUCCEEDED" and out["as_of"] == "2025-11-20T14:40:46+09:00"
+    assert out["status"] == "SUCCEEDED" and out["as_of"] == "2025-11-20T12:41:37+09:00"
     result = out["result"]
     assert set(result) == {"classification", "qa_review", "trace_summary", "cause_candidates",
                            "escape_candidates", "similar_cases", "drafts"}
@@ -37,7 +37,7 @@ def test_response_fields(example):
 
 
 def test_example_answer(example):
-    """RMA-08743 (P13 follow-up): the spec's example. Outer-layer etch residue on OLE-02, E-Test fixture escape on ET-02."""
+    """RMA-08927 (P13 follow-up, v5; v4 example was RMA-08743). Outer-layer etch residue on OLE-02, E-Test fixture escape on ET-02."""
     result = example[0]["result"]
     top = result["cause_candidates"][0]
     assert (top["cause_code"], top["process_id"], top["equipment_id"]) == ("OL_ETCH_RESIDUE", "OL_ETCH", "OLE-02")
@@ -65,28 +65,28 @@ def test_no_future_evidence(rma_id):
 
 
 def test_deterministic():
-    first, second = run_analysis("RMA-08743"), run_analysis("RMA-08743")
+    first, second = run_analysis("RMA-08927"), run_analysis("RMA-08927")
     assert first["result"] == second["result"]
 
 
 def test_mode_a_falls_back_to_b():
-    out = run_analysis("RMA-08743", mode="A")
+    out = run_analysis("RMA-08927", mode="A")
     assert "MODE_A_NOT_READY" in out["warnings"] and out["result"]["cause_candidates"]
 
 
 def test_similar_cases_known_before_as_of():
-    out = similar_cases("RMA-08743", limit=5)
+    out = similar_cases("RMA-08927", limit=5)
     assert 0 < len(out["items"]) <= 5
     assert all(item["opened_at"] <= out["as_of"] for item in out["items"])
 
 
 @pytest.mark.parametrize("kwargs, error", [
     ({"rma_id": "RMA-99999"}, "CLAIM_NOT_FOUND"),
-    ({"rma_id": "RMA-08743", "as_of": "2025-11-01T00:00:00+09:00"}, "CLAIM_NOT_FOUND"),   # before it was opened
-    ({"rma_id": "RMA-08743", "as_of": "2025-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),     # opened, not triaged yet
-    ({"rma_id": "RMA-08743", "as_of": "2025-11-20 14:40"}, "AS_OF_INVALID"),              # no time zone
-    ({"rma_id": "RMA-08743", "as_of": "yesterday"}, "AS_OF_INVALID"),
-    ({"rma_id": "RMA-08743", "mode": "C"}, "INVALID_INPUT"),
+    ({"rma_id": "RMA-08927", "as_of": "2025-11-01T00:00:00+09:00"}, "CLAIM_NOT_FOUND"),   # before it was opened
+    ({"rma_id": "RMA-08927", "as_of": "2025-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),     # opened 08:56, triaged 12:41
+    ({"rma_id": "RMA-08927", "as_of": "2025-11-20 14:40"}, "AS_OF_INVALID"),              # no time zone
+    ({"rma_id": "RMA-08927", "as_of": "yesterday"}, "AS_OF_INVALID"),
+    ({"rma_id": "RMA-08927", "mode": "C"}, "INVALID_INPUT"),
     ({"rma_id": "", "top_k": 3}, "INVALID_INPUT"),
 ])
 def test_errors_carry_spec_codes(kwargs, error):

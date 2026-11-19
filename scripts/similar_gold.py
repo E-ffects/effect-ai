@@ -1,6 +1,6 @@
 """WBS 5.2: answer set for similar-case search (20 queries) and Hit@5.
 
-    python scripts/similar_gold.py make  [--db data/pcb_rma_v4.sqlite] [--out eval/similar_cases_gold_v4.json]
+    python scripts/similar_gold.py make  [--db data/pcb_rma_v5.sqlite] [--out eval/similar_cases_gold_v5.json]
     python scripts/similar_gold.py eval  [--gold eval/similar_cases_gold_v4.json] [--out results/...md]
 
 Which past case counts as similar (only cases whose cause was approved before the query's analysis start, as_of):
@@ -181,12 +181,12 @@ def evaluate(args):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("cmd", choices=["make", "eval"])
-    p.add_argument("--db", default=str(ROOT / "data" / "pcb_rma_v4.sqlite"))
+    p.add_argument("--db", default=str(ROOT / "data" / "pcb_rma_v5.sqlite"))
     p.add_argument("--out")
-    p.add_argument("--gold", default=str(ROOT / "eval" / "similar_cases_gold_v4.json"))
+    p.add_argument("--gold", default=str(ROOT / "eval" / "similar_cases_gold_v5.json"))
     a = p.parse_args()
     if a.cmd == "make":
-        a.out = a.out or str(ROOT / "eval" / "similar_cases_gold_v4.json")
+        a.out = a.out or str(ROOT / "eval" / "similar_cases_gold_v5.json")
         make(a)
     else:
         evaluate(a)

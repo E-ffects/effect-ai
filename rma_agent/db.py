@@ -1,7 +1,8 @@
 """Database connection.
 
 - DATABASE_URL set (postgresql://...): read the team's PostgreSQL, loaded with db/postgres (same tables and values).
-- Otherwise the local SQLite: RMA_DB or the argument, default data/pcb_rma_v4.sqlite (v3 if v4 is absent).
+- Otherwise the local SQLite: RMA_DB or the argument, default data/pcb_rma_v5.sqlite (the team's dataset from
+  2026-11-19; v4 if v5 is absent).
 
 Both return a connection with the sqlite3 interface the code uses: conn.execute(sql, params) with "?" placeholders,
 rows readable by index and by column name (dict(row) works). Keep SQL portable: no SQLite-only functions.
@@ -12,7 +13,8 @@ import threading
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
-DEFAULT_DB = DATA_DIR / "pcb_rma_v4.sqlite" if (DATA_DIR / "pcb_rma_v4.sqlite").exists() else DATA_DIR / "pcb_rma_v3.sqlite"
+DEFAULT_DB = next((DATA_DIR / f"pcb_rma_{v}.sqlite" for v in ("v5", "v4") if (DATA_DIR / f"pcb_rma_{v}.sqlite").exists()),
+                  DATA_DIR / "pcb_rma_v5.sqlite")
 
 
 def connect(path=None, threads=False):
@@ -26,7 +28,7 @@ def connect(path=None, threads=False):
     path = Path(path or os.environ.get("RMA_DB") or DEFAULT_DB)
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} not found. Extract pcb_rma.sqlite from PCB_RMA_dataset_v4_full.zip into data/pcb_rma_v4.sqlite, "
+            f"{path} not found. Extract pcb_rma.sqlite from PCB_RMA_dataset_v5_full.zip into data/pcb_rma_v5.sqlite, "
             "or set DATABASE_URL to the PostgreSQL database")
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=not threads)
     conn.row_factory = sqlite3.Row

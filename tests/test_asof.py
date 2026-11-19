@@ -37,14 +37,14 @@ def test_claim_itself_not_in_past_cases_before_its_cause_is_applied(conn, librar
 
 
 def test_first_p13_claim_sees_no_p13_cause(conn, library):
-    # RMA-08222 is the first P13 return (2025-10-30); P13's cause was approved on 2025-11-19
-    store = AsOfStore(conn, analysis_start(conn, "RMA-08222"), library)
+    # RMA-08300 is the first P13 return (2025-10-29, v5); P13's cause was approved on 2025-11-19
+    store = AsOfStore(conn, analysis_start(conn, "RMA-08300"), library)
     assert not [c for c in store.past_cases() if c.cause_code == "OL_ETCH_RESIDUE"]
 
 
 def test_p13_follow_up_sees_p13_cause(conn, library):
     late = conn.execute("""select r.rma_id from rma_claim r join investigation_claim l using(rma_id)
-                           where l.investigation_id='INV-25-0020' and r.opened_at>'2025-11-20' limit 1""").fetchone()[0]
+                           where l.investigation_id='INV-25-0021' and r.opened_at>'2025-11-20' limit 1""").fetchone()[0]
     store = AsOfStore(conn, analysis_start(conn, late), library)
     cases = [c for c in store.past_cases() if c.cause_code == "OL_ETCH_RESIDUE"]
     assert cases and all(c.equipment_id == "OLE-02" for c in cases)

@@ -93,11 +93,20 @@ def pct(value):
     return "-" if value is None else f"{100 * value:.1f}%"
 
 
+def _source(args):
+    import os
+    from .db import DEFAULT_DB
+    if os.environ.get("DATABASE_URL") and not args.db:
+        return "PostgreSQL (DATABASE_URL)"
+    return Path(args.db or os.environ.get("RMA_DB") or DEFAULT_DB).name
+
+
 def report(results, args, elapsed):
     lines = [f"# 평가 결과 {datetime.now():%Y-%m-%d %H:%M}", "",
              f"- 대상: {args.start} 이후 접수" + (f", {args.end} 이전" if args.end else "") +
              (f", 앞 {args.limit}건" if args.limit else ""),
              f"- 분석 시점: 접수별 분석 시작 시각(QA 판정 + 접수 소분류 확보). 그 시각 이전 데이터만 사용",
+             f"- 데이터: {_source(args)}",
              f"- 소요 시간: {elapsed:.0f}초", ""]
     first = next(iter(results.values()))["summary"]
     lines += [f"평가 대상: 알려진 원인 {first['n_known']}건 "

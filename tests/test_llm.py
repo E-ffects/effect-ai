@@ -23,7 +23,7 @@ def llm_on(monkeypatch):
 
 def test_sentences_from_llm(llm_on):
     llm_on.setattr(llm, "generate", fake_ok)
-    out = run_analysis("RMA-08743")
+    out = run_analysis("RMA-08927")
     result = out["result"]
     assert out["status"] == "SUCCEEDED" and out["model_versions"]["llm"] == "fake:model" and not out["warnings"]
     assert result["cause_candidates"][0]["explanation"] == "LLM 설명: 외층 에칭 잔동"
@@ -40,7 +40,7 @@ def test_invented_number_rejected(llm_on):
             return {"customer_reply": "불량률 12.7%로 확인됐습니다."}  # 12.7 is not in the facts
         return fake_ok(task, instruction, facts, schema)
     llm_on.setattr(llm, "generate", fake)
-    out = run_analysis("RMA-08743")
+    out = run_analysis("RMA-08927")
     assert "LLM_OUTPUT_REJECTED" in out["warnings"] and out["status"] == "SUCCEEDED"
     assert out["result"]["drafts"]["customer_reply"].startswith("A01 품질 담당자님")  # template kept
     assert out["trace"][-1]["llm_used"] is False
@@ -48,12 +48,12 @@ def test_invented_number_rejected(llm_on):
 
 def test_outage_keeps_ranking(llm_on):
     llm_on.setattr(llm, "generate", fake_ok)
-    baseline = run_analysis("RMA-08743")
+    baseline = run_analysis("RMA-08927")
 
     def broken(*args):
         raise TimeoutError("LLM down")
     llm_on.setattr(llm, "generate", broken)
-    out = run_analysis("RMA-08743")
+    out = run_analysis("RMA-08927")
     assert out["status"] == "PARTIAL" and "LLM_UNAVAILABLE" in out["warnings"]
     ranks = lambda o: [(c["cause_code"], c["equipment_id"], c["score"]) for c in o["result"]["cause_candidates"]]
     assert ranks(out) == ranks(baseline) and out["result"]["cause_candidates"][0]["explanation"]

@@ -12,13 +12,13 @@ SQLite로 배포한 PCB RMA 데이터(v4, v5)를 PostgreSQL에 그대로 옮기�
 ## 사용법
 ```bash
 # 1. 적재 패키지 만들기 (data/ 아래에 생기며 git에는 올리지 않는다)
-python db/postgres/build.py data/pcb_rma_v4.sqlite data/postgres_v4
+python db/postgres/build.py data/pcb_rma_v5.sqlite data/postgres_v5
 
 # 2. 빈 데이터베이스에 적재 (psql 필요, 약 10초)
-cd data/postgres_v4 && psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f load.sql && cd -
+cd data/postgres_v5 && psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f load.sql && cd -
 
 # 3. 검증 (약 20초)
-python db/postgres/verify.py data/pcb_rma_v4.sqlite "$DATABASE_URL"
+python db/postgres/verify.py data/pcb_rma_v5.sqlite "$DATABASE_URL"
 ```
 - `DATABASE_URL` 예: `postgresql://rma@localhost:5432/rma`. 비밀번호는 `PGPASSWORD`나 `~/.pgpass`로 넘긴다. 명령줄이나 git에 남기지 않는다.
 - Docker로 PostgreSQL을 띄웠다면 패키지 폴더를 컨테이너에 마운트하거나 `docker cp`로 넣고 컨테이너 안의 `psql`로 실행한다.
@@ -38,7 +38,9 @@ python db/postgres/verify.py data/pcb_rma_v4.sqlite "$DATABASE_URL"
 
 ## AI 에이전트가 이 DB를 읽기
 `.env`(또는 컨테이너 환경변수)에 `DATABASE_URL=postgresql://...`를 넣으면 `rma_agent`가 SQLite 대신 이 DB를 읽는다(읽기 전용).
-- 확인 (2026-11-19, 로컬 PostgreSQL 17, v4): 테스트 61개 통과. 원인분석 평가 1,907건의 지표 6개가 SQLite와 같다. 분석 응답·유사 사례·분류 20건도 글자까지 같다.
+- 확인 (2026-11-19, 로컬 PostgreSQL 17)
+  - v5: 테스트 63개 통과, 원인분석 평가 2,537건의 지표 6개가 SQLite와 같다.
+  - v4: 테스트 61개 통과, 원인분석 평가 1,907건이 같고, 분석 응답·유사 사례·분류 20건도 글자까지 같다.
 - 필요 패키지: `psycopg[binary]` (requirements.txt)
 
 ## 정해야 할 것 (백엔드, 윤서정 님)
@@ -48,7 +50,7 @@ python db/postgres/verify.py data/pcb_rma_v4.sqlite "$DATABASE_URL"
 | 시각 타입 | `text` (ISO-8601, 시간대 포함. 예: `2025-11-20T14:40:46+09:00`) | `timestamptz`로 바꿀 수 있다. AI 에이전트는 문자열 비교를 하므로, 바꾸면 에이전트 쪽 조회를 함께 고친다 |
 | JSON 컬럼 (`*_json` 11개) | `text` | `jsonb`로 바꿀 수 있다. 뷰는 이미 `::jsonb`로 읽는다 |
 | 0/1 플래그 (`ppap_required`, `origin_verified` 등) | `bigint` | `boolean`으로 바꾸면 뷰의 `= 1` 비교를 고친다 |
-| 데이터 버전 | v4 (팀 화면용) | v5는 같은 스크립트로 적재된다. 행 내용이 v4와 다르다 |
+| 데이터 버전 | **v5 (2026-11-19 팀 공식)** | v4도 같은 스크립트로 적재된다. 행 내용이 v5와 다르다 |
 
 타입을 바꾸더라도 처음에는 이대로 적재해 `verify.py`로 확인한 뒤, 별도 마이그레이션(`V2__...`)으로 바꾸는 쪽이 안전하다.
 
