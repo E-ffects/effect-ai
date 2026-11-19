@@ -12,13 +12,13 @@ SQLite로 배포한 PCB RMA 데이터(v4, v5)를 PostgreSQL에 그대로 옮기�
 ## 사용법
 ```bash
 # 1. 적재 패키지 만들기 (data/ 아래에 생기며 git에는 올리지 않는다)
-python db/postgres/build.py data/pcb_rma_v5.sqlite data/postgres_v5
+python db/postgres/build.py data/pcb_rma_v5.sqlite data/postgres_v5 --schema pcb   # 팀 DB는 pcb 스키마
 
 # 2. 빈 데이터베이스에 적재 (psql 필요, 약 10초)
 cd data/postgres_v5 && psql "$RMA_DATABASE_URL" -v ON_ERROR_STOP=1 -f load.sql && cd -
 
 # 3. 검증 (약 20초)
-python db/postgres/verify.py data/pcb_rma_v5.sqlite "$RMA_DATABASE_URL"
+python db/postgres/verify.py data/pcb_rma_v5.sqlite "$RMA_DATABASE_URL" --schema pcb
 ```
 - `RMA_DATABASE_URL` 예: `postgresql://rma@localhost:5432/rma`. 비밀번호는 `PGPASSWORD`나 `~/.pgpass`로 넘긴다. 명령줄이나 git에 남기지 않는다.
 - Docker로 PostgreSQL을 띄웠다면 패키지 폴더를 컨테이너에 마운트하거나 `docker cp`로 넣고 컨테이너 안의 `psql`로 실행한다.
@@ -35,6 +35,19 @@ python db/postgres/verify.py data/pcb_rma_v5.sqlite "$RMA_DATABASE_URL"
 
 - 외래 키는 `DEFERRABLE INITIALLY DEFERRED`로 만든다. 데이터는 한 트랜잭션으로 넣으므로 커밋이 성공했다면 외래 키 위반이 0건이다.
 - 값을 일부러 하나 바꾸면 `verify.py`가 그 테이블을 `DIFFERENT`로 잡는 것도 확인했다.
+
+## 팀 DB 구조 (`pcb` / `app`)
+- `--schema pcb`로 만들면 `schema.sql`·`views.sql` 맨 앞에 `CREATE SCHEMA IF NOT EXISTS pcb; SET search_path TO pcb;`가 붙고, 데이터도 `pcb`에 들어간다. Spring 전용 테이블(`app` 또는 `public`)은 건드리지 않는다.
+- AI 서버용 읽기 전용 계정 예:
+  ```sql
+  CREATE ROLE rma_reader LOGIN PASSWORD '...';
+  GRANT CONNECT ON DATABASE effect TO rma_reader;
+  GRANT USAGE ON SCHEMA pcb TO rma_reader;
+  GRANT SELECT ON ALL TABLES IN SCHEMA pcb TO rma_reader;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA pcb GRANT SELECT ON TABLES TO rma_reader;   -- 새 접수 테이블 행도 보이게
+  ```
+- AI 서버 환경 변수: `RMA_DATABASE_URL=postgresql://rma_reader@<host>:5432/effect`, `RMA_DB_SCHEMA=pcb`
+- 확인 (2026-11-19, 로컬 PostgreSQL 17): `pcb`에 적재·대조 모두 같음, 위 계정은 `pcb` 읽기만 되고 다른 스키마 읽기·쓰기는 거부, 이 계정으로 테스트 78개 통과.
 
 ## AI 에이전트가 이 DB를 읽기
 `.env`(또는 컨테이너 환경변수)에 `RMA_DATABASE_URL=postgresql://...`를 넣으면 `rma_agent`가 SQLite 대신 이 DB를 읽는다(읽기 전용).

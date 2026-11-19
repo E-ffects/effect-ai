@@ -1,6 +1,7 @@
 """Database connection.
 
 - RMA_DATABASE_URL set (postgresql://...): read the team's PostgreSQL, loaded with db/postgres (same tables and values).
+  RMA_DB_SCHEMA picks the schema that holds the PCB tables (the team DB uses `pcb`).
 - Otherwise the local SQLite: RMA_DB or the argument, default data/pcb_rma_v5.sqlite (the team's dataset from
   2026-11-19; v4 if v5 is absent).
 
@@ -106,6 +107,10 @@ class PgConnection:
         self._conn = psycopg.connect(url, autocommit=True)
         self._conn.read_only = True
         self._conn.execute("SET TIME ZONE 'Asia/Seoul'")
+        schema = os.environ.get("RMA_DB_SCHEMA")
+        if schema:  # the team DB keeps the PCB data in its own schema (pcb); unqualified table names resolve there
+            from psycopg import sql
+            self._conn.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))
         self._lock = threading.Lock()
 
     @staticmethod

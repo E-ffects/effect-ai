@@ -205,6 +205,32 @@ def _resolve(rt, rma_id, as_of):
     return as_of or start
 
 
+def triage(rma_id, as_of=None):
+    """QA triage proposal for a return (docs/api_spec.md 3-6): severity, special characteristic, analysis level.
+
+    For new intakes, which have no qa_triage until QA confirms one. Needs the intake label (classify result saved in
+    symptom_assessment). as_of defaults to when that label was saved.
+    """
+    if not rma_id or not isinstance(rma_id, str):
+        raise InvalidInput("rma_id가 비어 있습니다")
+    rt = _runtime()
+    as_of = check_as_of(as_of)
+    row = rt.conn.execute("""select r.opened_at, s.created_at from rma_claim r join rma_item i using(rma_id)
+                             left join symptom_assessment s using(rma_item_id) where r.rma_id=?""", (rma_id,)).fetchone()
+    if row is None:
+        raise ClaimNotFound(f"{rma_id} 접수를 찾을 수 없습니다")
+    if as_of and as_of < row["opened_at"]:
+        raise ClaimNotFound(f"{rma_id}는 {as_of} 이전에 접수되지 않았습니다 (접수 {row['opened_at']})")
+    if row["created_at"] is None:
+        raise AsOfInvalid(f"{rma_id}는 아직 접수 분류(소분류)가 저장되지 않았습니다")
+    if as_of and as_of < row["created_at"]:
+        raise AsOfInvalid(f"{rma_id}는 {row['created_at']}부터 판정할 수 있습니다 (접수 분류 저장 시각)")
+    as_of = as_of or row["created_at"]
+    store = rt.store(as_of, rma_id)
+    proposal = qa.propose_triage(rt.masters, store, store.claim(rma_id))
+    return {**proposal, "as_of": as_of}
+
+
 def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
     """Analyse one return. Returns the 3-3 response fields: result, trace, warnings, ... (spec docs/api_spec.md).
 

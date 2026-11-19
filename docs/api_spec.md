@@ -82,7 +82,7 @@
 모든 에이전트·도구 호출은 `trace`로 응답에 포함한다. LangSmith 추적 ID도 함께 준다. 화면에서 **"AI가 어떤 순서로 무엇을 봤는지"** 를 그대로 보여 줄 수 있다.
 
 ### 1-5. AI 패키지와 FastAPI의 경계
-FastAPI는 아래 함수만 호출한다. 에이전트 내부(LangGraph 그래프, 도구, 프롬프트)는 AI 담당이 바꿔도 FastAPI 코드는 바뀌지 않는다.
+AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGraph 그래프, 도구, 프롬프트)는 AI 담당이 바꿔도 FastAPI 코드는 바뀌지 않는다.
 
 | 함수 (`rma_agent`) | 대응 API | 반환 |
 |---|---|---|
@@ -90,6 +90,7 @@ FastAPI는 아래 함수만 호출한다. 에이전트 내부(LangGraph 그래�
 | `run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None)` | `POST /analyses` 작업 안에서 실행 | 3-3 응답의 `result`, `trace`, `warnings` dict. 진행 상황은 `on_progress(agent, steps_done, steps_total)`로 알림 |
 | `similar_cases(rma_id, as_of=None, limit=5)` | `GET /claims/{id}/similar` | 3-4 응답의 dict |
 | `refresh_cases()` | `POST /cases/refresh` | 사례 수 |
+| `triage(rma_id, as_of=None)` | `POST /triage` | 3-7 응답의 dict (새 접수의 QA 판정안) |
 
 - 작업 등록·상태 저장·시간 초과 처리는 FastAPI가 한다. `run_analysis`는 동기 함수이며 끝나면 결과를 돌려준다.
 - LangSmith 추적은 `rma_agent` 안에서 남긴다. 환경 변수(`LANGSMITH_API_KEY`, `LANGSMITH_PROJECT`)만 서비스에 넣으면 된다.
@@ -98,22 +99,19 @@ FastAPI는 아래 함수만 호출한다. 에이전트 내부(LangGraph 그래�
 
 ## 2. 흐름과 상태값
 
-### 2-1. 케이스 상태 (Spring이 관리)
-```
-RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA_REVIEW (L1·L2) ─▶ CONFIRMED ─▶ CASE_STORED
-                                                          └▶ WAITING_APPROVAL (L3) ─▶ APPROVED / REJECTED
-```
-| 상태 | 의미 | 바뀌는 시점 |
+### 2-1. 접수·분석 상태 (Spring이 관리, 2026-11-19 팀 결정)
+케이스 하나의 상태를 네 가지로 나눠서 본다. 한국어 처리 상태(`claim_status`)는 쓰지 않는다.
+
+| 상태 | 값 | 출처·저장 |
 |---|---|---|
-| RECEIVED | 접수 | 접수 등록 |
-| CLASSIFIED | 분류 완료 | `/classify` 응답 |
-| ANALYZING | AI 분석 중 | `/analyses` 등록 |
-| CANDIDATES_READY | 원인 후보 준비 | 분석 결과 SUCCEEDED / PARTIAL |
-| QA_REVIEW | QA 확인 (L1·L2) | 분석 수준 L1·L2 |
-| WAITING_APPROVAL | 사람 승인 대기 (L3) | 분석 수준 L3 |
-| APPROVED / REJECTED | 승인 / 반려 | 승인 화면 |
-| CONFIRMED | QA 확정 (L1·L2) | QA 확인 화면 |
-| CASE_STORED | 사례 저장 완료 | `/cases/refresh` 호출 후 |
+| `cs_status` | `OPEN` / `RESPONDED` / `CLOSED` | `rma_claim.cs_status` (데이터 값 그대로) |
+| `qa_status` | `TRIAGED` / `ANALYZING` / `CAUSE_DECIDED` / `CLOSED`. 새 접수의 QA 판정 전은 `null` | `rma_claim.qa_status` (데이터 값 그대로) |
+| `analysis_state` | `NOT_REQUESTED` / `QUEUED` / `RUNNING` / `SUCCEEDED` / `PARTIAL` / `FAILED` | AI 작업 상태(2-2). Spring `ai_analysis`에 저장 |
+| `approval_status` | `NOT_REQUIRED` / `WAITING` / `APPROVED` / `REJECTED` / `CONFIRMED` | Spring이 새로 관리 |
+
+- 새 접수 흐름: 접수 → 분류(`POST /classify`) + **QA 판정안(`POST /triage`, 3-7)** → 품질관리자 확인 → Spring이 `qa_triage` 저장(`qa_status = TRIAGED`) → 원인분석(`POST /analyses`). 원인분석은 `qa_triage`가 있어야 시작할 수 있다.
+- `PARTIAL`: 원인 순위·근거는 정상이고 LLM 문장만 빠졌다(`warnings: ["LLM_UNAVAILABLE"]`).
+- `approval_status`: L3는 `WAITING` → `APPROVED`/`REJECTED`, L1·L2는 QA 확인 시 `CONFIRMED`. 분석 전은 `NOT_REQUIRED`. 승인·확정 뒤 Spring이 `POST /cases/refresh`를 부른다.
 
 ### 2-2. AI 분석 작업 상태 (AI가 응답)
 | 상태 | 의미 |
@@ -150,6 +148,7 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 | 4 | `GET /claims/{rma_id}/similar` | 바로 응답 | 2초 이내 | RMA 상세, 챗봇 |
 | 5 | `POST /cases/refresh` | 바로 응답 | 1초 이내 | 승인·확정 후 사례 저장소 갱신 알림 |
 | 6 | `GET /health` | 바로 응답 | — | 상태 확인 (LLM 연결 포함) |
+| 7 | `POST /triage` | 바로 응답 | 0.5초 이내 | 새 접수의 QA 판정안(분석 수준). 품질관리자 확인 후 Spring이 `qa_triage`에 저장 |
 
 챗봇(`POST /chat`)은 2차 범위로, 4번 유사 사례를 근거로 쓰는 형태로 추가한다.
 
@@ -689,6 +688,42 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 {"status": "ok", "db": "ok", "llm": "ok", "version": "0.1.0", "rules": "pcb-v4"}
 ```
 `llm`이 `"down"`이면 분석 결과가 `PARTIAL`로 나온다.
+
+### 3-7. `POST /triage`
+새 접수에는 `qa_triage`가 없어서 원인분석을 시작할 수 없다. 접수 분류(소분류)가 `symptom_assessment`에 저장된 뒤 이 API로 QA 판정안을 받고, 품질관리자가 확인(또는 수정)하면 Spring이 `qa_triage`에 저장한다.
+
+**요청**
+```json
+{"rma_id": "RMA-08927"}
+```
+`as_of`(선택)를 생략하면 접수 분류가 저장된 시각으로 판정한다.
+
+**응답 200** (v5 RMA-08927, QA 판정 저장 전 시점)
+```json
+{
+  "rma_id": "RMA-08927",
+  "minor_code": "ELEC02",
+  "customer_industry": "AUTOMOTIVE",
+  "severity": 8,
+  "characteristic_id": null,
+  "characteristic_symbol": null,
+  "repeat_signal": 1,
+  "analysis_level": "L3",
+  "needs_approval": true,
+  "approval_reasons": [
+    "차량 고객 + 심각도 8 이상"
+  ],
+  "provisional": false,
+  "rationale": "불량 형태 쇼트, 심각도 8, 고객 AUTOMOTIVE, 동일 고객·불량 형태 30일 내 3건째 이상 → L3",
+  "as_of": "2025-11-20T12:00:00+09:00"
+}
+```
+- 규칙은 `analysis_level_rule`과 같다. L3: 심각도 9 이상, CC 특별특성, 차량 고객 + 심각도 8 이상. L2: 심각도 6 이상, SC 특별특성, 같은 고객·같은 증상 30일 안 3건째 이상. 그 밖은 L1.
+- 심각도·특별특성은 소분류 정의(`symptom_definition`, `special_characteristic`), 업종은 `customer`, 반복은 그 고객의 같은 증상 접수(분석 시점까지 재분류된 것은 확인된 증상으로)에서 계산한다.
+- 소분류가 정보 부족·분류 불가면 `provisional: true`, 임시 L2다. 차량 고객이면 QA가 당일 직접 확인한다는 문구가 붙는다.
+- `needs_approval`은 L3이면 `true`. `approval_reasons`는 그 이유다.
+- 대조 (v5): 저장된 `qa_triage` 10,210건과 분석 수준 99.8%, 모든 필드 99.6% 일치(`scripts/eval_triage.py`).
+- 오류: 없는 접수 `CLAIM_NOT_FOUND`(404), 접수 분류가 아직 없거나 `as_of`가 그 전이면 `AS_OF_INVALID`(422).
 
 ---
 

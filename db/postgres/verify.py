@@ -1,11 +1,12 @@
 """Check a PostgreSQL load against the SQLite source: every table row by row, and every view's result.
 
-    python db/postgres/verify.py data/pcb_rma_v4.sqlite "postgresql://user@host:5432/db"
+    python db/postgres/verify.py data/pcb_rma_v5.sqlite "postgresql://user@host:5432/db" [--schema pcb]
 
 Uses the psql command line (no Python driver needed). Exit code 1 if anything differs.
 """
 import hashlib
 import sqlite3
+import os
 import subprocess
 import sys
 
@@ -47,9 +48,12 @@ def digest(rows):
     return len(rows), h.hexdigest()[:16]
 
 
+SCHEMA_ENV = {}
+
+
 def pg_rows(url, sql):
     res = subprocess.run(["psql", url, "-X", "-q", "-v", "ON_ERROR_STOP=1", "-c", f"COPY ({sql}) TO STDOUT"],
-                         capture_output=True, text=True, check=True)
+                         capture_output=True, text=True, check=True, env={**os.environ, **SCHEMA_ENV})
     return [tuple(unescape(x) for x in line.split("\t")) for line in res.stdout.splitlines()]
 
 
@@ -68,12 +72,17 @@ def main(src, url):
             bad += not ok
             print(f"{kind + ' ' + name:40} {a[0]:>10,} {b[0]:>10,}  {'same' if ok else 'DIFFERENT'}")
     fk = subprocess.run(["psql", url, "-X", "-At", "-c",
-                         "select count(*) from pg_constraint where contype='f' and connamespace='public'::regnamespace"],
-                        capture_output=True, text=True, check=True).stdout.strip()
+                         "select count(*) from pg_constraint where contype='f' and connamespace=current_schema()::regnamespace"],
+                        capture_output=True, text=True, check=True, env={**os.environ, **SCHEMA_ENV}).stdout.strip()
     print(f"\nforeign keys in postgres: {fk} (all checked when the load committed)")
     print("ALL SAME" if not bad else f"{bad} object(s) differ")
     sys.exit(1 if bad else 0)
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    args = sys.argv[1:]
+    if "--schema" in args:
+        i = args.index("--schema")
+        SCHEMA_ENV["PGOPTIONS"] = f"-c search_path={args[i + 1]}"
+        del args[i:i + 2]
+    main(*args[:2])

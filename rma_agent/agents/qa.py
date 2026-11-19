@@ -3,6 +3,8 @@
 Both are rules. Level and approval come from the QA triage record (analysis_level_rule);
 the evidence check follows qa_causal_requirement (what a cause needs before it can be confirmed).
 """
+from datetime import datetime, timedelta
+
 from langsmith import traceable
 from pydantic import BaseModel
 
@@ -31,6 +33,64 @@ def triage(store, claim):
         reasons.append("동일 고객·불량 형태 30일 내 3건 이상 반복")
     return {"severity": sev, "characteristic_symbol": symbol, "analysis_level": t["analysis_level"],
             "needs_approval": t["analysis_level"] == "L3", "approval_reasons": reasons, "rationale": t["rationale"]}
+
+
+REPEAT_DAYS, REPEAT_COUNT = 30, 3   # same customer, same symptom: the 3rd return within 30 days
+
+
+def level_for(severity, symbol, industry, repeat):
+    """analysis_level_rule (same rule the data was generated with)."""
+    if severity >= 9 or symbol == "CC" or (industry == "AUTOMOTIVE" and severity >= 8):
+        return "L3"
+    if severity >= 6 or symbol == "SC" or repeat:
+        return "L2"
+    return "L1"
+
+
+@traceable(name="triage_proposal", run_type="tool", process_inputs=_hide)
+def propose_triage(masters, store, claim):
+    """QA triage proposal for a new intake (no qa_triage yet): the analysis_level_rule on the intake label.
+
+    Severity and special characteristic come from the symptom definition, the industry from the customer, the repeat
+    signal from this customer's returns with the same label in the last 30 days. An unconfirmed symptom
+    (INSUFFICIENT_INFO / UNCLASSIFIED) gets a provisional L2 (label criteria 2-3). A person confirms it; Spring saves it.
+    """
+    label, industry = claim.get("intake_label"), claim["industry"]
+    base = {"rma_id": claim["rma_id"], "minor_code": label, "customer_industry": industry}
+    if label in (None, "INSUFFICIENT_INFO", "UNCLASSIFIED"):
+        name = {"INSUFFICIENT_INFO": "정보 부족", "UNCLASSIFIED": "분류 불가"}.get(label, "분류 전")
+        rationale = f"소분류 미확정({name}) 임시 판정, 고객 {industry}"
+        if industry == "AUTOMOTIVE":
+            rationale += ", 차량 고객은 QA가 당일 직접 확인"
+        return {**base, "severity": None, "characteristic_id": None, "characteristic_symbol": None, "repeat_signal": 0,
+                "analysis_level": "L2", "needs_approval": False, "approval_reasons": [], "provisional": True,
+                "rationale": rationale + " → L2"}
+    symptom = masters["symptoms"][label]
+    severity, char_id = symptom["severity"], symptom["characteristic_id"] or None
+    char = masters["characteristics"].get(char_id, {}) if char_id else {}
+    symbol = char.get("symbol")
+    since = (datetime.fromisoformat(claim["opened_at"]) - timedelta(days=REPEAT_DAYS)).isoformat()
+    earlier = [r for r in store.recent_same_symptom(claim["customer_id"], label, since, claim["opened_at"])
+               if r["opened_at"] < claim["opened_at"] or r["rma_id"] < claim["rma_id"]]
+    repeat = int(len(earlier) + 1 >= REPEAT_COUNT)
+    level = level_for(severity, symbol, industry, repeat)
+    rationale = f"불량 형태 {symptom['minor_name']}, 심각도 {severity}"
+    if char:
+        rationale += f", 관련 특성 {char['characteristic_name']}({symbol})"
+    rationale += f", 고객 {industry}"
+    if repeat:
+        rationale += ", 동일 고객·불량 형태 30일 내 3건째 이상"
+    reasons = []
+    if severity >= 9:
+        reasons.append("심각도 9 이상")
+    if symbol == "CC":
+        reasons.append("CC 특별특성 관련")
+    if industry == "AUTOMOTIVE" and severity >= 8:
+        reasons.append("차량 고객 + 심각도 8 이상")
+    return {**base, "severity": severity, "characteristic_id": char_id, "characteristic_symbol": symbol,
+            "repeat_signal": repeat, "analysis_level": level, "needs_approval": level == "L3",
+            "approval_reasons": reasons if level == "L3" else [], "provisional": False,
+            "rationale": f"{rationale} → {level}"}
 
 
 @traceable(name="causal_requirements", run_type="tool", process_inputs=_hide)

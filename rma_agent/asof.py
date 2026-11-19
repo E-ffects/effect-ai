@@ -132,7 +132,7 @@ class AsOfStore:
                    i.input_qty, i.claimed_defect_qty, l.spec_id, s.intake_label, s.created_at label_at,
                    t.severity, t.analysis_level, t.decided_at triage_at
             from rma_claim r join customer cu using(customer_id) join rma_item i using(rma_id)
-            join symptom_assessment s using(rma_item_id) join qa_triage t using(rma_id)
+            join symptom_assessment s using(rma_item_id) left join qa_triage t using(rma_id)
             left join production_lot l on l.lot_id=i.lot_id where r.rma_id=?""", (rma_id,)).fetchone()
         if row is None:
             raise KeyError(rma_id)
@@ -142,7 +142,8 @@ class AsOfStore:
             raise FutureDataError(f"{rma_id} opened after as_of")
         if claim.pop("label_at") > self.as_of:
             claim["intake_label"] = None
-        if claim.pop("triage_at") > self.as_of:
+        triage_at = claim.pop("triage_at")
+        if triage_at is None or triage_at > self.as_of:  # new intakes have no QA triage until QA confirms one
             claim["severity"] = claim["analysis_level"] = None
         return claim
 
@@ -357,6 +358,19 @@ class AsOfStore:
         for r in rows:
             out[r["reopened_from"]].append(r["investigation_id"])
         return dict(out)
+
+    def recent_same_symptom(self, customer_id, intake_label, since, until):
+        """Other returns of one customer with one symptom opened in [since, until], label known by as_of.
+
+        The symptom is the QA-confirmed one once reclassified by as_of (an intake of INSUFFICIENT_INFO counts as its
+        confirmed label), otherwise the intake label."""
+        rows = self._rows("""select r.rma_id, r.opened_at, s.created_at from rma_claim r join rma_item i using(rma_id)
+                             join symptom_assessment s using(rma_item_id)
+                             where r.customer_id=? and r.opened_at>=? and r.opened_at<=? and s.created_at<=?
+                             and (case when s.reclassified_at is not null and s.reclassified_at<=? then s.primary_label
+                                       else s.intake_label end)=?""",
+                          (customer_id, since, until, self.as_of, self.as_of, intake_label), "created_at")
+        return [r for r in rows if r["rma_id"] != self.subject]
 
     def occurrence_actions(self, cause_code):
         """Corrective actions on the occurrence of a cause, chosen by as_of (implemented_at hidden until it happens)."""

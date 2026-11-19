@@ -1,6 +1,6 @@
 """Convert the PCB RMA SQLite database into a PostgreSQL load package.
 
-    python db/postgres/build.py data/pcb_rma_v4.sqlite data/postgres_v4
+    python db/postgres/build.py data/pcb_rma_v5.sqlite data/postgres_v5 [--schema pcb]
 
 Writes into the output folder:
   schema.sql   tables (primary keys, foreign keys DEFERRABLE INITIALLY DEFERRED) and indexes
@@ -38,7 +38,7 @@ def tsv(value):
     return s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r")
 
 
-def main(src, out):
+def main(src, out, schema=None):
     db = sqlite3.connect(src)
     out = Path(out)
     (out / "data").mkdir(parents=True, exist_ok=True)
@@ -71,20 +71,29 @@ def main(src, out):
     indexes = [r[0] + ";" for r in db.execute(
         "select sql from sqlite_master where type='index' and sql is not null order by name")]
 
+    use = (f'CREATE SCHEMA IF NOT EXISTS {q(schema)};\nSET search_path TO {q(schema)};\n\n' if schema else "")
     (out / "schema.sql").write_text(
-        f"-- PCB RMA schema for PostgreSQL, generated from {Path(src).name} by db/postgres/build.py\n\n"
+        f"-- PCB RMA schema for PostgreSQL, generated from {Path(src).name} by db/postgres/build.py\n\n" + use
         + "\n\n".join(ddl) + "\n\n" + "\n".join(fks) + "\n\n" + "\n".join(indexes) + "\n", encoding="utf-8")
-    shutil.copy(HERE / "views.sql", out / "views.sql")
+    (out / "views.sql").write_text(use + (HERE / "views.sql").read_text(encoding="utf-8"), encoding="utf-8")
     load = ["-- psql -v ON_ERROR_STOP=1 -f load.sql   (run inside this folder; the schema must be empty)",
             "\\set ON_ERROR_STOP 1", "\\i schema.sql", "BEGIN;"]
+    if schema:
+        load.append(f"SET LOCAL search_path TO {q(schema)};")
     load += [f"\\copy {q(t)} FROM 'data/{t}.tsv'" for t in tables]
     load += ["COMMIT;", "\\i views.sql", "ANALYZE;"]
     (out / "load.sql").write_text("\n".join(load) + "\n", encoding="utf-8")
-    (out / "manifest.json").write_text(json.dumps({"source": Path(src).name, "tables": counts,
+    (out / "manifest.json").write_text(json.dumps({"source": Path(src).name, "schema": schema or "public", "tables": counts,
                                                    "views": 10, "indexes": len(indexes), "foreign_keys": len(fks)},
                                                   ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"{len(tables)} tables, {sum(counts.values()):,} rows, {len(fks)} foreign keys, {len(indexes)} indexes -> {out}")
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("sqlite")
+    ap.add_argument("out")
+    ap.add_argument("--schema", help="PostgreSQL schema to load into (team DB: pcb). Default: public")
+    a = ap.parse_args()
+    main(a.sqlite, a.out, a.schema)

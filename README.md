@@ -1,6 +1,6 @@
 # effect-ai
 
-E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 에이전트 5개(CS, 오케스트레이터, QA, 제조, 원인분석)를 LangGraph 그래프로 묶었고, LangSmith로 실행을 추적한다. FastAPI(구태우)는 `rma_agent`의 함수 4개만 호출한다(`docs/api_spec.md` 1-5). **연결 방법은 `docs/integration_guide.md`.**
+E!ffect 팀 RMA 분석 AI Agent의 AI/DATA 저장소다. 에이전트 5개(CS, 오케스트레이터, QA, 제조, 원인분석)를 LangGraph 그래프로 묶었고, LangSmith로 실행을 추적한다. AI 서버(FastAPI, 구태우)는 `rma_agent`의 함수 5개(`classify`, `triage`, `run_analysis`, `similar_cases`, `refresh_cases`)만 호출한다(`docs/api_spec.md` 1-5). **연결 방법은 `docs/integration_guide.md`.**
 
 ## 준비
 ```bash
