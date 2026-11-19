@@ -10,8 +10,12 @@ _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", 
 def classification(masters, store, claim):
     intake = store.intake(claim["rma_item_id"]) or {"intake_label": None, "evidence_spans": []}
     symptom = masters["symptoms"].get(intake["intake_label"], {})
+    # Only phrases found in the customer's text. For INSUFFICIENT_INFO the stored spans are the QA-confirmed symptom's,
+    # which the intake text does not contain (known at intake: no).
+    text = claim.get("raw_text") or ""
+    spans = [s for s in intake["evidence_spans"] if s and s in text]
     return {"major_code": symptom.get("major_code"), "minor_code": intake["intake_label"],
-            "minor_name": symptom.get("minor_name"), "evidence_spans": intake["evidence_spans"]}
+            "minor_name": symptom.get("minor_name"), "evidence_spans": spans}
 
 
 @traceable(name="reply_draft", run_type="tool", process_inputs=_hide)

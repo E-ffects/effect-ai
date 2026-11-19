@@ -100,3 +100,13 @@ def test_error_body_matches_frontend():
     from rma_agent.errors import ClaimNotFound
     assert ClaimNotFound("RMA-99999 접수를 찾을 수 없습니다").body() == {
         "detail": "RMA-99999 접수를 찾을 수 없습니다", "code": "CLAIM_NOT_FOUND"}
+
+
+def test_evidence_spans_come_from_the_customer_text():
+    """INSUFFICIENT_INFO claims store the QA-confirmed symptom's phrase; it must not show up as intake evidence."""
+    conn = get_runtime().conn
+    rma_id = conn.execute("""select i.rma_id from rma_item i join symptom_assessment s using(rma_item_id)
+                             where s.intake_label='INSUFFICIENT_INFO' order by i.rma_id limit 1""").fetchone()[0]
+    out = run_analysis(rma_id)
+    text = conn.execute("select raw_text from rma_claim where rma_id=?", (rma_id,)).fetchone()[0]
+    assert all(s in text for s in out["result"]["classification"]["evidence_spans"])
