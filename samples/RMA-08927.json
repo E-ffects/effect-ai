@@ -20,9 +20,9 @@
   "major_name": "전기적 불량",
   "minor_code": "ELEC02",
   "minor_name": "쇼트",
-  "confidence": 0.98,
+  "confidence": 0.99,
   "evidence_spans": [
-   "ICT·기능검사에서 숏트 불량이 발생했습니다."
+   "ICT·기능검사에서 숏트 불량이 발생했습니다"
   ],
   "severity": 8,
   "characteristic_symbol": null,
@@ -35,11 +35,11 @@
    {
     "minor_code": "ELEC04",
     "minor_name": "임피던스 규격 이탈",
-    "confidence": 0.01
+    "confidence": 0.0
    }
   ],
   "follow_up_questions": [],
-  "elapsed_ms": 2472,
+  "elapsed_ms": 2794,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -108,7 +108,7 @@
       "requirement": "반송품 현미경·성분 분석. 고객 측 측정값은 시료 출처·측정 조건이 확인된 경우에만 근거로 사용한다."
      }
     ],
-    "review_note": "1순위 외층 에칭 잔동은 같은 원인 확정 사례와 생산 기록 근거가 있어 유력하나, 출처 확인된 반송품 시험 결과가 없어 아직 확정 근거는 부족합니다. 2·3순위는 1순위보다 근거가 약하며, 특히 E-Test 재검 판정 오처리는 생산 기록 근거가 없어 우선순위가 낮습니다. 차량 고객 대상이고 심각도 8 이상이며 30일 내 동일 고객·불량 형태 3건 이상 반복되어 사람 승인 요청이 필요합니다."
+    "review_note": "1순위 외층 에칭 잔동은 같은 원인 확정 사례와 생산 기록, 비교 시료 시험 1건까지 있어 유력하지만, 출처 확인된 반송품 시험 결과가 대기 중이라 확정 근거가 부족합니다. 2순위는 생산 기록 근거가 없어 부족하고, 3순위도 생산 기록은 있으나 반송품 시험 확인이 필요합니다. 차량 고객 + 심각도 8 이상, 동일 고객·불량 형태 30일 내 3건 이상 반복으로 사람 승인이 필요하므로 승인 요청드립니다."
    },
    "trace_summary": {
     "lot_id": "LT-01603",
@@ -124,7 +124,7 @@
      "process_name": "외층 에칭",
      "equipment_id": "OLE-02",
      "score": 0.63,
-     "explanation": "같은 제품의 최근 사례인 RMA-08668에서 외층 에칭 잔동이 확정되어, 이 후보가 1순위로 올라와 있습니다. 과거 쇼트 반품 228건 중 39건이 외층 에칭 잔동이어서 반복 이력이 보이며, 이 Lot에서도 외층 에칭과 OLE-02에서 스프레이 압력 -4.0σ가 확인되고 노즐 7개 막힘·교체 기록이 있습니다.",
+     "explanation": "같은 제품의 최근 사례인 RMA-08668에서 외층 에칭 잔동이 확정되어 1순위로 보입니다. 과거 쇼트 반품 228건 중 39건이 이 원인이었고, OLE-02 스프레이 압력 -4.0σ와 스프레이 노즐 7개 막힘 확인·교체가 있어 공정 신호와 설비 이벤트도 맞습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -168,7 +168,7 @@
      "process_name": "전기검사(E-Test)",
      "equipment_id": null,
      "score": 0.48,
-     "explanation": "같은 제품의 최근 사례 RMA-06914에서 E-Test 재검 판정 오처리가 추정되어, 쇼트 반품과의 연결 사례가 있습니다. 다만 이 Lot의 전기검사 판정 흐름이나 이상 기록은 제시되지 않았고, 장비도 특정 불가입니다. 그럼에도 과거 쇼트 반품 228건 중 103건으로 비중이 커서 2순위로 보입니다.",
+     "explanation": "같은 제품의 최근 사례인 RMA-06914에서 E-Test 재검 판정 오처리가 추정된 이력이 있어 유력합니다. 과거 쇼트 반품 228건 중 103건으로 건수가 많지만, 이 Lot의 전기검사 공정 기록이나 설비 이상은 확인된 기록이 없습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -198,7 +198,7 @@
      "process_name": "PSR(솔더레지스트) 인쇄·경화",
      "equipment_id": "SMR-02",
      "score": 0.41,
-     "explanation": "같은 제품의 최근 사례 RMA-04667에서 공정 이물 혼입이 추정되어 후보에 포함되었습니다. 과거 쇼트 반품 228건 중 63건이 공정 이물 혼입으로 집계되어 관련성은 있으나, 이 Lot의 PSR(솔더레지스트) 인쇄·경화 기록만으로는 직접 원인을 확정하기는 어렵습니다. 다만 SMR-02에서 경화로 3존 히터 단선이 있어 설비 측 신호는 일부 보입니다.",
+     "explanation": "같은 제품의 최근 사례인 RMA-04667에서 공정 이물 혼입이 추정된 이력이 있어 후보에 올랐습니다. 과거 쇼트 반품 228건 중 63건이 이 원인이지만, 이 Lot의 PSR 인쇄·경화 공정 기록과 직접 연결된 이상 신호는 확인된 기록이 없습니다. 다만 SMR-02 경화로 3존 히터 단선 설비 고장은 있어 간접 근거로는 볼 수 있습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -1677,30 +1677,45 @@
     "status": "NOT_APPLICABLE",
     "corrective_action": null,
     "checks": null,
-    "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."
+    "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다.",
+    "suggestion": "신규"
    },
    "similar_cases": [
     {
      "rma_id": "RMA-08486",
      "opened_at": "2025-11-05T10:32:14+09:00",
+     "claim_date": "2025-11-05",
      "minor_code": "ELEC02",
+     "minor_name": "쇼트",
      "cause_code": "OL_ETCH_RESIDUE",
+     "cause_name": "외층 에칭 잔동",
      "process_id": "OL_ETCH",
      "equipment_id": "OLE-02",
      "certainty": "CONFIRMED",
      "similarity": 0.68,
+     "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 14,
      "snippet": "[불량 통보] A01 P/N PCB-ECU6-A1 (Lot LT-01603) ICT·기능검사에서 인접 패턴 …",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-00300",
      "opened_at": "2025-01-24T08:59:29+09:00",
+     "claim_date": "2025-01-24",
      "minor_code": "ELEC02",
+     "minor_name": "쇼트",
      "cause_code": "FOREIGN_MATERIAL",
+     "cause_name": "공정 이물 혼입",
      "process_id": "SM",
      "equipment_id": null,
      "certainty": "PROBABLE",
      "similarity": 0.63,
+     "basis": "같은 증상+같은 제품+문장 유사",
+     "past_action": "인쇄실 청정도 관리 강화",
+     "recurrence": false,
+     "days_to_resolve": 72,
      "snippet": "긴급 품질 이슈 공유드립니다(A04). P/N PCB-ECU6-A1 (Lot LT-00170, D/C 245…",
      "corrective_actions": [
       {
@@ -1713,47 +1728,68 @@
     {
      "rma_id": "RMA-08504",
      "opened_at": "2025-11-06T08:40:49+09:00",
+     "claim_date": "2025-11-06",
      "minor_code": "ELEC02",
+     "minor_name": "쇼트",
      "cause_code": "OL_ETCH_RESIDUE",
+     "cause_name": "외층 에칭 잔동",
      "process_id": "OL_ETCH",
      "equipment_id": "OLE-02",
      "certainty": "CONFIRMED",
      "similarity": 0.62,
+     "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 13,
      "snippet": "A01 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-ECU6-A1 (Lot LT-01603,…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-00892",
      "opened_at": "2025-03-21T08:36:24+09:00",
+     "claim_date": "2025-03-21",
      "minor_code": "ELEC02",
+     "minor_name": "쇼트",
      "cause_code": "NO_DEFECT_FOUND",
+     "cause_name": "불량 미재현(양품 판정)",
      "process_id": "NONE",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.62,
+     "basis": "같은 증상+같은 제품+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 15,
      "snippet": "A02 SMT 품질 담당입니다. P/N PCB-ECU6-A1 (Lot LT-00417, D/C 2507) I…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-08641",
      "opened_at": "2025-11-11T08:43:59+09:00",
+     "claim_date": "2025-11-11",
      "minor_code": "ELEC02",
+     "minor_name": "쇼트",
      "cause_code": "OL_ETCH_RESIDUE",
+     "cause_name": "외층 에칭 잔동",
      "process_id": "OL_ETCH",
      "equipment_id": "OLE-02",
      "certainty": "CONFIRMED",
      "similarity": 0.59,
+     "basis": "같은 증상+같은 제품+같은 설비(OLE-02)+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 8,
      "snippet": "안녕하세요, A03 품질팀입니다. P/N PCB-ECU6-A1 (Lot LT-01620, D/C 2544) …",
      "corrective_actions": []
     }
    ],
    "drafts": {
-    "customer_reply": "A01 품질 담당자님, PCB-ECU6-A1 Lot LT-01603에서 쇼트 불량 109ea / 2050ea 접수를 확인했습니다. 현재 외층 에칭 공정의 외층 에칭 잔동이 유력 원인으로 보이며, 확정 전 출처 확인된 반송품 시험 결과를 기다리며 확인 중입니다. 회송해 주시는 시료로 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 여부를 검토하겠습니다. 분석 결과는 확인되는 즉시 다시 회신드리겠습니다.",
+    "customer_reply": "A01 품질 담당자님, PCB-ECU6-A1 (Lot LT-01603) 쇼트 불량 접수 확인했습니다. 현재 외층 에칭 공정의 외층 에칭 잔동이 유력 원인으로 보이나, 확정은 아니며 출처 확인된 반송품 시험 결과를 확인 중입니다. 회송해 주시는 시료로 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 조치를 검토하겠습니다. 결과는 확인되는 대로 회신드리겠습니다.",
     "improvement": {
      "process": [
       {
        "cause_code": "OL_ETCH_RESIDUE",
-       "action": "외층 에칭 잔동이 1순위 원인 후보이므로, OLE-02의 스프레이 노즐 막힘 점검 주기를 주간에서 일간으로 단축하고 압력 모니터링을 강화하시기 바랍니다. 특히 OLE-02에서 스프레이 노즐 7개 막힘이 확인되어 교체된 근거에 맞춰, 점검 시 노즐 막힘 여부와 압력 변동을 함께 확인하는 방식으로 관리하시면 됩니다.",
+       "action": "외층 에칭 OLE-02는 스프레이 압력 변동이 확인되었고 노즐 7개 막힘도 확인되었습니다. 스프레이 노즐 막힘 점검 주기를 주간에서 일간으로 단축하고, OLE-02 압력 모니터링을 강화하시기 바랍니다.",
        "standard_action": "스프레이 노즐 막힘 점검 주기 단축(주→일) 및 압력 모니터링",
        "owner_dept": "공정기술팀"
       }
@@ -1761,7 +1797,7 @@
      "inspection": [
       {
        "escape_code": "ESC_ET_FIXTURE",
-       "action": "E-Test 픽스처 접촉 불량이 유출 원인 후보이므로, ET-02의 픽스처 핀 수명 관리를 적용하고 일일 골든 보드 검증을 수행하시기 바랍니다. ET-02에서 픽스처 핀 38개 마모가 확인된 근거에 맞춰, 일일 검증 시 접촉 상태 이상과 핀 마모 여부를 함께 확인하는 기준으로 운영하시면 됩니다.",
+       "action": "ET-02는 픽스처 핀 38개 마모가 확인되었고 쇼트 검출률도 낮게 나타났습니다. 픽스처 핀 수명 관리를 강화하고 일일 골든 보드 검증을 ET-02 기준으로 적용하시기 바랍니다.",
        "standard_action": "픽스처 핀 수명 관리 및 일일 골든 보드 검증"
       }
      ]
@@ -1778,7 +1814,7 @@
      "intake"
     ],
     "llm_used": false,
-    "elapsed_ms": 3
+    "elapsed_ms": 4
    },
    {
     "step": 2,
@@ -1802,7 +1838,7 @@
      "material_usage"
     ],
     "llm_used": false,
-    "elapsed_ms": 5
+    "elapsed_ms": 6
    },
    {
     "step": 4,
@@ -1814,7 +1850,7 @@
      "process_signals"
     ],
     "llm_used": true,
-    "elapsed_ms": 2700
+    "elapsed_ms": 2625
    },
    {
     "step": 5,
@@ -1826,7 +1862,7 @@
      "recurrence_check"
     ],
     "llm_used": true,
-    "elapsed_ms": 1501
+    "elapsed_ms": 2097
    },
    {
     "step": 6,
@@ -1839,7 +1875,7 @@
      "candidate_lots"
     ],
     "llm_used": true,
-    "elapsed_ms": 2100
+    "elapsed_ms": 1900
    },
    {
     "step": 7,
@@ -1849,7 +1885,7 @@
      "reply_template"
     ],
     "llm_used": true,
-    "elapsed_ms": 1904
+    "elapsed_ms": 1660
    }
   ],
   "warnings": [],
@@ -1859,6 +1895,6 @@
    "prompt": "agents-0.4",
    "rules": "pcb-v4"
   },
-  "elapsed_ms": 8216
+  "elapsed_ms": 8296
  }
 }

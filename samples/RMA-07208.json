@@ -20,15 +20,21 @@
   "major_name": "외관 불량",
   "minor_code": "APPR02",
   "minor_name": "동 노출·스크래치",
-  "confidence": 1.0,
+  "confidence": 0.99,
   "evidence_spans": [
-   "ICT·기능검사에서 기판에 긁힌 자국이 있고 동이 보입니다."
+   "기판에 긁힌 자국이 있고 동이 보입니다"
   ],
   "severity": 4,
   "characteristic_symbol": null,
-  "alternatives": [],
+  "alternatives": [
+   {
+    "minor_code": "INSUFFICIENT_INFO",
+    "minor_name": "정보 부족",
+    "confidence": 0.01
+   }
+  ],
   "follow_up_questions": [],
-  "elapsed_ms": 1339,
+  "elapsed_ms": 1174,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -68,7 +74,7 @@
       "requirement": "반송품 현미경 스크래치 위치 + 설비 가이드 롤러 점검 기록. 고객 측 측정값은 시료 출처·측정 조건이 확인된 경우에만 근거로 사용한다."
      }
     ],
-    "review_note": "1순위 취급 스크래치는 같은 원인 확정 사례는 있으나, 생산 기록 근거와 출처 확인된 반송품 시험 결과가 부족합니다. 또한 보관 시료·골든 샘플 비교 시험이 필요하므로, 현재는 유력 후보로만 보고 QA 확인 후 확정하는 것이 적절합니다."
+    "review_note": "1순위 후보 취급 스크래치은(는) 같은 원인 확정 사례 근거가 있으나, 생산 기록 근거, 출처 확인된 반송품 시험, 비교 시료(보관 시료·골든 샘플) 시험이(가) 없어 확정 전 확인이 필요합니다. QA 확인 후 확정합니다."
    },
    "trace_summary": {
     "lot_id": "LT-01398",
@@ -84,7 +90,7 @@
      "process_name": "외층 노광·현상",
      "equipment_id": null,
      "score": 0.4,
-     "explanation": "이 후보가 1순위인 이유는 과거 동 노출·스크래치 반품 380건이 모두 취급 스크래치로 분류되어, 같은 불량 형태와의 연관성이 가장 높기 때문입니다. 이번 Lot의 공정 신호나 설비 이벤트에 대한 기록은 확인된 기록이 없습니다. 자재 관련 근거도 없어, 현재로서는 취급 중 긁힘이 가장 유력한 후보입니다.",
+     "explanation": "이 후보는 동 노출·스크래치 반품 380건 중 380건이 취급 스크래치로 분류된 과거 사례와 일치해 가장 유력합니다. 다만 이 Lot의 공정 기록, 설비 이벤트, 자재 이상은 확인된 기록이 없습니다. 따라서 현재로서는 같은 제품의 과거 불량 분포를 근거로 한 후보이며, 이 Lot 내부 신호로는 뒷받침이 약합니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -1669,18 +1675,26 @@
     "status": "NOT_APPLICABLE",
     "corrective_action": null,
     "checks": null,
-    "reason": "1순위 원인 취급 스크래치은(는) 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다."
+    "reason": "1순위 원인 취급 스크래치은(는) 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다.",
+    "suggestion": "신규"
    },
    "similar_cases": [
     {
      "rma_id": "RMA-03405",
      "opened_at": "2025-06-19T08:37:41+09:00",
+     "claim_date": "2025-06-19",
      "minor_code": "APPR02",
+     "minor_name": "동 노출·스크래치",
      "cause_code": "HANDLING_SCRATCH",
+     "cause_name": "취급 스크래치",
      "process_id": "OL_IMG",
      "equipment_id": "OLI-02",
      "certainty": "CONFIRMED",
      "similarity": 0.62,
+     "basis": "같은 증상+같은 제품+같은 설비(OLI-02)+문장 유사",
+     "past_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+     "recurrence": false,
+     "days_to_resolve": 9,
      "snippet": "S07 SMT 품질 담당입니다. P/N PCB-SSD8H-E3 (Lot LT-00800, D/C 2519) …",
      "corrective_actions": [
       {
@@ -1698,12 +1712,19 @@
     {
      "rma_id": "RMA-03274",
      "opened_at": "2025-06-14T09:43:58+09:00",
+     "claim_date": "2025-06-14",
      "minor_code": "APPR02",
+     "minor_name": "동 노출·스크래치",
      "cause_code": "HANDLING_SCRATCH",
+     "cause_name": "취급 스크래치",
      "process_id": "OL_IMG",
      "equipment_id": "OLI-02",
      "certainty": "CONFIRMED",
      "similarity": 0.59,
+     "basis": "같은 증상+같은 제품+같은 설비(OLI-02)+문장 유사",
+     "past_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+     "recurrence": false,
+     "days_to_resolve": 14,
      "snippet": "S05 수입검사 담당입니다. P/N PCB-SSD8H-E3 (Lot LT-00784) ICT·기능검사에서 기…",
      "corrective_actions": [
       {
@@ -1721,12 +1742,19 @@
     {
      "rma_id": "RMA-03144",
      "opened_at": "2025-06-09T10:04:45+09:00",
+     "claim_date": "2025-06-09",
      "minor_code": "APPR02",
+     "minor_name": "동 노출·스크래치",
      "cause_code": "HANDLING_SCRATCH",
+     "cause_name": "취급 스크래치",
      "process_id": "OL_IMG",
      "equipment_id": "OLI-02",
      "certainty": "CONFIRMED",
      "similarity": 0.58,
+     "basis": "같은 증상+같은 제품+같은 설비(OLI-02)+문장 유사",
+     "past_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+     "recurrence": false,
+     "days_to_resolve": 12,
      "snippet": "긴급 품질 이슈 공유드립니다(S07). P/N PCB-SSD8H-E3 (Lot LT-00800, D/C 25…",
      "corrective_actions": [
       {
@@ -1744,12 +1772,19 @@
     {
      "rma_id": "RMA-02931",
      "opened_at": "2025-05-30T17:04:08+09:00",
+     "claim_date": "2025-05-30",
      "minor_code": "APPR02",
+     "minor_name": "동 노출·스크래치",
      "cause_code": "HANDLING_SCRATCH",
+     "cause_name": "취급 스크래치",
      "process_id": "OL_IMG",
      "equipment_id": "OLI-02",
      "certainty": "CONFIRMED",
      "similarity": 0.57,
+     "basis": "같은 증상+같은 제품+같은 설비(OLI-02)+문장 유사",
+     "past_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+     "recurrence": false,
+     "days_to_resolve": 11,
      "snippet": "S05 수입검사 담당입니다. P/N PCB-SSD8H-E3 (Lot LT-00784, D/C 2518) IC…",
      "corrective_actions": [
       {
@@ -1767,12 +1802,19 @@
     {
      "rma_id": "RMA-02386",
      "opened_at": "2025-05-16T08:29:41+09:00",
+     "claim_date": "2025-05-16",
      "minor_code": "APPR02",
+     "minor_name": "동 노출·스크래치",
      "cause_code": "HANDLING_SCRATCH",
+     "cause_name": "취급 스크래치",
      "process_id": "OL_IMG",
      "equipment_id": "OLI-02",
      "certainty": "CONFIRMED",
      "similarity": 0.57,
+     "basis": "같은 증상+같은 제품+같은 설비(OLI-02)+문장 유사",
+     "past_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
+     "recurrence": false,
+     "days_to_resolve": 13,
      "snippet": "S07 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-SSD8H-E3 (Lot LT-00800…",
      "corrective_actions": [
       {
@@ -1789,12 +1831,12 @@
     }
    ],
    "drafts": {
-    "customer_reply": "S02 품질 담당자님, PCB-SSD8H-E3 Lot LT-01398의 동 노출·스크래치 불량 접수 확인했습니다. 현재 외층 노광·현상 공정의 취급 스크래치가 유력 원인으로 보이나, 확정 전 단계입니다. 회송 시료와 보관 시료 및 골든 샘플 비교 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 검토하겠습니다. 확인 결과는 정리되는 대로 다시 회신드리겠습니다.",
+    "customer_reply": "S02 품질 담당자님, PCB-SSD8H-E3 (Lot LT-01398) 동 노출·스크래치 불량 접수 확인했습니다. 현재 외층 노광·현상 공정의 취급 스크래치가 유력 원인으로 검토 중이며, 확정 전 생산 기록과 반송품 시험, 비교 시료 시험을 진행하겠습니다. 회송해 주시는 시료로 분석을 진행하고, 동일 Lot 재고는 출하 보류 후 선별 검토하겠습니다. 확인 결과는 정리되는 대로 다시 회신드리겠습니다.",
     "improvement": {
      "process": [
       {
        "cause_code": "HANDLING_SCRATCH",
-       "action": "외층 노광·현상 공정에서는 취급 스크래치 예방을 위해 외층 컨베이어 가이드 롤러 교체를 반영하고, 해당 Lot의 취급 표준을 개정해 작업 중 스크래치 발생 가능성을 낮추시기 바랍니다. 장비는 특정되지 않았으므로, 특정 장비에 한정하지 말고 외층 공정 전반의 취급 기준에 맞춰 적용하시는 것이 적절합니다.",
+       "action": "외층 노광·현상 구간에서는 취급 스크래치가 1순위 원인 후보이므로, 외층 컨베이어 가이드 롤러 교체를 진행하고 취급 표준을 개정해 스크래치 발생 가능성을 낮추도록 관리하겠습니다. 장비가 특정되지 않은 점을 고려해, 해당 공정 전반의 취급 방법 점검과 표준 준수 확인을 함께 적용하겠습니다.",
        "standard_action": "외층 컨베이어 가이드 롤러 교체 및 취급 표준 개정",
        "owner_dept": "생산팀"
       }
@@ -1802,7 +1844,7 @@
      "inspection": [
       {
        "escape_code": "ESC_AOI_THRESHOLD",
-       "action": "OAOI-01에서는 AOI 레시피 변경 시 승인 절차를 반드시 거치도록 하고, 결함 검출력 검증을 필수화해 판정 기준 완화로 인한 유출을 방지하시기 바랍니다. 검사 기준 변경 전후의 검출력 확인이 누락되지 않도록 관리하시는 것이 필요합니다.",
+       "action": "OAOI-01에서는 AOI 판정 기준 완화가 유출 원인 후보이므로, AOI 레시피 변경 시 승인 절차를 반드시 거치도록 하고 결함 검출력 검증을 필수화하겠습니다. 이를 통해 판정 기준이 완화되더라도 검출 성능 확인 없이 적용되지 않도록 관리하겠습니다.",
        "standard_action": "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화"
       }
      ]
@@ -1829,7 +1871,7 @@
      "triage_rules"
     ],
     "llm_used": false,
-    "elapsed_ms": 1
+    "elapsed_ms": 4
    },
    {
     "step": 3,
@@ -1843,7 +1885,7 @@
      "material_usage"
     ],
     "llm_used": false,
-    "elapsed_ms": 8
+    "elapsed_ms": 12
    },
    {
     "step": 4,
@@ -1855,7 +1897,7 @@
      "process_signals"
     ],
     "llm_used": true,
-    "elapsed_ms": 1454
+    "elapsed_ms": 1698
    },
    {
     "step": 5,
@@ -1866,8 +1908,8 @@
      "item_lab_tests",
      "recurrence_check"
     ],
-    "llm_used": true,
-    "elapsed_ms": 1362
+    "llm_used": false,
+    "elapsed_ms": 1560
    },
    {
     "step": 6,
@@ -1880,7 +1922,7 @@
      "candidate_lots"
     ],
     "llm_used": true,
-    "elapsed_ms": 1731
+    "elapsed_ms": 2678
    },
    {
     "step": 7,
@@ -1890,16 +1932,18 @@
      "reply_template"
     ],
     "llm_used": true,
-    "elapsed_ms": 1422
+    "elapsed_ms": 1520
    }
   ],
-  "warnings": [],
+  "warnings": [
+   "LLM_OUTPUT_REJECTED"
+  ],
   "langsmith_run_id": null,
   "model_versions": {
    "llm": "openai:gpt-5.4-mini",
    "prompt": "agents-0.4",
    "rules": "pcb-v4"
   },
-  "elapsed_ms": 5987
+  "elapsed_ms": 7478
  }
 }

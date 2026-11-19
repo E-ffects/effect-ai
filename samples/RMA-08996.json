@@ -28,7 +28,7 @@
   "characteristic_symbol": null,
   "alternatives": [],
   "follow_up_questions": [],
-  "elapsed_ms": 1526,
+  "elapsed_ms": 1097,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -70,7 +70,7 @@
       "requirement": "반송품 박리 강도 + 동박 Lot 추적 + 미사용 동박 박리 강도 시험. 고객 측 측정값은 시료 출처·측정 조건이 확인된 경우에만 근거로 사용한다."
      }
     ],
-    "review_note": "1순위인 동박 표면 처리 불량은 같은 원인 확정 사례, 동일 자재 Lot 이력, 비교 시료 시험 2건까지 있어 근거는 상당히 갖춰졌습니다. 다만 출처 확인된 반송품 시험 결과가 대기 중이라 최종 확정 전에는 그 결과 확인이 필요합니다. 2·3순위 비교 자료는 없으며, 사람 승인은 필요하지 않아 QA 확인 후 확정하시면 됩니다."
+    "review_note": "1순위 원인 후보인 동박 표면 처리 불량은 같은 원인 확정 사례와 동일 자재 Lot 근거, 비교 시료 시험 2건이 있어 유력합니다. 다만 출처가 확인된 반송품 시험 결과가 대기 중이라 확정 근거는 부족하므로, 해당 시험 결과 확인 후 QA에서 확정하겠습니다."
    },
    "trace_summary": {
     "lot_id": "LT-01616",
@@ -86,7 +86,7 @@
      "process_name": null,
      "equipment_id": null,
      "score": 1.0,
-     "explanation": "같은 제품의 최근 사례인 RMA-08676에서 동박 표면 처리 불량으로 확정된 기록이 있어 1순위로 가장 강합니다. 과거 패드 들뜸 반품 36건이 모두 동박 표면 처리 불량이었고, 자재 Lot ML-CU_FOIL-B-00859도 과거 확정 사례와 같은 Lot이라 반복 근거가 있습니다. 다만 이 Lot의 공정 기록, 설비 이벤트는 확인된 기록이 없습니다.",
+     "explanation": "이 후보가 1순위인 이유는 같은 제품의 최근 사례 RMA-08676(2025-11-12)에서 동박 표면 처리 불량이 확정되었기 때문입니다. 과거 패드 들뜸 반품 36건 중 36건이 모두 이 원인으로 기록되어 있어 연관성이 매우 강합니다. 다만 이 Lot의 공정 기록에는 별도의 이상 신호가 제시되지 않았고, 장비도 특정 불가로 남아 있어 Lot 내부 공정 신호로는 추가 확인이 어렵습니다.",
      "evidence": [
       {
        "type": "SIMILAR_CASE",
@@ -1406,77 +1406,113 @@
     "status": "NOT_APPLICABLE",
     "corrective_action": null,
     "checks": null,
-    "reason": "1순위 원인 동박 표면 처리 불량에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."
+    "reason": "1순위 원인 동박 표면 처리 불량에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다.",
+    "suggestion": "신규"
    },
    "similar_cases": [
     {
      "rma_id": "RMA-08515",
      "opened_at": "2025-11-06T12:09:21+09:00",
+     "claim_date": "2025-11-06",
      "minor_code": "SOLD03",
+     "minor_name": "패드 들뜸",
      "cause_code": "CU_FOIL_PROFILE",
+     "cause_name": "동박 표면 처리 불량",
      "process_id": "MATERIAL",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.65,
+     "basis": "같은 증상+같은 제품+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 15,
      "snippet": "A08 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-BMS4H-C2 (Lot LT-01591…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-08472",
      "opened_at": "2025-11-05T08:34:39+09:00",
+     "claim_date": "2025-11-05",
      "minor_code": "SOLD03",
+     "minor_name": "패드 들뜸",
      "cause_code": "CU_FOIL_PROFILE",
+     "cause_name": "동박 표면 처리 불량",
      "process_id": "MATERIAL",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.65,
+     "basis": "같은 증상+같은 제품+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 16,
      "snippet": "A08 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-BMS4H-C2 (Lot LT-01591…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-08570",
      "opened_at": "2025-11-08T16:43:12+09:00",
+     "claim_date": "2025-11-08",
      "minor_code": "SOLD03",
+     "minor_name": "패드 들뜸",
      "cause_code": "CU_FOIL_PROFILE",
+     "cause_name": "동박 표면 처리 불량",
      "process_id": "MATERIAL",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.6,
+     "basis": "같은 증상+같은 제품+같은 Lot+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 13,
      "snippet": "A03 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-BMS4H-C2 (Lot LT-01616…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-08562",
      "opened_at": "2025-11-08T10:48:01+09:00",
+     "claim_date": "2025-11-08",
      "minor_code": "SOLD03",
+     "minor_name": "패드 들뜸",
      "cause_code": "CU_FOIL_PROFILE",
+     "cause_name": "동박 표면 처리 불량",
      "process_id": "MATERIAL",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.58,
+     "basis": "같은 증상+같은 제품+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 13,
      "snippet": "안녕하세요, A08 품질팀입니다. P/N PCB-BMS4H-C2 (Lot LT-01591, D/C 2543)…",
      "corrective_actions": []
     },
     {
      "rma_id": "RMA-08344",
      "opened_at": "2025-10-30T16:42:17+09:00",
+     "claim_date": "2025-10-30",
      "minor_code": "SOLD03",
+     "minor_name": "패드 들뜸",
      "cause_code": "CU_FOIL_PROFILE",
+     "cause_name": "동박 표면 처리 불량",
      "process_id": "MATERIAL",
      "equipment_id": null,
      "certainty": "CONFIRMED",
      "similarity": 0.56,
+     "basis": "같은 증상+같은 제품+같은 고객+문장 유사",
+     "past_action": null,
+     "recurrence": false,
+     "days_to_resolve": 22,
      "snippet": "안녕하세요, A08 품질팀입니다. P/N PCB-BMS4H-C2 (Lot LT-01591, D/C 2543)…",
      "corrective_actions": []
     }
    ],
    "drafts": {
-    "customer_reply": "A08 품질 담당자님, PCB-BMS4H-C2 Lot LT-01616의 패드 들뜸 불량 접수 확인했습니다. 현재 동박 표면 처리 불량이 유력 원인으로 보이나, 아직 확정된 사항은 아니며 출처 확인된 반송품 시험 결과를 기다리고 있습니다. 회송해 주시는 시료로 분석을 진행하겠습니다. 동일 Lot 재고는 출하 보류 후 선별 조치를 검토하겠습니다. 분석 결과는 확인되는 즉시 다시 회신드리겠습니다.",
+    "customer_reply": "A08 품질 담당자님, PCB-BMS4H-C2 (Lot LT-01616) 패드 들뜸 불량 통보를 확인했습니다. 현재 동박 표면 처리 불량이 유력 원인으로 보이나, 확정 전 추가 확인이 필요합니다. 회송해 주시는 시료로 분석을 진행하겠으며, 동일 Lot 재고는 출하 보류 후 선별 검토하겠습니다. 분석 결과는 확인되는 대로 회신드리겠습니다.",
     "improvement": {
      "process": [
       {
        "cause_code": "CU_FOIL_PROFILE",
-       "action": "자재 Lot ML-CU_FOIL-B-00859와 같은 동박 자재에 대해 공급사 시정조치 요구를 진행해 동박 표면 처리 불량 재발을 차단하시고, 해당 Lot에는 박리 강도 수입검사를 추가해 표면 처리 상태를 실측으로 확인하시기 바랍니다.",
+       "action": "동박 표면 처리 불량이 과거 확정 사례와 같은 자재 Lot에서 확인된 만큼, 해당 공급사에 시정조치를 요구하시고 같은 Lot의 입고 관리에 박리 강도 수입검사를 추가하시기 바랍니다. 장비는 특정되지 않았으므로 특정 설비 조건을 전제로 한 조치는 두지 않고, 해당 Lot의 자재 상태 확인과 수입검사 강화 중심으로 관리하시기 바랍니다.",
        "standard_action": "공급사 시정조치 요구(SCAR) 및 박리 강도 수입검사 추가",
        "owner_dept": "구매팀"
       }
@@ -1484,7 +1520,7 @@
      "inspection": [
       {
        "escape_code": "ESC_IQC_COA_ONLY",
-       "action": "수입검사 성적서에만 의존하지 않도록 해당 자재의 수입검사 항목을 추가하고, 박리 강도를 포함한 실측 결과를 확인하는 기준으로 운영하시기 바랍니다.",
+       "action": "수입검사 성적서만 의존하지 않도록, 해당 자재의 수입검사 항목을 추가하고 실측 기준으로 확인하시기 바랍니다. 검사 장비는 특정되지 않았으므로 특정 장비 기준은 두지 말고, 추가된 항목을 실제 측정으로 확인하는 절차로 운영하시기 바랍니다.",
        "standard_action": "해당 자재 수입검사 항목 추가(실측)"
       }
      ]
@@ -1501,7 +1537,7 @@
      "intake"
     ],
     "llm_used": false,
-    "elapsed_ms": 7
+    "elapsed_ms": 9
    },
    {
     "step": 2,
@@ -1511,7 +1547,7 @@
      "triage_rules"
     ],
     "llm_used": false,
-    "elapsed_ms": 1
+    "elapsed_ms": 4
    },
    {
     "step": 3,
@@ -1525,7 +1561,7 @@
      "material_usage"
     ],
     "llm_used": false,
-    "elapsed_ms": 8
+    "elapsed_ms": 12
    },
    {
     "step": 4,
@@ -1537,7 +1573,7 @@
      "process_signals"
     ],
     "llm_used": true,
-    "elapsed_ms": 1779
+    "elapsed_ms": 1468
    },
    {
     "step": 5,
@@ -1549,7 +1585,7 @@
      "recurrence_check"
     ],
     "llm_used": true,
-    "elapsed_ms": 1470
+    "elapsed_ms": 1700
    },
    {
     "step": 6,
@@ -1562,7 +1598,7 @@
      "candidate_lots"
     ],
     "llm_used": true,
-    "elapsed_ms": 1496
+    "elapsed_ms": 2083
    },
    {
     "step": 7,
@@ -1572,7 +1608,7 @@
      "reply_template"
     ],
     "llm_used": true,
-    "elapsed_ms": 1458
+    "elapsed_ms": 1305
    }
   ],
   "warnings": [],
@@ -1582,6 +1618,6 @@
    "prompt": "agents-0.4",
    "rules": "pcb-v4"
   },
-  "elapsed_ms": 6221
+  "elapsed_ms": 6581
  }
 }

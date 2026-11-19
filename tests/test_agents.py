@@ -159,3 +159,24 @@ def test_recurrence_outside_the_action_scope():
 def test_no_recurrence_verdict_without_a_tracked_action(example):
     out, _ = example  # outer-layer etch residue had no implemented action at this as_of
     assert out["result"]["recurrence_check"]["status"] == "NOT_APPLICABLE"
+
+
+@pytest.mark.parametrize("rma_id,status,suggestion", [
+    ("RMA-08218", "RECURRENCE", "확산형 재발"),        # recurred outside the fixed machine
+    ("RMA-07085", "PRE_ACTION_PRODUCT", "조치 전 생산품"),
+    ("RMA-08927", "NOT_APPLICABLE", "신규"),           # no action on the cause yet
+    ("RMA-07936", "PENDING_CAUSE_REVIEW", None),       # symptom not confirmed
+])
+def test_recurrence_suggestion_uses_the_screen_words(rma_id, status, suggestion):
+    rc = run_analysis(rma_id)["result"]["recurrence_check"]
+    assert (rc["status"], rc["suggestion"]) == (status, suggestion)
+
+
+def test_similar_case_items_carry_screen_fields():
+    out = similar_cases("RMA-08927", limit=5)
+    for item in out["items"]:
+        assert item["claim_date"] == item["opened_at"][:10] and item["opened_at"] <= out["as_of"]
+        assert item["basis"].endswith("문장 유사") and item["basis"].startswith("같은 증상")
+        assert isinstance(item["recurrence"], bool) and item["days_to_resolve"] >= 0
+        assert item["cause_name"] and item["minor_name"]
+    assert any("같은 Lot" in i["basis"] for i in out["items"])  # earlier returns from LT-01603

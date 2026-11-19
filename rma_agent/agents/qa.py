@@ -116,7 +116,7 @@ def _scope_text(scope):
     return None
 
 
-def recurrence_check(masters, store, claim, lot_trace, candidates, review):
+def _recurrence_check(masters, store, claim, lot_trace, candidates, review):
     """After cause analysis: is this return a real recurrence after the corrective action, or a product made before it?
 
     Compares the leading cause with the latest occurrence action on that cause implemented by as_of (recurrence_review
@@ -132,23 +132,23 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
     """
     top = candidates[0] if candidates else None
     if not top:
-        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None, "_why": "no_candidate",
                 "reason": "원인 후보가 없어 재발 여부를 판정하지 않습니다."}
     # Recurrence is tracked for systemic causes only. The data never reviews returns of sporadic causes; at analysis time
     # the sign of a sporadic cause is a leading candidate with no machine or material pinned down.
     if not top.get("equipment_id") and top.get("cause_category") != "MATERIAL":
-        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None, "_why": "sporadic",
                 "reason": f"1순위 원인 {top['cause_name']}은(는) 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다."}
     # only actions aimed at a machine or material lot are tracked for recurrence (quarterly "local" fixes are not)
     actions = [a for a in store.occurrence_actions(top["cause_code"])
                if a["implemented_at"] and (a["scope"].get("equipment") or a["scope"].get("material_lots"))]
     if not actions:
-        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None, "_why": "no_action",
                 "reason": f"1순위 원인 {top['cause_name']}에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."}
     lot_id = lot_trace.get("lot_id")
     lot = store.lots([lot_id]).get(lot_id) if lot_id else None
     if not lot:
-        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None,
+        return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None, "_why": "no_lot",
                 "reason": "Lot을 알 수 없어 조치 시행일과 생산 시점을 비교할 수 없습니다."}
     equipment = {st["equipment_id"] for st in lot_trace["steps"]}
     material_lots = {m["material_lot_id"] for m in lot_trace["materials"]}
@@ -202,3 +202,22 @@ def recurrence_check(masters, store, claim, lot_trace, candidates, review):
         reason = (f"Lot {lot_id}은(는) 조치 {action['corrective_action_id']}({day} 시행) 전에 생산된 제품입니다. "
                   "재발이 아니라 조치 전 생산품의 반품입니다.")
     return {"status": status, "corrective_action": public_action, "checks": checks, "reason": reason}
+
+
+# The screen's recurrence decision uses three words (재발 / 확산형 재발 / 신규). PRE_ACTION_PRODUCT has no button there yet.
+def _suggestion(result):
+    status, why = result["status"], result.pop("_why", None)
+    if status == "RECURRENCE":
+        return "확산형 재발" if result["checks"]["in_action_scope"] is False else "재발"
+    if status == "PRE_ACTION_PRODUCT":
+        return "조치 전 생산품"
+    if status == "NOT_APPLICABLE" and why in ("sporadic", "no_action"):
+        return "신규"
+    return None  # PENDING_CAUSE_REVIEW, no candidate, no lot: no suggestion until the cause or lot is known
+
+
+def recurrence_check(masters, store, claim, lot_trace, candidates, review):
+    """See _recurrence_check. Adds `suggestion`, the screen's word for the verdict (or None)."""
+    result = _recurrence_check(masters, store, claim, lot_trace, candidates, review)
+    result["suggestion"] = _suggestion(result)
+    return result

@@ -346,6 +346,18 @@ class AsOfStore:
                 out[r["lot_id"]] += 1
         return dict(out)
 
+    def reopened_investigations(self, investigation_ids):
+        """Investigations reopened as a recurrence by as_of: {original investigation_id: [recurrence investigation_id]}."""
+        ids = sorted(set(investigation_ids))
+        if not ids:
+            return {}
+        rows = self._rows(f"""select investigation_id, reopened_from, opened_at from investigation
+                              where reopened_from in ({','.join('?' * len(ids))}) and opened_at<=?""", (*ids, self.as_of), "opened_at")
+        out = defaultdict(list)
+        for r in rows:
+            out[r["reopened_from"]].append(r["investigation_id"])
+        return dict(out)
+
     def occurrence_actions(self, cause_code):
         """Corrective actions on the occurrence of a cause, chosen by as_of (implemented_at hidden until it happens)."""
         rows = self._rows("""select corrective_action_id, investigation_id, action_category, description, cause_code, scope_json,

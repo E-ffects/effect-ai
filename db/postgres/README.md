@@ -42,14 +42,15 @@ python db/postgres/verify.py data/pcb_rma_v5.sqlite "$RMA_DATABASE_URL"
   - v5: 테스트 63개 통과, 원인분석 평가 2,537건의 지표 6개가 SQLite와 같다.
   - v4: 테스트 61개 통과, 원인분석 평가 1,907건이 같고, 분석 응답·유사 사례·분류 20건도 글자까지 같다.
 - 필요 패키지: `psycopg[binary]` (requirements.txt)
+- **타입을 바꿔도 된다.** 시각을 `timestamptz`, `*_json`을 `jsonb`, 0/1 플래그를 `boolean`으로 바꾼 DB(시각 43개, JSON 12개, 플래그 11개)에서도 테스트 71개가 통과하고 원인분석 평가와 응답 20건이 SQLite와 같다(2026-11-19). 에이전트가 읽을 때 원래 형식(`+09:00` 문자열, JSON 문자열, 0/1)으로 되돌린다.
 
 ## 정해야 할 것 (백엔드, 윤서정 님)
 | 항목 | 지금 | 선택지 |
 |---|---|---|
 | 테이블 생성 방식 | `schema.sql`이 직접 만든다 | Flyway를 쓰면 `schema.sql` + `views.sql`을 `V1__rma_schema.sql`로 넣고, 적재는 `\copy` 부분만 쓴다. JPA `ddl-auto`라면 엔티티를 이 이름에 맞춘다 |
-| 시각 타입 | `text` (ISO-8601, 시간대 포함. 예: `2025-11-20T14:40:46+09:00`) | `timestamptz`로 바꿀 수 있다. AI 에이전트는 문자열 비교를 하므로, 바꾸면 에이전트 쪽 조회를 함께 고친다 |
-| JSON 컬럼 (`*_json` 11개) | `text` | `jsonb`로 바꿀 수 있다. 뷰는 이미 `::jsonb`로 읽는다 |
-| 0/1 플래그 (`ppap_required`, `origin_verified` 등) | `bigint` | `boolean`으로 바꾸면 뷰의 `= 1` 비교를 고친다 |
+| 시각 타입 | `text` (ISO-8601, 시간대 포함. 예: `2025-11-20T14:40:46+09:00`) | `timestamptz`로 바꿔도 된다. 에이전트는 그대로 동작한다(뷰의 `substr` 월 계산은 `to_char`로 고친다) |
+| JSON 컬럼 (`*_json` 11개) | `text` | `jsonb`로 바꿔도 된다. 에이전트와 뷰 모두 그대로 동작한다 |
+| 0/1 플래그 (`ppap_required`, `origin_verified` 등) | `bigint` | `boolean`으로 바꿔도 에이전트는 그대로다. 뷰의 `= 1` 비교만 고친다 |
 | 데이터 버전 | **v5 (2026-11-19 팀 공식)** | v4도 같은 스크립트로 적재된다. 행 내용이 v5와 다르다 |
 
 타입을 바꾸더라도 처음에는 이대로 적재해 `verify.py`로 확인한 뒤, 별도 마이그레이션(`V2__...`)으로 바꾸는 쪽이 안전하다.

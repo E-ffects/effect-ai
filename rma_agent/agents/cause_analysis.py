@@ -217,11 +217,39 @@ def similar_case_items(masters, store, claim, limit=5):
     actions = defaultdict(list)
     for a in store.corrective_actions({c.investigation_id for c, _ in chosen}):
         actions[a["investigation_id"]].append({"category": a["action_category"], "description": a["description"],
-                                              "implemented_at": a["implemented_at"]})
-    return [{"rma_id": c.rma_id, "opened_at": c.opened_at, "minor_code": c.intake_label, "cause_code": c.cause_code,
-             "process_id": c.process, "equipment_id": c.equipment_id, "certainty": c.certainty, "similarity": score,
-             "snippet": c.raw_text[:60] + ("…" if len(c.raw_text) > 60 else ""),
-             "corrective_actions": actions.get(c.investigation_id, [])} for c, score in chosen]
+                                              "implemented_at": a["implemented_at"], "role": a["action_role"]})
+    reopened = store.reopened_investigations({c.investigation_id for c, _ in chosen})
+    lot_id = claim.get("lot_id")
+    lot_equipment = {h["equipment_id"] for h in store.lot_process_history(lot_id)} if lot_id else set()
+    symptoms = masters["symptoms"]
+    items = []
+    for c, score in chosen:
+        basis = []
+        if labelled and c.intake_label == label:
+            basis.append("같은 증상")
+        if c.spec_id and c.spec_id == claim.get("spec_id"):
+            basis.append("같은 제품")
+        if lot_id and c.lot_id == lot_id:
+            basis.append("같은 Lot")
+        elif c.equipment_id and c.equipment_id in lot_equipment:
+            basis.append(f"같은 설비({c.equipment_id})")
+        if c.customer_id == claim.get("customer_id"):
+            basis.append("같은 고객")
+        basis.append("문장 유사")
+        acts = actions.get(c.investigation_id, [])
+        main = next((a for a in acts if a["role"] == "OCCURRENCE"), acts[0] if acts else None)
+        items.append({
+            "rma_id": c.rma_id, "opened_at": c.opened_at, "claim_date": c.opened_at[:10], "minor_code": c.intake_label,
+            "minor_name": symptoms.get(c.intake_label, {}).get("minor_name"), "cause_code": c.cause_code,
+            "cause_name": masters["causes"].get(c.cause_code, {}).get("cause_name", c.cause_code),
+            "process_id": c.process, "equipment_id": c.equipment_id, "certainty": c.certainty, "similarity": score,
+            "basis": "+".join(basis),
+            "past_action": main["description"] if main else None,
+            "recurrence": bool(reopened.get(c.investigation_id)),
+            "days_to_resolve": (datetime.fromisoformat(c.applied_at) - datetime.fromisoformat(c.opened_at)).days,
+            "snippet": c.raw_text[:60] + ("…" if len(c.raw_text) > 60 else ""),
+            "corrective_actions": [{k: v for k, v in a.items() if k != "role"} for a in acts]})
+    return items
 
 
 class _CauseExplanation(BaseModel):

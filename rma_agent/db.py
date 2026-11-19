@@ -7,11 +7,15 @@
 Both return a connection with the sqlite3 interface the code uses: conn.execute(sql, params) with "?" placeholders,
 rows readable by index and by column name (dict(row) works). Keep SQL portable: no SQLite-only functions.
 """
+import datetime
+import decimal
+import json
 import os
 import sqlite3
 import threading
 from pathlib import Path
 
+KST = datetime.timezone(datetime.timedelta(hours=9))
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 DEFAULT_DB = next((DATA_DIR / f"pcb_rma_{v}.sqlite" for v in ("v5", "v4") if (DATA_DIR / f"pcb_rma_{v}.sqlite").exists()),
                   DATA_DIR / "pcb_rma_v5.sqlite")
@@ -70,16 +74,38 @@ class _Cursor:
         return iter(self._rows)
 
 
+def _plain(value):
+    """Values as the SQLite data has them, whatever column types the team's schema uses:
+    timestamp(tz) -> ISO-8601 text with +09:00, date -> YYYY-MM-DD, jsonb -> JSON text, numeric -> float, bool -> 0/1."""
+    if value is None or isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        return value
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, datetime.datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=KST)
+        return value.astimezone(KST).isoformat(timespec="seconds")
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return float(value)
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return value
+
+
 class PgConnection:
     """Read-only PostgreSQL connection with the part of the sqlite3 API this package uses.
 
     One connection in autocommit, read-only; a lock lets parallel graph nodes take turns (queries are short).
+    Session time zone is Asia/Seoul so timestamptz values and comparisons match the data's +09:00 text.
     """
 
     def __init__(self, url):
         import psycopg
         self._conn = psycopg.connect(url, autocommit=True)
         self._conn.read_only = True
+        self._conn.execute("SET TIME ZONE 'Asia/Seoul'")
         self._lock = threading.Lock()
 
     @staticmethod
@@ -92,7 +118,7 @@ class PgConnection:
             if cur.description is None:
                 return _Cursor([], None)
             names = [d.name for d in cur.description]
-            return _Cursor([Row(names, r) for r in cur.fetchall()], cur.description)
+            return _Cursor([Row(names, tuple(_plain(v) for v in r)) for r in cur.fetchall()], cur.description)
 
     def close(self):
         self._conn.close()

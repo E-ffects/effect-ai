@@ -375,11 +375,11 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
       }
     ],
     "candidate_lots": {"window_hours": 24, "total": 62, "items": [{"lot_id": "LT-01602", "spec_id": "SEMI-SSD8H", "started_at": "2025-10-16T10:15:45+09:00", "completed_at": "2025-10-24T07:52:46+09:00", "shared": [{"type": "EQUIPMENT", "process_id": "OL_ETCH", "process_name": "외층 에칭", "equipment_id": "OLE-02", "this_lot_at": "2025-10-21T02:20:29+09:00", "other_lot_at": "2025-10-20T07:19:59+09:00", "gap_hours": 19.0}], "shared_count": 16, "matches_top_cause": true, "shipped": true, "first_shipped_at": "2025-10-25T08:45:59+09:00", "shipped_boards": 4278, "known_returns": 0}]},
-    "recurrence_check": {"status": "NOT_APPLICABLE", "corrective_action": null, "checks": null, "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."},
+    "recurrence_check": {"status": "NOT_APPLICABLE", "corrective_action": null, "checks": null, "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다.", "suggestion": "신규"},
     "similar_cases": [
-      {"rma_id": "RMA-08576", "opened_at": "2025-11-13T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.81, "snippet": "ICT·기능검사에서 쇼트 판정이 나오며 육안상 잔동이 의심됩니다", "corrective_actions": []},
-      {"rma_id": "RMA-08427", "opened_at": "2025-11-08T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.78, "snippet": "ICT·기능검사에서 인접 패턴 간 쇼트가 발생했습니다", "corrective_actions": []},
-      {"rma_id": "RMA-06930", "opened_at": "2025-09-27T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "ET_RETEST_MISJUDGE", "process_id": "ET", "equipment_id": null, "certainty": "PROBABLE", "similarity": 0.52, "snippet": "고객 수입검사(IQC)에서 전원과 GND 사이 저항이 …", "corrective_actions": []}
+      {"rma_id": "RMA-08486", "opened_at": "2025-11-05T10:32:14+09:00", "claim_date": "2025-11-05", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.68, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 14, "snippet": "[불량 통보] A01 P/N PCB-ECU6-A1 (Lot LT-01603) ICT·기능검사에서 인접 패턴 …", "corrective_actions": []},
+      {"rma_id": "RMA-00300", "opened_at": "2025-01-24T08:59:29+09:00", "claim_date": "2025-01-24", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "FOREIGN_MATERIAL", "cause_name": "공정 이물 혼입", "process_id": "SM", "equipment_id": null, "certainty": "PROBABLE", "similarity": 0.63, "basis": "같은 증상+같은 제품+문장 유사", "past_action": "인쇄실 청정도 관리 강화", "recurrence": false, "days_to_resolve": 72, "snippet": "긴급 품질 이슈 공유드립니다(A04). P/N PCB-ECU6-A1 (Lot LT-00170, D/C 245…", "corrective_actions": [{"category": "PROCESS_LOCAL", "description": "인쇄실 청정도 관리 강화", "implemented_at": "2025-04-14T08:41:16+09:00"}]},
+      {"rma_id": "RMA-08504", "opened_at": "2025-11-06T08:40:49+09:00", "claim_date": "2025-11-06", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.62, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 13, "snippet": "A01 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-ECU6-A1 (Lot LT-01603,…", "corrective_actions": []}
     ],
     "drafts": {
       "customer_reply": "A01 품질 담당자님, PCB-ECU6-A1 (Lot LT-01603) 쇼트 불량 통보 확인했습니다. 현재 외층 에칭 공정의 잔동을 유력 원인으로 보고 회수 시료 4pcs 분석을 진행합니다. 동일 Lot 재고는 출하 보류 후 E-Test 100% 재검 선별을 진행하며, 결과를 회신드리겠습니다.",
@@ -534,10 +534,11 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
 | `checks.lot_id`, `lot_started_at`, `produced_after_action` | 이 Lot의 생산 시작과 조치 이후 생산 여부 |
 | `checks.in_action_scope` | 이 Lot이 조치 범위의 설비를 거쳤거나 자재 Lot을 썼는가(범위가 없으면 `null`) |
 | `reason` | 화면에 그대로 보여 줄 한 문장 |
+| `suggestion` | 화면 "재발여부 확정"의 AI 제안 단어. `RECURRENCE`이고 조치 범위 안이면 `재발`, 범위 밖이면 `확산형 재발`, `PRE_ACTION_PRODUCT`는 `조치 전 생산품`(화면에 버튼 추가 필요), 조치가 없거나 단발성이면 `신규`, 그 밖은 `null`(제안 없음). 화면의 `{suggestion, basis}`에는 `suggestion`과 `reason`을 쓴다 |
 
 예시 4가지 (v5 실제 출력, `//` 줄은 설명):
 ```jsonc
-// RECURRENCE: RMA-08218 (디스미어 부족 재발, 조치는 DSM-02에만, 재발은 DSM-01)
+// RECURRENCE (확산형 재발): RMA-08218 (디스미어 부족 재발, 조치는 DSM-02에만, 재발은 DSM-01)
 {
   "status": "RECURRENCE",
   "corrective_action": {
@@ -561,7 +562,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
     "produced_after_action": true,
     "in_action_scope": false
   },
-  "reason": "Lot LT-01550은(는) 조치 CA-000023(2025-07-30 시행) 이후에 생산됐고 원인이 같습니다. 조치 범위(설비 DSM-02) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다."
+  "reason": "Lot LT-01550은(는) 조치 CA-000023(2025-07-30 시행) 이후에 생산됐고 원인이 같습니다. 조치 범위(설비 DSM-02) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다.",
+  "suggestion": "확산형 재발"
 }
 // PRE_ACTION_PRODUCT: RMA-07085 (드릴 비트, 조치 전에 생산된 Lot)
 {
@@ -587,7 +589,8 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
     "produced_after_action": false,
     "in_action_scope": true
   },
-  "reason": "Lot LT-00545은(는) 조치 CA-000001(2025-04-16 시행) 전에 생산된 제품입니다. 재발이 아니라 조치 전 생산품의 반품입니다."
+  "reason": "Lot LT-00545은(는) 조치 CA-000001(2025-04-16 시행) 전에 생산된 제품입니다. 재발이 아니라 조치 전 생산품의 반품입니다.",
+  "suggestion": "조치 전 생산품"
 }
 // PENDING_CAUSE_REVIEW: RMA-07936 (정보 부족 접수)
 {
@@ -614,14 +617,16 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
     "produced_after_action": false,
     "in_action_scope": true
   },
-  "reason": "과거 조치(CA-000038, 2025-10-07 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다."
+  "reason": "과거 조치(CA-000038, 2025-10-07 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.",
+  "suggestion": null
 }
-// NOT_APPLICABLE: RMA-08927 (외층 에칭 잔동, 분석 시점까지 시행된 조치 없음)
+// NOT_APPLICABLE (신규): RMA-08927 (외층 에칭 잔동, 분석 시점까지 시행된 조치 없음)
 {
   "status": "NOT_APPLICABLE",
   "corrective_action": null,
   "checks": null,
-  "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다."
+  "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다.",
+  "suggestion": "신규"
 }
 ```
 
@@ -632,12 +637,40 @@ RECEIVED ─▶ CLASSIFIED ─▶ ANALYZING ─▶ CANDIDATES_READY ─┬▶ QA
   "rma_id": "RMA-08927",
   "as_of": "2025-11-20T12:41:37+09:00",
   "items": [
-    {"rma_id": "RMA-08576", "opened_at": "2025-11-13T00:00:00+09:00", "minor_code": "ELEC02", "cause_code": "OL_ETCH_RESIDUE", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.81, "snippet": "ICT·기능검사에서 쇼트 판정이 나오며 육안상 잔동이 의심됩니다", "corrective_actions": []}
+    {
+      "rma_id": "RMA-08486",
+      "opened_at": "2025-11-05T10:32:14+09:00",
+      "claim_date": "2025-11-05",
+      "minor_code": "ELEC02",
+      "minor_name": "쇼트",
+      "cause_code": "OL_ETCH_RESIDUE",
+      "cause_name": "외층 에칭 잔동",
+      "process_id": "OL_ETCH",
+      "equipment_id": "OLE-02",
+      "certainty": "CONFIRMED",
+      "similarity": 0.68,
+      "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사",
+      "past_action": null,
+      "recurrence": false,
+      "days_to_resolve": 14,
+      "snippet": "[불량 통보] A01 P/N PCB-ECU6-A1 (Lot LT-01603) ICT·기능검사에서 인접 패턴 …",
+      "corrective_actions": []
+    }
   ]
 }
 ```
 `as_of` 이전에 **승인된** 사례만 나온다. 아직 원인이 정해지지 않은 접수는 나오지 않는다.
 순서는 **같은 접수 증상**의 과거 사례 중 접수 문장 유사도(`similarity`, 0~1, 글자 단위) 순이다. 같은 점수면 최근 사례가 먼저 나온다. 정보 부족·분류 불가 접수는 증상 구분 없이 찾는다.
+
+| 필드 | 뜻 |
+|---|---|
+| `similarity` | 접수 문장 글자 유사도(0~1) |
+| `basis` | 판단 근거를 `+`로 이은 문자열. 순서대로 `같은 증상`, `같은 제품`, `같은 Lot` 또는 `같은 설비(설비)`, `같은 고객`, `문장 유사` 중 해당하는 것 |
+| `past_action` | 그 사례 조사의 발생 원인 대책(없으면 첫 대책, 분석 시점까지 정해진 것만). 없으면 `null` |
+| `recurrence` | 그 사례의 사건이 분석 시점까지 재발로 다시 열렸는가 |
+| `days_to_resolve` | 그 사례의 접수부터 원인 확정까지 일수 |
+| `claim_date`, `cause_name`, `minor_name` | 화면 표시용(접수일, 원인 이름, 소분류 이름) |
+| `corrective_actions[]` | 그 조사의 대책 전체(`category`, `description`, `implemented_at`) |
 
 ### 3-5. `POST /cases/refresh`
 Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI는 DB에서 새 사례를 읽어 검색 색인을 갱신한다.
