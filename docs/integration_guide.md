@@ -13,7 +13,7 @@ git checkout feature/ai-baseline
 pip install -r requirements.txt
 cp .env.example .env
 ```
-- **데이터:** `data/pcb_rma_v4.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v4_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
+- **데이터:** 팀 PostgreSQL을 쓰면 `DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v4.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v4_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
 - **확인:** `python3 -m pytest -q`가 모두 통과하면 준비 끝이다(LLM은 부르지 않는다).
 
 ## 2. `.env` 설정
@@ -25,6 +25,7 @@ cp .env.example .env
 | `OPENAI_API_KEY` | LLM 쓸 때 | OpenAI 키 | 팀 키를 각자 `.env`에 |
 | `LANGSMITH_API_KEY` | 추적 쓸 때 | LangSmith 키 | 이상윤 |
 | `LANGSMITH_PROJECT` | 선택 | `effect-ai` | 이상윤 |
+| `DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
 | `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v4.sqlite`) | — |
 
 - **사용 금지 모델:** gpt-6-astra, gpt-6.1-sol, gpt-6-sol, gpt-5.5-pro. 설정해도 쓰지 않고 템플릿으로 동작한다.

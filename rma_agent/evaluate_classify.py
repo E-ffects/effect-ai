@@ -28,7 +28,7 @@ def claims(conn, start, end=None):
     if end:
         sql += " and r.opened_at<?"
         params.append(end)
-    return [dict(r) for r in conn.execute(sql + " order by r.opened_at", params)]
+    return [dict(r) for r in conn.execute(sql + " order by r.opened_at, r.rma_id", params)]
 
 
 def predicted(out):

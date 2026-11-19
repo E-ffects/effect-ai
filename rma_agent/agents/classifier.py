@@ -44,7 +44,7 @@ class IntakeIndex:
     def __init__(self, conn):
         rows = conn.execute("""select r.rma_id, r.raw_text, s.intake_label, s.evidence_spans_json, s.created_at
                                from rma_claim r join rma_item i using(rma_id) join symptom_assessment s using(rma_item_id)
-                               where s.intake_label is not null order by s.created_at""").fetchall()
+                               where s.intake_label is not null order by s.created_at, r.rma_id""").fetchall()
         self.items, self.times = [], []
         df = Counter()
         grams = []

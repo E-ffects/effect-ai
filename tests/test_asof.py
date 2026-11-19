@@ -90,7 +90,8 @@ def test_return_with_cause_applied_at_intake_is_not_its_own_case(conn, library):
     rows = conn.execute("""select r.rma_id from rma_claim r join rma_item i using(rma_id) join qa_triage t using(rma_id)
                            join symptom_assessment s using(rma_item_id) join claim_cause cc using(rma_item_id)
                            join cause_assessment a using(cause_assessment_id)
-                           where max(cc.decided_at, a.approved_at) <= max(t.decided_at, s.created_at) limit 30""").fetchall()
+                           where (case when cc.decided_at > a.approved_at then cc.decided_at else a.approved_at end)
+                                 <= (case when t.decided_at > s.created_at then t.decided_at else s.created_at end) limit 30""").fetchall()
     assert rows
     for (rma_id,) in rows:
         store = AsOfStore(conn, analysis_start(conn, rma_id), library, subject=rma_id)

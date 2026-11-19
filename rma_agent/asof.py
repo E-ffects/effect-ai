@@ -30,7 +30,7 @@ class FutureDataError(RuntimeError):
 def analysis_start(conn, rma_id):
     """When cause analysis can start: QA triage done and the intake label available."""
     row = conn.execute("""
-        select max(t.decided_at, s.created_at) from qa_triage t join rma_item i using(rma_id)
+        select case when t.decided_at is null or s.created_at is null then null when t.decided_at > s.created_at then t.decided_at else s.created_at end from qa_triage t join rma_item i using(rma_id)
         join symptom_assessment s using(rma_item_id) where t.rma_id=?""", (rma_id,)).fetchone()
     if row is None or row[0] is None:
         raise KeyError(rma_id)
@@ -72,7 +72,7 @@ class CaseLibrary:
 
     def __init__(self, conn):
         rows = conn.execute("""
-            select r.rma_id, max(cc.decided_at, a.approved_at) known_at, a.approved_at, r.opened_at, r.customer_id,
+            select r.rma_id, case when cc.decided_at is null or a.approved_at is null then null when cc.decided_at > a.approved_at then cc.decided_at else a.approved_at end known_at, a.approved_at, r.opened_at, r.customer_id,
                    r.detection_stage, r.raw_text, s.intake_label, s.primary_label, l.spec_id, i.lot_id,
                    a.cause_code, a.cause_category, a.process_id, a.equipment_id, a.material_lot_ids_json,
                    a.investigation_id, a.certainty_status
@@ -163,14 +163,14 @@ class AsOfStore:
         """Baseline text-similarity results stored in the data (searched at QA triage)."""
         return self._rows("""select query_rma_id, reference_rma_id, similarity_score, searched_at
                              from similar_cases where query_rma_id=? and searched_at<=?
-                             order by similarity_score desc""", (rma_id, self.as_of), "searched_at")
+                             order by similarity_score desc, reference_rma_id""", (rma_id, self.as_of), "searched_at")
 
     # ---------- production history of a lot
     def lot_process_history(self, lot_id):
         return self._rows("""select r.process_run_id, r.process_id, p.sequence_no, r.equipment_id, r.load_no,
                                     r.panel_seq_from, r.panel_seq_to, r.recipe_version, r.started_at, r.ended_at, r.shift
                              from process_run r join process_master p using(process_id)
-                             where r.lot_id=? and r.ended_at<=? order by p.sequence_no, r.started_at""",
+                             where r.lot_id=? and r.ended_at<=? order by p.sequence_no, r.started_at, r.process_run_id""",
                           (lot_id, self.as_of), "ended_at")
 
     def lot_observations(self, lot_id, process_id=None):
@@ -182,7 +182,7 @@ class AsOfStore:
         if process_id:
             sql += " and r.process_id=?"
             params.append(process_id)
-        return self._rows(sql + " order by o.measured_at", params, "measured_at")
+        return self._rows(sql + " order by o.measured_at, o.observation_id", params, "measured_at")
 
     def equipment_events(self, equipment_ids, since=None):
         ids = list(equipment_ids)
@@ -195,7 +195,7 @@ class AsOfStore:
         if since:
             sql += " and occurred_at>=?"
             params.append(since)
-        return self._rows(sql + " order by occurred_at", params, "recorded_at")
+        return self._rows(sql + " order by occurred_at, event_id", params, "recorded_at")
 
     def lot_tests(self, lot_id, phases=None):
         sql = """select test_run_id, phase, subject_type, equipment_id, plan_id, sample_origin, origin_verified,
@@ -205,7 +205,7 @@ class AsOfStore:
         if phases:
             sql += f" and phase in ({','.join('?' * len(phases))})"
             params += list(phases)
-        return self._rows(sql + " order by ended_at", params, "ended_at")
+        return self._rows(sql + " order by ended_at, test_run_id", params, "ended_at")
 
     def test_measurements(self, test_run_ids):
         ids = list(test_run_ids)
@@ -222,7 +222,7 @@ class AsOfStore:
         rows = self._rows("""select u.material_lot_id, u.material_type, u.issued_at, m.supplier_id, m.grade,
                                     m.coa_json, m.iqc_method, m.iqc_result, m.iqc_at
                              from material_usage u join material_lot m using(material_lot_id)
-                             where u.lot_id=? and u.issued_at<=? order by u.issued_at""",
+                             where u.lot_id=? and u.issued_at<=? order by u.issued_at, u.material_lot_id""",
                           (lot_id, self.as_of), "issued_at")
         for row in rows:
             if row["iqc_at"] and row["iqc_at"] > self.as_of:
@@ -255,13 +255,13 @@ class AsOfStore:
     def detection_counts(self, phase, since, test_spec_id=None):
         """Tests and fails per inspection equipment over [since, as_of], overall or for one test item."""
         if test_spec_id:
-            sql = """select r.equipment_id, count(*) n, sum(m.result='FAIL') fails
+            sql = """select r.equipment_id, count(*) n, sum(case when m.result='FAIL' then 1 else 0 end) fails
                      from test_run r join test_measurement m using(test_run_id)
                      where r.phase=? and r.ended_at>=? and r.ended_at<=? and r.equipment_id is not null
                      and m.test_spec_id=? group by r.equipment_id"""
             params = (phase, since, self.as_of, test_spec_id)
         else:
-            sql = """select equipment_id, count(*) n, sum(overall_result='FAIL') fails
+            sql = """select equipment_id, count(*) n, sum(case when overall_result='FAIL' then 1 else 0 end) fails
                      from test_run where phase=? and ended_at>=? and ended_at<=? and equipment_id is not null
                      group by equipment_id"""
             params = (phase, since, self.as_of)
@@ -282,7 +282,7 @@ class AsOfStore:
         rows = self._rows(f"""select investigation_id, action_role, action_category, description, owner_dept, cause_code,
                                      escape_code, selected_at, implemented_at
                               from corrective_action where investigation_id in ({','.join('?' * len(ids))})
-                              and selected_at<=? order by selected_at""", (*ids, self.as_of), "selected_at")
+                              and selected_at<=? order by selected_at, description""", (*ids, self.as_of), "selected_at")
         for row in rows:
             if row["implemented_at"] and row["implemented_at"] > self.as_of:
                 row["implemented_at"] = None

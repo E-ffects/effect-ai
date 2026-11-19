@@ -29,7 +29,7 @@ class ProcessBaseline:
     def __init__(self, conn):
         rows = conn.execute("""select r.process_id, o.item_code, o.measured_at, o.value, r.lot_id
                                from process_observation o join process_run r using(process_run_id)
-                               where o.value is not null order by o.measured_at""").fetchall()
+                               where o.value is not null order by o.measured_at, o.observation_id""").fetchall()
         series = defaultdict(list)
         for r in rows:
             series[(r["process_id"], r["item_code"])].append((r["measured_at"], r["value"], r["lot_id"]))

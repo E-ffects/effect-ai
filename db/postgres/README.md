@@ -36,6 +36,11 @@ python db/postgres/verify.py data/pcb_rma_v4.sqlite "$DATABASE_URL"
 - 외래 키는 `DEFERRABLE INITIALLY DEFERRED`로 만든다. 데이터는 한 트랜잭션으로 넣으므로 커밋이 성공했다면 외래 키 위반이 0건이다.
 - 값을 일부러 하나 바꾸면 `verify.py`가 그 테이블을 `DIFFERENT`로 잡는 것도 확인했다.
 
+## AI 에이전트가 이 DB를 읽기
+`.env`(또는 컨테이너 환경변수)에 `DATABASE_URL=postgresql://...`를 넣으면 `rma_agent`가 SQLite 대신 이 DB를 읽는다(읽기 전용).
+- 확인 (2026-11-19, 로컬 PostgreSQL 17, v4): 테스트 61개 통과. 원인분석 평가 1,907건의 지표 6개가 SQLite와 같다. 분석 응답·유사 사례·분류 20건도 글자까지 같다.
+- 필요 패키지: `psycopg[binary]` (requirements.txt)
+
 ## 정해야 할 것 (백엔드, 윤서정 님)
 | 항목 | 지금 | 선택지 |
 |---|---|---|
