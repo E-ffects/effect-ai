@@ -44,5 +44,20 @@
   "elapsed_ms": 1528,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
+ },
+ "triage": {
+  "rma_id": "RMA-07936",
+  "minor_code": "INSUFFICIENT_INFO",
+  "customer_industry": "AUTOMOTIVE",
+  "severity": null,
+  "characteristic_id": null,
+  "characteristic_symbol": null,
+  "repeat_signal": 0,
+  "analysis_level": "L2",
+  "needs_approval": false,
+  "approval_reasons": [],
+  "provisional": true,
+  "rationale": "소분류 미확정(정보 부족) 임시 판정, 고객 AUTOMOTIVE, 차량 고객은 QA가 당일 직접 확인 → L2",
+  "as_of": "2025-10-18T13:50:42+09:00"
  }
 }

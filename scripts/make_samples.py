@@ -1,4 +1,4 @@
-"""Real responses for screens and API mocks: python3 scripts/make_samples.py (LLM per .env)."""
+"""Real responses for screens and API mocks (classify, triage, run_analysis): python3 scripts/make_samples.py (LLM per .env)."""
 import json
 import sys
 from pathlib import Path
@@ -36,11 +36,12 @@ def main():
         classify = rma_agent.classify(claim["raw_text"], detection_stage=claim["detection_stage"],
                                       part_no=claim["reported_part_no"], customer_id=claim["customer_id"],
                                       as_of=claim.pop("label_at"))
-        entry = {"rma_id": rma_id, "note": note, "claim": claim, "classify": classify}
+        entry = {"rma_id": rma_id, "note": note, "claim": claim, "classify": classify, "triage": rma_agent.triage(rma_id)}
         if classify["status"] == "CLASSIFIED":
             entry["analysis"] = rma_agent.run_analysis(rma_id)
         (ROOT / f"{rma_id}.json").write_text(json.dumps(entry, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         index.append({"rma_id": rma_id, "note": note, "classify_status": classify["status"],
+                      "triage_level": entry["triage"]["analysis_level"], "triage_provisional": entry["triage"]["provisional"],
                       "analysis_status": entry.get("analysis", {}).get("status")})
         print(rma_id, classify["status"], entry.get("analysis", {}).get("status"), entry.get("analysis", {}).get("warnings"))
     (ROOT / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

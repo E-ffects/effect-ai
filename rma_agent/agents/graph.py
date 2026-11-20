@@ -25,7 +25,7 @@ from ..asof import analysis_start
 from ..errors import AsOfInvalid, ClaimNotFound, InvalidInput, ServiceUnavailable, check_as_of
 
 PROMPT_VERSION = "agents-0.4"
-RULES_VERSION = "pcb-v4"
+RULES_VERSION = "pcb-v5"
 STEPS_TOTAL = 7
 
 

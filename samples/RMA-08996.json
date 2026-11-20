@@ -32,6 +32,21 @@
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
+ "triage": {
+  "rma_id": "RMA-08996",
+  "minor_code": "SOLD03",
+  "customer_industry": "AUTOMOTIVE",
+  "severity": 7,
+  "characteristic_id": null,
+  "characteristic_symbol": null,
+  "repeat_signal": 1,
+  "analysis_level": "L2",
+  "needs_approval": false,
+  "approval_reasons": [],
+  "provisional": false,
+  "rationale": "불량 형태 패드 들뜸, 심각도 7, 고객 AUTOMOTIVE, 동일 고객·불량 형태 30일 내 3건째 이상 → L2",
+  "as_of": "2025-11-21T23:47:42+09:00"
+ },
  "analysis": {
   "rma_id": "RMA-08996",
   "as_of": "2025-11-21T23:47:42+09:00",
@@ -1627,7 +1642,7 @@
   "model_versions": {
    "llm": "openai:gpt-5.4-mini",
    "prompt": "agents-0.4",
-   "rules": "pcb-v4"
+   "rules": "pcb-v5"
   },
   "elapsed_ms": 6581
  }

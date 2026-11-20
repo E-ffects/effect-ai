@@ -38,6 +38,21 @@
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
+ "triage": {
+  "rma_id": "RMA-07208",
+  "minor_code": "APPR02",
+  "customer_industry": "SEMICONDUCTOR",
+  "severity": 4,
+  "characteristic_id": null,
+  "characteristic_symbol": null,
+  "repeat_signal": 0,
+  "analysis_level": "L1",
+  "needs_approval": false,
+  "approval_reasons": [],
+  "provisional": false,
+  "rationale": "불량 형태 동 노출·스크래치, 심각도 4, 고객 SEMICONDUCTOR → L1",
+  "as_of": "2025-10-03T18:06:24+09:00"
+ },
  "analysis": {
   "rma_id": "RMA-07208",
   "as_of": "2025-10-03T20:42:18+09:00",
@@ -1953,7 +1968,7 @@
   "model_versions": {
    "llm": "openai:gpt-5.4-mini",
    "prompt": "agents-0.4",
-   "rules": "pcb-v4"
+   "rules": "pcb-v5"
   },
   "elapsed_ms": 7478
  }

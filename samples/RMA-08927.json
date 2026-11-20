@@ -43,6 +43,23 @@
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
+ "triage": {
+  "rma_id": "RMA-08927",
+  "minor_code": "ELEC02",
+  "customer_industry": "AUTOMOTIVE",
+  "severity": 8,
+  "characteristic_id": null,
+  "characteristic_symbol": null,
+  "repeat_signal": 1,
+  "analysis_level": "L3",
+  "needs_approval": true,
+  "approval_reasons": [
+   "차량 고객 + 심각도 8 이상"
+  ],
+  "provisional": false,
+  "rationale": "불량 형태 쇼트, 심각도 8, 고객 AUTOMOTIVE, 동일 고객·불량 형태 30일 내 3건째 이상 → L3",
+  "as_of": "2025-11-20T11:46:17+09:00"
+ },
  "analysis": {
   "rma_id": "RMA-08927",
   "as_of": "2025-11-20T12:41:37+09:00",
@@ -1915,7 +1932,7 @@
   "model_versions": {
    "llm": "openai:gpt-5.4-mini",
    "prompt": "agents-0.4",
-   "rules": "pcb-v4"
+   "rules": "pcb-v5"
   },
   "elapsed_ms": 8296
  }

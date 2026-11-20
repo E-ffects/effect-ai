@@ -6,13 +6,13 @@
 - 상태: **초안.** 3장 API와 5장 저장 책임을 팀이 확인하면 v1.0으로 확정한다.
 
 ## 요약
-- AI 서비스는 **FastAPI 하나**다. **지금은 화면(Vue)이 AI API를 직접 부른다**(`/api/ai/...`, 3-0). Spring이 준비되면 Spring 경유로 바꾼다. 그때도 FastAPI 코드는 바뀌지 않는다.
+- AI 서비스는 **FastAPI 하나**다. **화면은 Spring만 부르고, Spring이 AI 서버를 부른다**(3-0, Spring_API_v4 2026-11-20 확정). 화면이 AI 서버를 직접 부르지 않는다.
 - API는 4개다: **분류**(바로 응답), **원인분석**(등록 → 상태 조회), **유사 사례**(바로 응답), **사례 반영**(승인 후 알림).
 - AI는 DB를 **읽기만** 한다. 업무 상태, 승인, AI 결과 저장은 **Spring**이 한다.
 - 에이전트는 **5개**(CS, 오케스트레이터, QA, 제조, 원인분석)이고, 팀 구조도를 그대로 따른다. CS가 앞단에서 접수·분류하고, QA와 제조가 분석 전후로 두 번씩 일하며, 원인분석 결과는 QA가 검토해 L3(Major) 건의 사람 승인을 요청한다.
 - 에이전트 구성은 A안(자율형)과 B안(혼합형) 두 가지를 정리했다. **어느 쪽이든 이 API는 같다.** 그래서 백·프론트는 지금 바로 개발을 시작해도 된다.
 - **역할 경계:** 에이전트 로직(LangGraph 그래프, 도구, 프롬프트, LangSmith 추적 코드, 평가)은 **AI(유희범)** 가 `rma_agent` 패키지로 제공한다. FastAPI 서비스(주소, 작업 등록·조회, 오류 응답, Dockerfile)와 **목업**은 **구태우**, LangSmith 계정·키·관측 설정은 **이상윤**, Spring 연동·저장은 **윤서정**이 맡는다.
-- 목업은 이 문서의 JSON 예시를 그대로 돌려주면 된다. 실제 AI는 나중에 `rma_agent`의 함수 호출로 목업 자리에 들어간다.
+- 목업은 Spring의 `MockAiClient`가 `samples/*.json`(실제 에이전트 응답)을 돌려주는 방식이다(Spring_API_v4 5-4). 실제 AI는 FastAPI가 `rma_agent` 함수를 불러 같은 형식으로 돌려준다.
 
 ---
 
@@ -138,10 +138,12 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 
 ## 3. API
 
-- 기본 주소: `http://{ai-host}/ai/v1`. 화면은 `/api/ai/...`로 부르고 프록시가 이 주소로 넘긴다(3-0).
-- 공통 헤더: `Content-Type: application/json`. `X-Request-Id`는 있으면 로그에 쓴다(선택). **`Authorization` 헤더의 Spring 토큰(JWT)을 AI 서버가 Spring과 같은 `jwt.secret`으로 검증한다.** 고객대응관리자(CS) 역할이면 원인·설비·Lot 정보를 빼고 보낸다(검증과 필터링은 AI 서버가 하고, `rma_agent` 함수의 입출력은 그대로다).
+- 기본 주소: `http://{ai-host}/ai/v1` (Spring 설정 `ai.base-url`, local `http://127.0.0.1:8080/ai/v1`). 호출하는 쪽은 Spring뿐이다(3-0).
+- 공통 헤더: `Content-Type: application/json`. `X-Request-Id`는 있으면 로그에 쓴다(선택). **`Authorization: Bearer <서비스 토큰>`**: Spring이 같은 `jwt.secret`으로 발급한 토큰(`sub = "spring"`, `role = "SYSTEM"`, 유효 10분)을 AI 서버가 검증한다. 사용자 토큰은 넘어오지 않는다.
+- AI 서버는 `SYSTEM`에 **전체 결과**를 준다. 고객대응관리자(CS) 화면용 필터(원인·설비·Lot·`trace` 제외)는 **Spring이** 적용한다(Spring_API_v4 4-5). `rma_agent` 함수의 입출력은 그대로다.
 - 시각: ISO 8601, `+09:00`
-- **기준 시각 `as_of`:** 생략하면 서버 설정값을 쓴다. 시연 기본값은 `2025-12-31T23:59:00+09:00`. AI는 이 시각 이전에 알 수 있었던 데이터만 쓴다.
+- **기준 시각 `as_of`:** Spring은 보내지 않는다(Spring_API_v4). 생략하면 AI가 그 접수의 분석 시작 시각(QA 판정·접수 분류가 저장된 시각 중 늦은 쪽)으로 정해 응답의 `as_of`로 돌려주고, Spring은 그 값을 저장한다. AI는 이 시각 이전에 알 수 있었던 데이터만 쓴다.
+- 시간 제한(Spring 쪽): 연결 2초, 응답은 `classify`·`triage` 10초, 그 밖 5초. 연결 실패·5xx·시간 초과는 Spring이 `AI_UNAVAILABLE`(503)로 바꾼다.
 
 | # | 메서드·경로 | 방식 | 목표 응답 시간 | 용도 |
 |---|---|---|---|---|
@@ -155,30 +157,26 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 
 챗봇(`POST /chat`)은 2차 범위로, 4번 유사 사례를 근거로 쓰는 형태로 추가한다.
 
-### 3-0. 호출 경로 (지금: 화면 직접 호출)
+### 3-0. 호출 경로 (Spring_API_v4, 2026-11-20 확정)
 ```
-브라우저 ── /api/ai/classify ──▶ 프록시(Vite 개발 서버, nginx) ── /ai/v1/classify ──▶ AI 서버 (FastAPI :8080, 별도 저장소) → rma_agent
-        └─ /api/...(그 밖) ──────▶ 프록시 ────────────────────────────────────────▶ 백엔드 (Spring :8000)
+브라우저 ── /api/... ──▶ Spring (:8000) ── 서비스 토큰(SYSTEM) ── /ai/v1/... ──▶ AI 서버 (FastAPI :8080) → rma_agent
+                              │                                                          │
+                              └── pcb·app 스키마 읽기/쓰기                 pcb 스키마 읽기 전용 ──┘
 ```
-| 화면이 부르는 경로 | FastAPI 경로 |
-|---|---|
-| `POST /api/ai/classify` | `POST /ai/v1/classify` |
-| `POST /api/ai/analyses` | `POST /ai/v1/analyses` |
-| `GET /api/ai/analyses/{analysis_id}` | `GET /ai/v1/analyses/{analysis_id}` |
-| `GET /api/ai/claims/{rma_id}/similar` | `GET /ai/v1/claims/{rma_id}/similar` |
-| `GET /api/ai/health` | `GET /ai/v1/health` |
+| Spring이 부르는 때 | AI API | Spring이 하는 일 |
+|---|---|---|
+| 접수 저장 직후 | `POST /classify` (3-1) | 분류됨이면 `symptom_assessment` 저장, 정보 부족·분류 불가면 재질의(`NEEDS_INFO`) |
+| 분류 저장 직후 | `POST /triage` (3-7) | `provisional: false`면 `qa_triage` 바로 저장, `true`면 품질관리자 확인 대기 |
+| QA 판정 저장 직후 (자동), 재분석 버튼 | `POST /analyses` (3-2) | `ai_analysis(QUEUED)` 생성 |
+| 등록 뒤 백그라운드로 `poll_after_ms` 간격 | `GET /analyses/{analysis_id}` (3-3) | 상태·진행 갱신, 끝나면 결과 저장 (B안 최대 40초, A안 100초) |
+| 2단계 (유사 사례 화면) | `GET /claims/{rma_id}/similar` (3-4) | |
+| 원인 판정 저장 뒤 | `POST /cases/refresh` (3-5) | 실패하면 1분 간격 최대 5회 재시도 |
+| 상태 표시 | `GET /health` (3-6) | |
 
 - 포트: **AI 서버 8080, Spring 8000** (2026-11-19 팀 결정).
-- `/cases/refresh`는 화면이 아니라 승인 저장 쪽(Spring 또는 운영자)이 부른다.
-- **Vite 개발 서버** (`vite.config.js`): `/api/ai` 규칙을 `/api`보다 **먼저** 둔다.
-  ```js
-  proxy: {
-    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8080', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
-    '/api': process.env.API_TARGET || 'http://127.0.0.1:8000',
-  }
-  ```
-- **nginx** (`nginx.conf`): `location /api/ai/ { proxy_pass http://ai:8080/ai/v1/; proxy_read_timeout 60s; }`를 `location /api/` 위에 둔다.
-- **임시 구조의 한계:** 분석 결과는 FastAPI 메모리에만 있다(재시작하면 사라짐). 채택·기각·승인 저장과 `ai_analysis` 테이블은 Spring이 붙은 뒤 5장대로 한다.
+- 화면은 AI 서버를 직접 부르지 않는다. 프론트에 `/api/ai` 프록시 규칙은 필요 없다.
+- AI 서버 연결 전에는 Spring의 `MockAiClient`가 `samples/*.json`을 돌려준다(Spring_API_v4 5-4). `ai.mode=http`로 바꾸면 실제 호출이다.
+- 분석 작업 상태는 FastAPI 메모리에 있다. 결과의 영구 저장(`app.ai_analysis`)은 Spring이 폴링해서 한다. AI 서버가 재시작되어 조회가 404면 Spring이 `ANALYSIS_LOST`로 처리한다.
 
 ### 3-1. `POST /classify`
 **요청**
@@ -409,7 +407,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
-  "model_versions": {"llm": "설정값", "prompt": "agents-0.3", "rules": "pcb-v4"},
+  "model_versions": {"llm": "설정값", "prompt": "agents-0.3", "rules": "pcb-v5"},
   "elapsed_ms": 8040
 }
 ```
@@ -703,7 +701,7 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 
 ### 3-6. `GET /health`
 ```json
-{"status": "ok", "db": "ok", "llm": "ok", "version": "0.1.0", "rules": "pcb-v4"}
+{"status": "ok", "db": "ok", "llm": "ok", "version": "0.1.0", "rules": "pcb-v5"}
 ```
 `llm`이 `"down"`이면 분석 결과가 `PARTIAL`로 나온다.
 

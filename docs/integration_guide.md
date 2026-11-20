@@ -1,7 +1,7 @@
 # AI 패키지 연결 안내 (FastAPI · LangSmith)
 
-- 대상: 구태우(FastAPI), 윤서정(프론트), 이상윤(LangSmith)
-- **지금 구조:** 화면이 AI API를 직접 부른다(`/api/ai/...` → FastAPI `/ai/v1/...`). Spring이 준비되면 Spring 경유로 바꾼다(명세 3-0).
+- 대상: 구태우(FastAPI), 윤서정(Spring), 프론트, 이상윤(LangSmith)
+- **구조:** 화면 → Spring(`/api/...`) → AI 서버(FastAPI `/ai/v1/...`) → `rma_agent`. 화면은 AI 서버를 직접 부르지 않는다(명세 3-0, Spring_API_v4 2026-11-20 확정).
 - 기준: `feature/ai-baseline` 브랜치, 명세 `docs/api_spec.md` v0.3
 - 문의: 유희범(AI/DATA)
 
@@ -33,7 +33,7 @@ cp .env.example .env
 - **키가 없으면:** LLM은 템플릿 문장, LangSmith는 추적 없이 그대로 돈다. 개발 중에는 `RMA_LLM=off`가 빠르다(분석 약 0.6초, LLM 켜면 약 10초).
 
 ## 3. FastAPI가 부르는 함수 (구태우)
-AI 서버(FastAPI)는 `rma_agent`의 함수 5개만 부른다. 에이전트 내부가 바뀌어도 이 함수들의 입출력은 명세대로 유지한다.
+AI 서버(FastAPI)는 `rma_agent`의 아래 함수만 부른다. 에이전트 내부가 바뀌어도 이 함수들의 입출력은 명세대로 유지한다.
 
 | 함수 | API | 반환 | 시간 |
 |---|---|---|---|
@@ -42,9 +42,14 @@ AI 서버(FastAPI)는 `rma_agent`의 함수 5개만 부른다. 에이전트 내�
 | `similar_cases(rma_id, as_of=None, limit=5)` | `GET /claims/{id}/similar` | 3-4 응답 dict | 0.1초 |
 | `refresh_cases()` | `POST /cases/refresh` | 사례 수(int) | 0.3초 |
 | `triage(rma_id, as_of=None)` | `POST /triage` | 3-7 응답 dict (새 접수의 QA 판정안) | 0.01초 |
+| `pattern_priority(as_of=None, weights=None, limit=None)` | `GET /priority/patterns` (2단계) | 3-8 응답 dict | 0.1초 |
+| `response_priority(as_of=None, weights=None, limit=None)` | `GET /priority/responses` (2단계) | 3-8 응답 dict | 0.1초 |
 
 - `classify`는 과거 접수 검색(약 0.03초) 뒤 LLM이 소분류를 고른다(LLM 켜면 약 1.3초). LLM이 없거나 실패하면 검색 결과로 답한다. 처음 호출 때 접수 색인을 만든다(약 0.6초).
 - `as_of`를 주면 그 시각 이전에 분류된 접수만 예시로 쓴다. 생략하면 전체를 쓴다.
+- Spring의 `POST /classify` 요청은 `reported_part_no`로 온다. `classify(part_no=body["reported_part_no"], ...)`로 넘긴다.
+- **인증:** Spring이 같은 `jwt.secret`으로 발급한 서비스 토큰(`role = "SYSTEM"`, 유효 10분)만 받는다. 서명·만료·`role`을 확인하고 아니면 401. `SYSTEM`에는 결과 전체를 준다(CS 필터는 Spring이 한다).
+- Spring은 `as_of`를 보내지 않는다. `rma_agent`가 정한 `as_of`가 응답에 들어가니 그대로 돌려주면 Spring이 저장한다.
 
 ### `run_analysis` 쓰는 법
 - **동기 함수다.** 요청 스레드에서 기다리지 말고 작업으로 돌린다(스레드 풀 또는 BackgroundTasks). 여러 건을 동시에 돌려도 된다(DB는 읽기 전용, 연결은 스레드 공유 가능).
@@ -133,47 +138,17 @@ def get_analysis(analysis_id: str):
 | `RMA-99999` | 없는 접수 → `CLAIM_NOT_FOUND` |
 | `RMA-08927` + `as_of="2025-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
 
-## 4. 프론트 연결 (윤서정)
-화면은 AI API를 `/api/ai/...`로 부른다. 포트는 AI 서버 8080, Spring 8000이다. 프록시가 `/api/ai/`만 FastAPI(`/ai/v1/`)로 넘기고, 나머지 `/api/`는 지금처럼 백엔드로 보낸다. 경로 대응은 명세 3-0.
+## 4. Spring 연결 (윤서정)
+Spring이 AI 서버를 부르는 순서·저장·오류 처리는 `Spring_API_v4.md`(4~6장)가 기준이다. AI 쪽에서 알아 둘 점만 적는다.
 
-**`vite.config.js`** (`/api/ai`를 `/api`보다 먼저)
-```js
-server: {
-  host: true, port: 5173,
-  proxy: {
-    '/api/ai': { target: process.env.AI_TARGET || 'http://127.0.0.1:8080', rewrite: (p) => p.replace(/^\/api\/ai/, '/ai/v1') },
-    '/api': process.env.API_TARGET || 'http://127.0.0.1:8000',
-  },
-},
-```
-**`nginx.conf`** (`location /api/` 위에)
-```nginx
-location /api/ai/ {
-    resolver 127.0.0.11 valid=10s ipv6=off;
-    set $ai http://ai:8080;
-    rewrite ^/api/ai/(.*)$ /ai/v1/$1 break;
-    proxy_pass $ai;
-    proxy_read_timeout 60s;
-    error_page 502 504 = @ai_down;
-}
-location @ai_down {
-    default_type application/json;
-    charset utf-8;
-    return 503 '{"detail":"AI 분석을 잠시 사용할 수 없습니다","code":"SERVICE_UNAVAILABLE"}';
-}
-```
-- AI가 꺼져 있으면 503이 가서, `api.js`가 이미 하는 대로 "AI 일시 불가" 배너가 뜬다.
+- **목업부터:** AI 서버가 없을 때는 `MockAiClient`가 `samples/*.json`을 돌려준다. 샘플마다 `classify`, `triage`(QA 판정안), `analysis`(분석 결과, 분류 불가 샘플은 없음)가 실제 에이전트 응답 그대로 들어 있다.
+- **새 접수가 분석되려면 DB에 이 행이 있어야 한다:** `rma_claim`, `rma_item`(`lot_id`가 있어야 Lot 추적), `symptom_assessment`(분류 결과), `qa_triage`(QA 판정, `decided_at`). 접수가 없으면 `CLAIM_NOT_FOUND`(404), 분류나 QA 판정이 아직 없으면 `AS_OF_INVALID`(422)를 준다.
+- **원인 판정을 저장할 때 (`cause_assessment` 새 행):** `cause_category`(`cause_master`에서), `assessed_at`은 DB 필수다. 채택한 원인 후보의 `process_id`, `equipment_id`도 채워야 다음 분석에서 그 사례가 장비 근거로 쓰인다. `claim_cause.decided_at`과 `cause_assessment.approved_at`이 둘 다 있어야 사례로 잡힌다.
+- **저장한 뒤 `POST /cases/refresh`:** AI가 사례 저장소를 다시 읽는다. 부르지 않으면 새 확정 원인이 다음 분석에 안 쓰인다.
+- **CS 화면 필터:** AI는 전체 결과를 준다. CS에게는 Spring이 `classification`, `qa_review.{analysis_level, needs_approval}`, `drafts.customer_reply`, `drafts.service_action`만 넘긴다. `drafts.service_action.basis`에는 원인·설비 이름이 없어 그대로 보여도 된다. 과거 처리 기록이 없으면 `service_action`이 `null`이니 "제안 없음"으로 표시한다.
+- **시간 제한:** `classify`는 LLM을 켜면 약 1.3초, `triage`는 0.01초라 10초 제한 안에 들어온다. 분석은 약 10초라 폴링으로 받는다.
 
-**화면별로 바꿀 곳** (응답 모양은 `samples/*.json`, 그리는 법은 화면 시안 참고)
-| 화면 | 지금 부르는 것 | 바꿀 것 |
-|---|---|---|
-| 접수 (`IntakeView.vue`) | `POST /intake` → `subtype` | 저장 전에 `POST /api/ai/classify`로 소분류·근거 구절·재질의 문구 표시 (`status`가 `INSUFFICIENT_INFO`면 `follow_up_questions`) |
-| RMA 상세 AI (`useRmaDetail.js`, `RmaDetailQuality.vue`) | `GET /rmas/{id}/ai` → `suggestion`, `basis` | `POST /api/ai/analyses` `{rma_id}` → 1초마다 `GET /api/ai/analyses/{id}`, `status`가 `SUCCEEDED`·`PARTIAL`이면 `result`를 그린다. 실행 중에는 `progress.current_agent`로 단계 표시 |
-| 유사 사례 (`agent.js` `fetchSimilar`) | `GET /rmas/{id}/similar` → `basis`, `past_action` | `GET /api/ai/claims/{id}/similar` → `items[]`의 `cause_code`, `similarity`, `corrective_actions` |
-| 에이전트 패널 (`agent.js` `fetchAnalysis`) | `GET /rmas/{id}` | 위 분석 결과의 `qa_review`(분석 수준, 승인 필요), `cause_candidates[0]`(1순위 원인·공정·장비) |
-
-- 분석은 LLM을 켜면 약 10초 걸린다. `poll_after_ms`(1000) 간격으로 조회한다.
-- 지금 분석 결과는 FastAPI 메모리에만 있다. 채택·기각·승인 저장은 Spring이 붙은 뒤에 한다(시안 화면의 버튼도 아직 저장하지 않는다).
+**프론트:** 화면은 Spring API만 부른다(`/api/...`). AI 서버 주소나 `/api/ai` 프록시 규칙은 필요 없다. 분석 결과의 모양은 `GET /api/rmas/{rmaId}/analysis`의 `result`가 명세 3-3 `result`와 같으므로 `samples/*.json`의 `analysis.result`를 보고 그리면 된다.
 
 ## 5. LangSmith (이상윤)
 1. LangSmith에서 프로젝트 `effect-ai`를 만들고 API 키를 발급한다.
@@ -182,7 +157,7 @@ location @ai_down {
 
 **트레이스 구조** (분석 1건 = 트레이스 1개)
 ```
-rma_analysis RMA-08927            태그: mode:B, pcb-v4 / 메타데이터: rma_id, as_of, mode
+rma_analysis RMA-08927            태그: mode:B, pcb-v5 / 메타데이터: rma_id, as_of, mode
 ├─ orchestrator
 ├─ qa_triage ─ triage_rules
 ├─ mfg_trace ─ lot_trace
