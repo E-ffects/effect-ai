@@ -26,3 +26,15 @@ def triage(rma_id, as_of=None):
     """QA triage proposal for a new intake: {severity, characteristic_symbol, analysis_level, needs_approval, rationale, ...}."""
     from .agents.graph import triage as propose
     return propose(rma_id, as_of=as_of)
+
+
+def pattern_priority(as_of=None, weights=None, limit=None):
+    """Quality action priority per open pattern (investigation), 0~100 with per-part basis (rma_agent/priority.py)."""
+    from .priority import pattern_priority as score
+    return score(as_of=as_of, weights=weights, limit=limit)
+
+
+def response_priority(as_of=None, weights=None, limit=None):
+    """Customer response priority per return with an open CS reply; safety (CC) returns pinned on top."""
+    from .priority import response_priority as score
+    return score(as_of=as_of, weights=weights, limit=limit)

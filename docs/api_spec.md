@@ -91,6 +91,8 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | `similar_cases(rma_id, as_of=None, limit=5)` | `GET /claims/{id}/similar` | 3-4 응답의 dict |
 | `refresh_cases()` | `POST /cases/refresh` | 사례 수 |
 | `triage(rma_id, as_of=None)` | `POST /triage` | 3-7 응답의 dict (새 접수의 QA 판정안) |
+| `pattern_priority(as_of=None, weights=None, limit=None)` | `GET /priority/patterns` | 3-8 응답의 dict (패턴별 품질 조치 우선순위) |
+| `response_priority(as_of=None, weights=None, limit=None)` | `GET /priority/responses` | 3-8 응답의 dict (반품별 고객 응대 우선순위) |
 
 - 작업 등록·상태 저장·시간 초과 처리는 FastAPI가 한다. `run_analysis`는 동기 함수이며 끝나면 결과를 돌려준다.
 - LangSmith 추적은 `rma_agent` 안에서 남긴다. 환경 변수(`LANGSMITH_API_KEY`, `LANGSMITH_PROJECT`)만 서비스에 넣으면 된다.
@@ -728,6 +730,86 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 
 ---
 
+### 3-8. `GET /priority/patterns`, `GET /priority/responses` (우선순위 점수, 요구사항 FR-03)
+LLM 없이 DB 값으로 계산하는 점수다(0~100). 점수마다 항목별 점수와 근거 문장(`parts`)이 있어 화면에서 마우스를 올리면 그대로 보여 주면 된다. 가중치는 설정값이다(`weights`로 바꿀 수 있고 합이 1이 되도록 다시 나눈다). Spring이 같은 계산을 직접 해도 되고, 이 API를 불러도 된다.
+
+**요청 (쿼리)**: `as_of`(선택, 생략하면 데이터의 마지막 접수 시각), `limit`(선택), `weights`(선택, JSON 예: `{"loss": 0.4, "count": 0.2, "severity": 0.2, "trend": 0.2}`)
+
+**품질 조치 우선순위** (`/priority/patterns`, 패턴 = 조사 `investigation`, `as_of`에 열려 있는 것)
+
+| 항목 | 가중치 | 계산 |
+|---|---:|---|
+| 발생 건수·수량 (`count`) | 30% | 최근 30일 반품 수와 불량 수량. 각각 가장 큰 패턴 대비 비율의 평균 |
+| 손실 금액 (`loss`) | 30% | 최근 30일 추정 손실(`loss_ledger`). 가장 큰 패턴 대비 비율 |
+| 심각도 (`severity`) | 20% | 최근 30일 반품의 최고 QA 심각도 / 10 |
+| 증가 추세 (`trend`) | 20% | 패턴의 주 증상(가장 많은 접수 소분류)을 가진 전체 반품의 최근 30일 / 직전 30일 증가율. 0~100%로 자름(+100% 이상 만점) |
+
+- 재발 이력은 넣지 않는다(재발은 따로 모니터링).
+- 최근 30일만 보는 이유: 누적으로 세면 조치 후 잠잠해진 오래된 패턴이 위에 남는다. 매월 말 점수와 이후 60일 실제 손실의 순위상관이 누적 +0.03, 최근 30일 +0.38이었다(`scripts/eval_priority.py`).
+- 추세를 패턴 자신의 반품이 아니라 같은 증상 전체로 재는 이유: 패턴은 조사가 열린 뒤에만 반품이 모여 늘 "새로 생김"으로 보이기 때문이다.
+- `status`는 지금 상태(분석 중, 조치 진행, 효과 확인 중)다. `as_of` 이후에 닫힌 조사는 그 시점 상태가 데이터에 없어 `status: null`, `status_name: "진행 중"`이다.
+- 연결된 반품이 없는 조사(분기별 단발 묶음)도 열려 있으면 목록 끝에 0점대로 나온다.
+
+```json
+{
+  "as_of": "2025-12-31T18:56:13+09:00",
+  "weights": {"count": 0.3, "loss": 0.3, "severity": 0.2, "trend": 0.2},
+  "items": [
+    {
+      "rank": 1, "investigation_id": "INV-25-0023", "title": "오픈(단선) — 공통점 추적", "analysis_level": "L3",
+      "status": "MONITORING", "status_name": "효과 확인 중", "opened_at": "2025-11-17T10:18:22+09:00",
+      "main_symptom": "ELEC01", "claim_count": 218, "total_claim_count": 258, "defect_qty": 10551, "loss_krw": 1076025493,
+      "score": 88.9,
+      "reason": "발생 건수·수량 30.0점 · 손실 금액 27.9점 · 심각도 16.0점 · 증가 추세 15.0점",
+      "parts": {
+        "count": {"name": "발생 건수·수량", "weight": 0.3, "score": 1.0, "points": 30.0, "basis": "최근 30일 반품 218건 · 불량 10,551pcs (가장 큰 패턴 대비 100% · 100%)"},
+        "loss": {"name": "손실 금액", "weight": 0.3, "score": 0.9296, "points": 27.9, "basis": "최근 30일 추정 손실 10.76억 원 (가장 큰 패턴 대비 93%)"},
+        "severity": {"name": "심각도", "weight": 0.2, "score": 0.8, "points": 16.0, "basis": "최근 30일 최고 심각도 8/10"},
+        "trend": {"name": "증가 추세", "weight": 0.2, "score": 0.7477, "points": 15.0, "basis": "같은 증상(ELEC01) 반품 최근 30일 194건 / 직전 30일 111건 (+75%)"}
+      },
+      "recent_rma_ids": ["RMA-10603", "RMA-10596", "RMA-10591", "RMA-10585", "RMA-10583"]
+    }
+  ]
+}
+```
+`claim_count`·`defect_qty`·`loss_krw`는 최근 30일 값, `total_claim_count`는 `as_of`까지 연결된 전체 반품 수다.
+
+**고객 응대 우선순위** (`/priority/responses`, CS 회신이 끝나지 않은 반품 `cs_status <> 'CLOSED'`)
+
+| 항목 | 가중치 | 계산 |
+|---|---:|---|
+| 심각도 (`severity`) | 30% | QA 심각도 / 10 |
+| 처리 경과일 (`elapsed`) | 25% | 접수 후 일수 / 30 (30일 이상 만점) |
+| 제품 중요도 (`importance`) | 25% | 제품 용도: AUTOMOTIVE 1.0, SEMICONDUCTOR 0.8, INDUSTRIAL 0.6 (**가정값**, 팀 확인 필요) |
+| 클레임 수량 (`qty`) | 20% | 클레임 불량 수량, 로그 척도로 가장 큰 반품 대비 |
+
+- 안전 특성(CC) 반품은 점수와 관계없이 맨 위에 고정한다(`pinned: true`). v5 마지막 시점 기준 열린 반품 996건 중 44건.
+- 손실 금액은 품질 지표라 넣지 않는다.
+- CS 상태는 저장된 현재 값이다(상태 이력이 데이터에 없음). `as_of`는 경과일과 대상 반품 범위에만 쓴다.
+
+```json
+{
+  "as_of": "2025-12-31T18:56:13+09:00",
+  "weights": {"severity": 0.3, "elapsed": 0.25, "importance": 0.25, "qty": 0.2},
+  "items": [
+    {
+      "rank": 1, "rma_id": "RMA-09816", "customer_id": "A04", "opened_at": "2025-12-09T13:46:20+09:00",
+      "cs_status": "RESPONDED", "part_no": "PCB-ECU6-A1", "pinned": true, "score": 83.1,
+      "reason": "안전 특성(CC) 반품이라 맨 위 고정 · 심각도 27.0점 · 제품 중요도 25.0점 · 처리 경과일 18.5점 · 클레임 수량 12.6점",
+      "parts": {
+        "severity": {"name": "심각도", "weight": 0.3, "score": 0.9, "points": 27.0, "basis": "심각도 9/10 · 안전 특성(CC)"},
+        "elapsed": {"name": "처리 경과일", "weight": 0.25, "score": 0.7405, "points": 18.5, "basis": "접수 후 22일 (30일 이상은 만점)"},
+        "importance": {"name": "제품 중요도", "weight": 0.25, "score": 1.0, "points": 25.0, "basis": "AUTOMOTIVE 제품 (중요도 1.0)"},
+        "qty": {"name": "클레임 수량", "weight": 0.2, "score": 0.6289, "points": 12.6, "basis": "클레임 불량 24pcs"}
+      }
+    }
+  ]
+}
+```
+- 오류: `as_of` 형식 오류 `AS_OF_INVALID`(422), 모르는 가중치 이름이나 음수 가중치 `INVALID_INPUT`(400).
+
+---
+
 ## 4. 오류
 **오류 응답 형식** (화면의 `api.js`가 `detail`을 그대로 보여 준다)
 ```json
@@ -795,7 +877,7 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 | **RMA 조회 → 상세** · 품질관리자 | 상세 열기 또는 "AI 분석" · `/analyses` → 1초 조회 | 오케스트레이터, QA, 제조, 원인분석, CS | 원인 후보 표 (`cause_candidates`), 검토 근거 (`evidence`), 유출 원인 (`escape_candidates`), 유사 사례, QA 검토 (`qa_review`), 회신·개선안 초안 (`drafts`), 진행 단계 (`progress`, `trace`) |
 | **승인** · 품질관리자 (L3) | 원인 후보 채택·기각, 의견 → Spring 저장 → `/cases/refresh` | 없음 (사람 판단) | `qa_review.approval_reasons`, `candidate_checks`, `review_note`. 채택된 후보가 확정 원인이 되어 다음 반품 분석에 재사용됨 |
 | **대시보드** · 품질관리자 | 열기 · Spring 집계 | 없음 | 승인 대기 수, 원인 공정·장비 TOP(채택 기준), 손실 금액(`loss_ledger`) |
-| **불량 패턴 분석** · 품질관리자 | 패턴(조사) 선택 · Spring 집계 + `/claims/{id}/similar` | 원인분석 결과 재사용 | 패턴별 확정 원인·공정·장비, 관련 반품, 손실 합계(`loss_by_investigation`) |
+| **불량 패턴 분석** · 품질관리자 | 패턴(조사) 선택 · Spring 집계 + `/claims/{id}/similar` | 원인분석 결과 재사용 | 패턴별 확정 원인·공정·장비, 관련 반품, 손실 합계(`loss_by_investigation`), **우선순위 점수와 근거**(3-8 `/priority/patterns`) |
 | **알림 및 재발 관리** · 품질관리자 | 알림 확인 · 저장된 분석 결과 | 원인분석 결과 재사용 | 새 반품의 1순위가 과거 확정 원인과 같으면 재발 의심 알림 (예: P01 → P01R) |
 | **AI 보고서** · 품질관리자 | 보고서 생성 · 저장된 분석 결과 | 원인분석·QA·CS 결과 재사용 | 원인 후보와 검토 근거, QA 검토 의견, 개선안·회신 초안 |
 | **AI 어시스턴트** · 전체 (2차) | 질문 · `/chat` | 유사 사례 근거 | 현재 RMA 맥락의 답변과 근거 사례 |
