@@ -1848,6 +1848,16 @@
        "standard_action": "AOI 레시피 변경 승인 절차 및 결함 검출력 검증 필수화"
       }
      ]
+    },
+    "service_action": {
+     "action_type": "SORTING_SUPPORT_AND_CREDIT",
+     "action_name": "선별 지원·대금 공제",
+     "board_qty": 4,
+     "basis": "유사 사례 5건 중 5건이 선별 지원·대금 공제",
+     "similar_case_count": 5,
+     "expected_days": 7,
+     "expected_days_basis": "유사 사례 처리 결정→실행 5건의 중앙값",
+     "alternatives": []
     }
    }
   },
@@ -1927,9 +1937,10 @@
    {
     "step": 7,
     "agent": "CS",
-    "action": "QA 검토 결과로 고객 회신 초안 작성",
+    "action": "QA 검토 결과로 고객 회신 초안 작성, 처리방안 제안 선별 지원·대금 공제",
     "tools": [
-     "reply_template"
+     "reply_template",
+     "service_actions"
     ],
     "llm_used": true,
     "elapsed_ms": 1520

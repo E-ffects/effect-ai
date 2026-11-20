@@ -111,7 +111,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | `analysis_state` | `NOT_REQUESTED` / `QUEUED` / `RUNNING` / `SUCCEEDED` / `PARTIAL` / `FAILED` | AI 작업 상태(2-2). Spring `ai_analysis`에 저장 |
 | `approval_status` | `NOT_REQUIRED` / `WAITING` / `APPROVED` / `REJECTED` / `CONFIRMED` | Spring이 새로 관리 |
 
-- 새 접수 흐름: 접수(`rma_claim` 저장, `qa_status = RECEIVED`) → 분류(`POST /classify`) + **QA 판정안(`POST /triage`, 3-7)** → 품질관리자 확인·확정 → Spring이 `qa_triage` 저장, `qa_status = TRIAGED` → 원인분석(`POST /analyses`). 판정안은 저장하지 않고, 확정할 때만 `qa_triage`에 넣는다. 원인분석은 `qa_triage`가 있어야 시작할 수 있다.
+- 새 접수 흐름: 접수(`rma_claim` 저장, `qa_status = RECEIVED`) → 분류(`POST /classify`) + **QA 판정안(`POST /triage`, 3-7)** → Spring이 판정안을 바로 `qa_triage`에 저장(`decided_by = "QA_AGENT"`), `qa_status = TRIAGED` → 원인분석(`POST /analyses`) 자동 시작. 임시 판정(`provisional: true`)만 품질관리자가 확인한 뒤 저장한다. 원인분석은 `qa_triage`가 있어야 시작할 수 있다(2026-11-20 팀 결정, Spring_API_v4 4-6).
 - AI는 `qa_status`를 읽지 않는다. 판정 전후는 `qa_triage` 행이 있는지로 판단한다.
 - `PARTIAL`: 원인 순위·근거는 정상이고 LLM 문장만 빠졌다(`warnings: ["LLM_UNAVAILABLE"]`).
 - `approval_status`: L3는 `WAITING` → `APPROVED`/`REJECTED`, L1·L2는 QA 확인 시 `CONFIRMED`. 분석 전은 `NOT_REQUIRED`. 승인·확정 뒤 Spring이 `POST /cases/refresh`를 부른다.
@@ -151,7 +151,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | 4 | `GET /claims/{rma_id}/similar` | 바로 응답 | 2초 이내 | RMA 상세, 챗봇 |
 | 5 | `POST /cases/refresh` | 바로 응답 | 1초 이내 | 승인·확정 후 사례 저장소 갱신 알림 |
 | 6 | `GET /health` | 바로 응답 | — | 상태 확인 (LLM 연결 포함) |
-| 7 | `POST /triage` | 바로 응답 | 0.5초 이내 | 새 접수의 QA 판정안(분석 수준). 품질관리자 확인 후 Spring이 `qa_triage`에 저장 |
+| 7 | `POST /triage` | 바로 응답 | 0.5초 이내 | 새 접수의 QA 판정안(분석 수준). Spring이 바로 `qa_triage`에 저장(임시 판정만 품질관리자 확인 후) |
 
 챗봇(`POST /chat`)은 2차 범위로, 4번 유사 사례를 근거로 쓰는 형태로 추가한다.
 
@@ -388,6 +388,13 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
       "improvement": {
         "process": [{"cause_code": "OL_ETCH_RESIDUE", "action": "스프레이 노즐 막힘 점검 주기 단축(주→일) 및 압력 모니터링", "owner_dept": "공정기술팀"}],
         "inspection": [{"escape_code": "ESC_ET_FIXTURE", "action": "픽스처 핀 수명 관리 및 일일 골든 보드 검증"}]
+      },
+      "service_action": {
+        "action_type": "SORTING_SUPPORT_AND_CREDIT", "action_name": "선별 지원·대금 공제", "board_qty": 109,
+        "basis": "유사 사례 5건 중 3건이 선별 지원·대금 공제", "similar_case_count": 5,
+        "expected_days": 6, "expected_days_basis": "과거 선별 지원·대금 공제 전체 처리 결정→실행 1658건의 중앙값",
+        "alternatives": [{"action_type": "NO_CHARGE_SAMPLE_RETURN", "action_name": "무상 시료 회수", "count": 1},
+                         {"action_type": "CREDIT_NOTE", "action_name": "대금 공제", "count": 1}]
       }
     }
   },
@@ -398,7 +405,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
     {"step": 4, "agent": "CAUSE_ANALYSIS", "action": "이전 사례 검색, 원인 후보 순위·설명", "tools": ["past_cases", "similar_cases"], "llm_used": true, "elapsed_ms": 3600},
     {"step": 5, "agent": "QA", "action": "후보별 근거 검토, 승인 요청 (L3)", "tools": ["causal_requirements"], "llm_used": true, "elapsed_ms": 700},
     {"step": 6, "agent": "MANUFACTURING", "action": "1순위 후보(OL_ETCH_RESIDUE)·유출(ESC_ET_FIXTURE)의 공정·검사 개선안 초안", "tools": ["standard_actions"], "llm_used": true, "elapsed_ms": 900},
-    {"step": 7, "agent": "CS", "action": "QA 검토 결과로 고객 회신 초안 작성", "llm_used": true, "elapsed_ms": 900}
+    {"step": 7, "agent": "CS", "action": "QA 검토 결과로 고객 회신 초안 작성, 처리방안 제안 선별 지원·대금 공제", "tools": ["reply_template", "service_actions"], "llm_used": true, "elapsed_ms": 900}
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
@@ -409,6 +416,14 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 
 **필드 메모**
 - `drafts.improvement`: 제조 에이전트가 1순위 원인 후보(공정 개선)와 유출 원인 후보(검사 기준 개선)에 맞춰 쓴 초안.
+- `drafts.service_action`: 고객 처리방안 제안(Spring_API_v4 4-7). CS 에이전트가 **화면의 유사 사례(`similar_cases`)가 실제로 어떻게 처리됐는지**(`service_action`, `as_of`까지 결정된 것)를 보고 가장 많은 처리를 제안한다. 같으면 더 최근 것.
+  - `action_type`: `REPLACEMENT_SHIPMENT`(대체품 출하) / `CREDIT_NOTE`(대금 공제) / `SORTING_SUPPORT_AND_CREDIT`(선별 지원·대금 공제) / `NO_CHARGE_SAMPLE_RETURN`(무상 시료 회수). `action_name`은 화면 표시용 이름
+  - `board_qty`: 이 반품의 신고 불량 수량(`claimed_defect_qty`). 무상 시료 회수면 0
+  - `similar_case_count`: 처리 기록이 있는 유사 사례 수(최대 5). `basis`는 그 근거 문장이며 원인·설비 이름을 넣지 않는다(CS 화면에 그대로 보여도 됨)
+  - `expected_days`: 그 처리의 결정→실행 일수 중앙값. 유사 사례 중 실행된 것이 없으면 과거 같은 처리 전체로 계산한다(`expected_days_basis`에 어느 쪽인지 적음)
+  - `alternatives`: 유사 사례에서 나온 다른 처리와 건수
+  - 과거 처리 기록이 하나도 없으면 `null`이다
+  - 점검: 2025-10월 이후 처리 기록이 있는 반품 3,319건에서 실제 처리와 68.0% 일치(같은 유력 원인의 과거 반품 기준은 67.2%, `scripts/eval_service_action.py`). 제안이며, 처리 결정은 CS가 한다
 - `cause_candidates[].score`: 0~1. 같은 응답 안의 순위 비교용이며, 확률이 아니다.
 - `qa_review`: QA 에이전트의 판정(분석 전: 분석 수준·승인 필요 여부)과 검토(원인분석 후: 후보별 근거) 결과. `candidate_checks[].evidence_status`는 `SUFFICIENT`(확정에 필요한 근거 충분), `PARTIAL`(일부 있음, 예: 반송품 시험 대기), `INSUFFICIENT`(근거 부족). 기준은 원인별 필요 근거 규칙(`qa_causal_requirement`)이다.
 - `evidence[].type`: `SIMILAR_CASE`, `PROCESS_SIGNAL`, `EQUIPMENT_EVENT`, `INSPECTION`, `MATERIAL`, `SUPPLIER`
@@ -693,7 +708,9 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 `llm`이 `"down"`이면 분석 결과가 `PARTIAL`로 나온다.
 
 ### 3-7. `POST /triage`
-새 접수에는 `qa_triage`가 없어서 원인분석을 시작할 수 없다. 접수 분류(소분류)가 `symptom_assessment`에 저장된 뒤 이 API로 QA 판정안을 받고, 품질관리자가 확인(또는 수정)하면 Spring이 `qa_triage`에 저장한다.
+새 접수에는 `qa_triage`가 없어서 원인분석을 시작할 수 없다. 접수 분류(소분류)가 `symptom_assessment`에 저장된 뒤 이 API로 QA 판정안을 받는다(2026-11-20 팀 결정, Spring_API_v4 4-6).
+- `provisional: false`: Spring이 판정안을 **바로 `qa_triage`에 저장**하고(`decided_by = "QA_AGENT"`) 원인분석을 자동으로 시작한다. 품질관리자는 원인 판정 전까지 판정을 수정할 수 있다(`PUT /api/rmas/{rmaId}/triage`, L2 → L3로 올리면 승인 절차로 바뀜).
+- `provisional: true`(임시 판정, 접수 증상이 정보 부족·분류 불가): 저장하지 않고 품질관리자가 확인·수정한 뒤 저장하고 원인분석을 시작한다.
 
 **요청**
 ```json
@@ -892,6 +909,7 @@ AI 서비스는 DB에 **쓰지 않는다.** DB 계정은 읽기 전용으로 준
 | QA 검토 · 승인 사유 · 채택/기각 버튼 | QA → 사람 | `qa_review` |
 | 회신 초안 | CS | `drafts.customer_reply` |
 | 개선안 초안 (공정 개선 · 검사 기준 개선) | 제조 | `drafts.improvement` |
+| 처리방안 제안 (대체품 출하·대금 공제 등) | CS | `drafts.service_action` |
 | 진행 단계 | 오케스트레이터 | `progress`, `trace` |
 
 발표에서도 이 화면 하나로 "에이전트가 각각 무엇을 했는지"를 보여 줄 수 있다.

@@ -1,4 +1,6 @@
 """CS agent: classification at intake (already done by /classify) and the customer reply draft after QA review."""
+from datetime import datetime
+
 from langsmith import traceable
 from pydantic import BaseModel
 
@@ -80,3 +82,51 @@ def reply_with_llm(template, claim, classification_result, candidates, qa_review
              "템플릿 초안": template}
     result = llm.write("customer_reply", REPLY, facts, _Reply, lambda r: [r["customer_reply"]], outcome)
     return result["customer_reply"] if result else template
+
+
+ACTION_NAMES = {"REPLACEMENT_SHIPMENT": "대체품 출하", "CREDIT_NOTE": "대금 공제",
+                "SORTING_SUPPORT_AND_CREDIT": "선별 지원·대금 공제", "NO_CHARGE_SAMPLE_RETURN": "무상 시료 회수"}
+SAME_CAUSE_CASES = 30   # mode "cause": most recent past returns with the leading cause whose handling is looked at
+MIN_POOL = 3            # mode "cause": fewer handled returns than this -> the similar cases instead
+
+
+def service_action(store, claim, candidates, similar, mode="similar"):
+    """Proposal for how to settle the return with the customer (Spring_API_v4 4-7), from how past returns were handled.
+
+    Pool: the similar cases shown on screen (mode "similar", default), or the most recent past returns whose approved
+    cause is the leading candidate (mode "cause"). Matched the action actually taken in 68.0% vs 67.2% of returns
+    opened 2025-10~ (scripts/eval_service_action.py). The proposal is the pool's most common action (ties: the most
+    recent); board_qty is this return's claimed defect qty (0 for a sample return); expected_days is the median days
+    from decision to execution for that action in the pool (if none was executed by as_of: all past actions of that
+    type). The basis names no cause or equipment (the CS screen shows it). None when no past handling is known.
+    """
+    if mode == "cause" and candidates:
+        top = candidates[0]["cause_code"]
+        same = [c for c in store.past_cases(intake_label=claim.get("intake_label")) if c.cause_code == top]
+        acts, source = store.service_actions([c.rma_id for c in same[-SAME_CAUSE_CASES:]]), "같은 유력 원인의 과거 반품"
+        if len(acts) < MIN_POOL:
+            acts = []
+    else:
+        acts = []
+    if not acts:
+        acts, source = store.service_actions([s["rma_id"] for s in similar]), "유사 사례"
+    if not acts:
+        return None
+    counts = {}
+    for a in acts:
+        counts[a["action_type"]] = counts.get(a["action_type"], 0) + 1
+    last = {a["action_type"]: i for i, a in enumerate(acts)}
+    action = max(counts, key=lambda k: (counts[k], last[k]))
+    days = sorted((datetime.fromisoformat(a["executed_at"]) - datetime.fromisoformat(a["decided_at"])).total_seconds() / 86400
+                  for a in acts if a["action_type"] == action and a["executed_at"])
+    days_basis = "유사 사례"
+    if not days:  # none of the pool's actions was executed by as_of: all past actions of that type
+        days, days_basis = sorted(store.service_action_days(action)), f"과거 {ACTION_NAMES.get(action, action)} 전체"
+    expected = max(1, round(days[len(days) // 2])) if days else None
+    qty = 0 if action == "NO_CHARGE_SAMPLE_RETURN" else claim.get("claimed_defect_qty") or 0
+    return {"action_type": action, "action_name": ACTION_NAMES.get(action, action), "board_qty": qty,
+            "basis": f"{source} {len(acts)}건 중 {counts[action]}건이 {ACTION_NAMES.get(action, action)}",
+            "similar_case_count": len(acts), "expected_days": expected,
+            "expected_days_basis": f"{days_basis} 처리 결정→실행 {len(days)}건의 중앙값" if days else None,
+            "alternatives": [{"action_type": k, "action_name": ACTION_NAMES.get(k, k), "count": v}
+                             for k, v in sorted(counts.items(), key=lambda x: -x[1]) if k != action]}

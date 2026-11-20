@@ -1801,6 +1801,27 @@
        "standard_action": "픽스처 핀 수명 관리 및 일일 골든 보드 검증"
       }
      ]
+    },
+    "service_action": {
+     "action_type": "SORTING_SUPPORT_AND_CREDIT",
+     "action_name": "선별 지원·대금 공제",
+     "board_qty": 109,
+     "basis": "유사 사례 5건 중 3건이 선별 지원·대금 공제",
+     "similar_case_count": 5,
+     "expected_days": 6,
+     "expected_days_basis": "과거 선별 지원·대금 공제 전체 처리 결정→실행 1658건의 중앙값",
+     "alternatives": [
+      {
+       "action_type": "NO_CHARGE_SAMPLE_RETURN",
+       "action_name": "무상 시료 회수",
+       "count": 1
+      },
+      {
+       "action_type": "CREDIT_NOTE",
+       "action_name": "대금 공제",
+       "count": 1
+      }
+     ]
     }
    }
   },
@@ -1880,9 +1901,10 @@
    {
     "step": 7,
     "agent": "CS",
-    "action": "QA 검토 결과로 고객 회신 초안 작성",
+    "action": "QA 검토 결과로 고객 회신 초안 작성, 처리방안 제안 선별 지원·대금 공제",
     "tools": [
-     "reply_template"
+     "reply_template",
+     "service_actions"
     ],
     "llm_used": true,
     "elapsed_ms": 1660

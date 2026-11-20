@@ -46,6 +46,7 @@ class AnalysisState(TypedDict, total=False):
     candidate_lots: dict
     improvement: dict
     customer_reply: str
+    service_action: dict | None
     trace: Annotated[list, operator.add]
     warnings: Annotated[list, operator.add]
 
@@ -145,7 +146,10 @@ def cs_reply(state, rt, store, outcome):
     before = outcome.n_used
     text = cs.reply_with_llm(template, state["claim"], state["classification"], state["candidates"],
                              state["qa_review"], outcome)
-    return ({"customer_reply": text}, "QA 검토 결과로 고객 회신 초안 작성", ["reply_template"],
+    proposal = cs.service_action(store, state["claim"], state["candidates"], state["similar"])
+    return ({"customer_reply": text, "service_action": proposal},
+            "QA 검토 결과로 고객 회신 초안 작성" + (f", 처리방안 제안 {proposal['action_name']}" if proposal else ""),
+            ["reply_template", "service_actions"],
             outcome.n_used > before)
 
 
@@ -282,7 +286,8 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
             "candidate_lots": state["candidate_lots"],
             "recurrence_check": state["recurrence"],
             "similar_cases": state["similar"],
-            "drafts": {"customer_reply": state["customer_reply"], "improvement": state["improvement"]},
+            "drafts": {"customer_reply": state["customer_reply"], "improvement": state["improvement"],
+                       "service_action": state["service_action"]},
         },
         "trace": [{"step": i, **{k: v for k, v in e.items() if k != "order"}} for i, e in enumerate(trace, 1)],
         "warnings": warnings,

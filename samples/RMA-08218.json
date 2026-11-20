@@ -1706,6 +1706,27 @@
        "standard_action": "해당 특성 샘플 시험 Lot별 실시로 환원"
       }
      ]
+    },
+    "service_action": {
+     "action_type": "REPLACEMENT_SHIPMENT",
+     "action_name": "대체품 출하",
+     "board_qty": 16,
+     "basis": "유사 사례 5건 중 2건이 대체품 출하",
+     "similar_case_count": 5,
+     "expected_days": 5,
+     "expected_days_basis": "유사 사례 처리 결정→실행 2건의 중앙값",
+     "alternatives": [
+      {
+       "action_type": "SORTING_SUPPORT_AND_CREDIT",
+       "action_name": "선별 지원·대금 공제",
+       "count": 2
+      },
+      {
+       "action_type": "CREDIT_NOTE",
+       "action_name": "대금 공제",
+       "count": 1
+      }
+     ]
     }
    }
   },
@@ -1785,9 +1806,10 @@
    {
     "step": 7,
     "agent": "CS",
-    "action": "QA 검토 결과로 고객 회신 초안 작성",
+    "action": "QA 검토 결과로 고객 회신 초안 작성, 처리방안 제안 대체품 출하",
     "tools": [
-     "reply_template"
+     "reply_template",
+     "service_actions"
     ],
     "llm_used": true,
     "elapsed_ms": 1487

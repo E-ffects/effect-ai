@@ -21,6 +21,7 @@ import bisect
 import json
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 
 
 class FutureDataError(RuntimeError):
@@ -346,6 +347,28 @@ class AsOfStore:
             if r["rma_id"] != self.subject:
                 out[r["lot_id"]] += 1
         return dict(out)
+
+    def service_actions(self, rma_ids):
+        """Customer service actions (replacement, credit, ...) decided by as_of for these returns."""
+        ids = sorted(set(rma_ids) - {self.subject})
+        if not ids:
+            return []
+        rows = self._rows(f"""select i.rma_id, s.action_type, s.board_qty, s.decided_at, s.executed_at, s.result
+                              from service_action s join rma_item i using(rma_item_id)
+                              where i.rma_id in ({','.join('?' * len(ids))}) and s.decided_at<=?
+                              order by s.decided_at, s.action_id""", (*ids, self.as_of), "decided_at")
+        for row in rows:
+            if row["executed_at"] and row["executed_at"] > self.as_of:
+                row["executed_at"], row["result"] = None, "SCHEDULED"
+        return rows
+
+    def service_action_days(self, action_type):
+        """Days from decision to execution of every past action of this type executed by as_of."""
+        rows = self._rows("""select decided_at, executed_at from service_action
+                             where action_type=? and executed_at is not null and executed_at<=?""",
+                          (action_type, self.as_of), "executed_at")
+        return [(datetime.fromisoformat(r["executed_at"]) - datetime.fromisoformat(r["decided_at"])).total_seconds() / 86400
+                for r in rows]
 
     def reopened_investigations(self, investigation_ids):
         """Investigations reopened as a recurrence by as_of: {original investigation_id: [recurrence investigation_id]}."""

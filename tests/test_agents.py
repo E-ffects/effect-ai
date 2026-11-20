@@ -180,3 +180,22 @@ def test_similar_case_items_carry_screen_fields():
         assert isinstance(item["recurrence"], bool) and item["days_to_resolve"] >= 0
         assert item["cause_name"] and item["minor_name"]
     assert any("같은 Lot" in i["basis"] for i in out["items"])  # earlier returns from LT-01603
+
+
+def test_service_action_from_similar_cases_known_by_as_of(example):
+    """drafts.service_action (Spring_API_v4 4-7): from the handling of the similar cases on screen, decided by as_of."""
+    out, _ = example
+    res = out["result"]
+    p = res["drafts"]["service_action"]
+    assert set(p) >= {"action_type", "board_qty", "basis", "similar_case_count", "expected_days"}
+    assert p["action_type"] in ("REPLACEMENT_SHIPMENT", "CREDIT_NOTE", "SORTING_SUPPORT_AND_CREDIT", "NO_CHARGE_SAMPLE_RETURN")
+    conn = get_runtime().conn
+    ids = [s["rma_id"] for s in res["similar_cases"]]
+    rows = conn.execute(f"""select s.action_type, s.decided_at from service_action s join rma_item i using(rma_item_id)
+                            where i.rma_id in ({','.join('?' * len(ids))})""", ids).fetchall()
+    known = [r[0] for r in rows if r[1] <= out["as_of"]]
+    assert p["similar_case_count"] == len(known) and known.count(p["action_type"]) == max(map(known.count, known))
+    qty = conn.execute("select claimed_defect_qty from rma_item where rma_id='RMA-08927'").fetchone()[0]
+    assert p["board_qty"] == (0 if p["action_type"] == "NO_CHARGE_SAMPLE_RETURN" else qty)
+    assert all(c["cause_name"] not in p["basis"] for c in res["cause_candidates"])
+    assert isinstance(p["expected_days"], int) and p["expected_days"] > 0

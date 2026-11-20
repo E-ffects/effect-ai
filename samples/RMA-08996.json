@@ -1524,6 +1524,16 @@
        "standard_action": "해당 자재 수입검사 항목 추가(실측)"
       }
      ]
+    },
+    "service_action": {
+     "action_type": "REPLACEMENT_SHIPMENT",
+     "action_name": "대체품 출하",
+     "board_qty": 72,
+     "basis": "유사 사례 5건 중 5건이 대체품 출하",
+     "similar_case_count": 5,
+     "expected_days": 6,
+     "expected_days_basis": "과거 대체품 출하 전체 처리 결정→실행 4708건의 중앙값",
+     "alternatives": []
     }
    }
   },
@@ -1603,9 +1613,10 @@
    {
     "step": 7,
     "agent": "CS",
-    "action": "QA 검토 결과로 고객 회신 초안 작성",
+    "action": "QA 검토 결과로 고객 회신 초안 작성, 처리방안 제안 대체품 출하",
     "tools": [
-     "reply_template"
+     "reply_template",
+     "service_actions"
     ],
     "llm_used": true,
     "elapsed_ms": 1305
