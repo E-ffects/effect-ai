@@ -21,6 +21,7 @@ from langgraph.graph import END, START, StateGraph
 
 from . import cause_analysis, cs, llm, manufacturing, qa
 from .runtime import get_runtime
+from .. import ranker
 from ..asof import analysis_start
 from ..errors import AsOfInvalid, ClaimNotFound, InvalidInput, ServiceUnavailable, check_as_of
 
@@ -108,8 +109,10 @@ def cause_node(state, rt, store, outcome):
     if state["classification"].get("minor_code") in cs.NOT_CLASSIFIED:
         warnings.append("SYMPTOM_NOT_CONFIRMED")  # candidates are for reference until the customer answers
     top = ", ".join(c["cause_code"] for c in candidates) or "없음"
+    learned = ranker.active()
+    how = f", 상위 3개는 학습 모델({learned.name})로 재정렬" if learned and len(candidates) > 1 else ""
     return ({"candidates": candidates, "similar": similar, "warnings": warnings},
-            f"이전 사례 {len(store.past_cases(state['claim'].get('intake_label')))}건으로 원인 후보 순위: {top}",
+            f"이전 사례 {len(store.past_cases(state['claim'].get('intake_label')))}건으로 원인 후보 순위: {top}{how}",
             ["past_cases", "similar_cases", "process_signals"], outcome.n_used > before)
 
 
@@ -292,7 +295,8 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
         "trace": [{"step": i, **{k: v for k, v in e.items() if k != "order"}} for i, e in enumerate(trace, 1)],
         "warnings": warnings,
         "langsmith_run_id": str(run_id) if tracing else None,
-        "model_versions": {"llm": llm.model_name(), "prompt": PROMPT_VERSION, "rules": RULES_VERSION},
+        "model_versions": {"llm": llm.model_name(), "prompt": PROMPT_VERSION, "rules": RULES_VERSION,
+                           "cause_ranker": ranker.active().name if ranker.active() else None},
         "elapsed_ms": round((time.perf_counter() - started) * 1000),
     }
 

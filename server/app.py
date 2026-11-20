@@ -188,6 +188,8 @@ def _auth_dependency(secret):
 
 
 def _secret_from_env():
+    from rma_agent.agents.llm import _load_dotenv
+    _load_dotenv()  # effect-ai/.env, same as the LLM settings
     if os.environ.get("RMA_AUTH", "").lower() == "off":
         log.warning("RMA_AUTH=off: service token is not checked (local use only)")
         return None

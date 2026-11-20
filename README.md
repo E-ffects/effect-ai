@@ -20,6 +20,7 @@ pip install -r requirements.txt
 | `rma_agent/agents/classifier.py` | CS 접수 분류: 과거 접수 검색 + LLM(소분류 정의·예시) |
 | `rma_agent/agents/runtime.py` | 공유 자원(DB, 사례 저장소, 공정 기준선, 기준 테이블). 한 번만 불러온다 |
 | `rma_agent/tools/process.py` · `inspection.py` | 공정 신호(조건 이탈·σ·설비 이벤트), 검사 장비 검출률 |
+| `rma_agent/ranker.py` · `models/` | 원인 후보 학습 재정렬(선택). 모델은 계수만 담은 JSON |
 | `rma_agent/predictors.py` | 예측기. 기준선 A(글자 유사도), B(같은 소분류의 과거 원인), C(원인분석 에이전트) |
 | `rma_agent/truth.py` | 평가용 정답. **예측기에서 import 금지** |
 | `rma_agent/evaluate_classify.py` | CS 분류 정확도 평가 (`python3 -m rma_agent.evaluate_classify --llm 114`) |
@@ -57,6 +58,7 @@ orchestrator ─┬─ QA: 분석 수준 ────┐
 - LLM에는 도구 결과(사실 JSON)만 주고, 출력에 사실에 없는 숫자가 있으면 버리고 템플릿 문장을 쓴다(`LLM_OUTPUT_REJECTED`).
 - LLM이 꺼져 있거나 키가 없으면 템플릿 문장으로 동작한다. 호출이 실패하면 상태가 `PARTIAL`, 경고가 `LLM_UNAVAILABLE`이고 순위·근거는 그대로다.
 - 원인 점수 = 0.40 × 같은 소분류 투표 + 0.35 × 같은 제품 최근 60일 사례 + 0.25 × 이 Lot의 공정·자재 신호.
+- 학습 재정렬(선택, 기본 꺼짐): `RMA_CAUSE_RANKER=models/cause_ranker_v5.json`이면 위 점수의 상위 3개 순서를 로지스틱 회귀(`rma_agent/ranker.py`)가 다시 정한다. 2025-10월 이후 원인@1 78.2% → 85.0%, 장비@1 89.7% → 97.9%, 원인@3 그대로(`results/20261120_cause_ranker_agent_v5.md`). 다시 학습: `python3 -m rma_agent.ranker train`.
 - 장비는 이 Lot이 실제로 지난 장비 중 신호가 가장 강한 것이다. 같은 공정을 여러 장비로 나눠 지났으면 나머지는 `other_equipment`에 둔다.
 
 ## 설정

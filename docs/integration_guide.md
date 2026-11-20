@@ -28,6 +28,8 @@ cp .env.example .env
 | `RMA_DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
 | `RMA_DB_SCHEMA` | 팀 DB면 필수 | PCB 테이블이 있는 스키마. 팀 DB는 `pcb` | 윤서정 |
 | `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v5.sqlite`) | — |
+| `RMA_CAUSE_RANKER` | 선택 | 원인 후보 학습 재정렬. `models/cause_ranker_v5.json`이면 켬, 비우거나 `off`면 끔(기본). 응답 모양은 같다 | 팀 결정 |
+| `RMA_SERVICE_JWT_SECRET` | AI 서버 | Spring `jwt.secret`과 같은 값(3장 참고 서버). 로컬에서만 `RMA_AUTH=off` | 윤서정·구태우 |
 
 - **사용 금지 모델:** gpt-6-astra, gpt-6.1-sol, gpt-6-sol, gpt-5.5-pro. 설정해도 쓰지 않고 템플릿으로 동작한다.
 - **키가 없으면:** LLM은 템플릿 문장, LangSmith는 추적 없이 그대로 돈다. 개발 중에는 `RMA_LLM=off`가 빠르다(분석 약 0.6초, LLM 켜면 약 10초).

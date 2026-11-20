@@ -69,8 +69,11 @@ def _step_evidence(step, process_name):
 
 
 @traceable(name="rank_causes", run_type="tool", process_inputs=_hide)
-def rank_causes(masters, store, claim, lot_trace, top_k=3):
-    """Ranked cause candidates with evidence and a template explanation. [] when no past case has this label."""
+def rank_causes(masters, store, claim, lot_trace, top_k=3, ranker=...):
+    """Ranked cause candidates with evidence and a template explanation. [] when no past case has this label.
+
+    ranker: learned reordering of C's top 3 (rma_agent/ranker.py). Default: RMA_CAUSE_RANKER (off unless set).
+    """
     label = claim.get("intake_label")
     cases = store.past_cases(intake_label=label) if label else []
     if not cases:
@@ -175,7 +178,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
         types = {e["type"] for e in evidence}
         past_eq = {c.equipment_id for c in group if c.equipment_id}
         lot_eq = {st["equipment_id"] for st in steps.get(process_id, [])} if process_id else set()
-        features = {  # model inputs for experiments (scripts/cause_ranker.py); not in the response
+        features = {  # inputs of the learned ranker (rma_agent/ranker.py); not in the response
             "vote": vote, "recent": recent_score, "recent_n": len(recent), "n_cases": len(group), "n_label": len(cases),
             "signal": signal, "fit": fit, "with_equipment": with_equipment,
             "has_process_signal": "PROCESS_SIGNAL" in types, "has_event": "EQUIPMENT_EVENT" in types,
@@ -193,6 +196,11 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
             "other_equipment": other_equipment, "_vote": len(group), "_investigations": sorted({c.investigation_id for c in group}),
         })
     candidates.sort(key=lambda c: (-c["score"], -c["_vote"], c["cause_code"]))
+    if ranker is ...:
+        from ..ranker import active
+        ranker = active()
+    if ranker is not None:
+        candidates = ranker.rerank(candidates, store, claim, cases)
     for rank, c in enumerate(candidates, 1):
         c["rank"] = rank
         c["status"], c["source"] = "PROPOSED", "AI"

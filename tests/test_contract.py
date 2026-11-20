@@ -93,6 +93,7 @@ def test_live_analysis_has_the_sample_shape(live_analysis):
         if a is not None and b is not None:
             assert _shape(a) == _shape(b), key
     assert live["as_of"] == sample["analysis"]["as_of"]
+    assert set(live["model_versions"]) == set(sample["analysis"]["model_versions"])
 
 
 def test_live_analysis_ranks_like_the_sample(live_analysis):

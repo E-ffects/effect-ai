@@ -409,7 +409,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
-  "model_versions": {"llm": "설정값", "prompt": "agents-0.3", "rules": "pcb-v5"},
+  "model_versions": {"llm": "설정값", "prompt": "agents-0.4", "rules": "pcb-v5", "cause_ranker": null},
   "elapsed_ms": 8040
 }
 ```
@@ -425,6 +425,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   - 과거 처리 기록이 하나도 없으면 `null`이다
   - 점검: 2025-10월 이후 처리 기록이 있는 반품 3,319건에서 실제 처리와 68.0% 일치(같은 유력 원인의 과거 반품 기준은 67.2%, `scripts/eval_service_action.py`). 제안이며, 처리 결정은 CS가 한다
 - `cause_candidates[].score`: 0~1. 같은 응답 안의 순위 비교용이며, 확률이 아니다.
+- `model_versions.cause_ranker`: 원인 후보 학습 재정렬(WBS 4.12) 모델 이름, 꺼져 있으면 `null`(기본). 켜면 손으로 정한 점수의 상위 3개 안에서만 순서를 바꾸고, 그 3개의 `score`는 모델 확률이 된다. 필드와 모양은 같다(결과 `results/20261120_cause_ranker_agent_v5.md`).
 - `qa_review`: QA 에이전트의 판정(분석 전: 분석 수준·승인 필요 여부)과 검토(원인분석 후: 후보별 근거) 결과. `candidate_checks[].evidence_status`는 `SUFFICIENT`(확정에 필요한 근거 충분), `PARTIAL`(일부 있음, 예: 반송품 시험 대기), `INSUFFICIENT`(근거 부족). 기준은 원인별 필요 근거 규칙(`qa_causal_requirement`)이다.
 - `evidence[].type`: `SIMILAR_CASE`, `PROCESS_SIGNAL`, `EQUIPMENT_EVENT`, `INSPECTION`, `MATERIAL`, `SUPPLIER`
   - `SUPPLIER`: 이 Lot의 자재가 과거 확정 사례의 문제 자재와 같은 공급사·같은 종류의 다른 Lot이다. 참고 정보이며 점수와 QA 생산 근거에는 쓰지 않는다.
