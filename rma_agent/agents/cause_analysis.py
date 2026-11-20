@@ -39,6 +39,10 @@ def _shift(ts, days):
     return (datetime.fromisoformat(ts) + timedelta(days=days)).isoformat(timespec="seconds")
 
 
+def _day_num(ts):
+    return datetime.fromisoformat(ts).timestamp() / 86400
+
+
 def _day(ts):
     return ts[:10] if ts else ""
 
@@ -168,7 +172,19 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3):
                     fit = 1 - PENALTY_NO_MATCH
                     sentences.append(f"과거 사례의 장비({', '.join(sorted(past_equipment))})를 이 Lot은 거치지 않았습니다.")
 
+        types = {e["type"] for e in evidence}
+        past_eq = {c.equipment_id for c in group if c.equipment_id}
+        lot_eq = {st["equipment_id"] for st in steps.get(process_id, [])} if process_id else set()
+        features = {  # model inputs for experiments (scripts/cause_ranker.py); not in the response
+            "vote": vote, "recent": recent_score, "recent_n": len(recent), "n_cases": len(group), "n_label": len(cases),
+            "signal": signal, "fit": fit, "with_equipment": with_equipment,
+            "has_process_signal": "PROCESS_SIGNAL" in types, "has_event": "EQUIPMENT_EVENT" in types,
+            "has_material": "MATERIAL" in types, "has_supplier": "SUPPLIER" in types,
+            "lot_passed_past_equipment": bool(lot_eq & past_eq), "category": category,
+            "days_since_last": (_day_num(store.as_of) - _day_num(max(c.applied_at for c in group))),
+        }
         candidates.append({
+            "_features": features,
             "cause_code": code, "cause_name": cause_name, "cause_category": category,
             "process_id": process_token(process_id, category), "process_name": process_name,
             "equipment_id": equipment,
