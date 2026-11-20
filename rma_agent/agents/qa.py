@@ -9,6 +9,7 @@ from langsmith import traceable
 from pydantic import BaseModel
 
 from . import llm
+from ..tools.names import josa
 
 _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", "store")}
 PRODUCTION_EVIDENCE = ("PROCESS_SIGNAL", "EQUIPMENT_EVENT", "MATERIAL")
@@ -20,19 +21,23 @@ def triage(store, claim):
     if t is None:
         raise LookupError(f"{claim['rma_id']}: QA triage not decided at {store.as_of}")
     sev, symbol = t["severity"], t["characteristic_symbol"]
+    l3 = t["analysis_level"] == "L3"
+    # Only the L3 conditions are reasons for approval; repeat and SC are L2 conditions (they stay in rationale).
+    return {"severity": sev, "characteristic_symbol": symbol, "analysis_level": t["analysis_level"],
+            "needs_approval": l3, "approval_reasons": l3_reasons(sev, symbol, t["customer_industry"]) if l3 else [],
+            "rationale": t["rationale"]}
+
+
+def l3_reasons(severity, symbol, industry):
+    """Which L3 conditions of analysis_level_rule hold (the reasons a person must approve the cause)."""
     reasons = []
-    if sev >= 9:
+    if severity is not None and severity >= 9:
         reasons.append("심각도 9 이상")
     if symbol == "CC":
         reasons.append("CC 특별특성 관련")
-    if t["customer_industry"] == "AUTOMOTIVE" and sev >= 8:
+    if industry == "AUTOMOTIVE" and severity is not None and severity >= 8:
         reasons.append("차량 고객 + 심각도 8 이상")
-    if symbol == "SC":
-        reasons.append("SC 특별특성 관련")
-    if t["repeat_signal"]:
-        reasons.append("동일 고객·불량 형태 30일 내 3건 이상 반복")
-    return {"severity": sev, "characteristic_symbol": symbol, "analysis_level": t["analysis_level"],
-            "needs_approval": t["analysis_level"] == "L3", "approval_reasons": reasons, "rationale": t["rationale"]}
+    return reasons
 
 
 REPEAT_DAYS, REPEAT_COUNT = 30, 3   # same customer, same symptom: the 3rd return within 30 days
@@ -80,13 +85,7 @@ def propose_triage(masters, store, claim):
     rationale += f", 고객 {industry}"
     if repeat:
         rationale += ", 동일 고객·불량 형태 30일 내 3건째 이상"
-    reasons = []
-    if severity >= 9:
-        reasons.append("심각도 9 이상")
-    if symbol == "CC":
-        reasons.append("CC 특별특성 관련")
-    if industry == "AUTOMOTIVE" and severity >= 8:
-        reasons.append("차량 고객 + 심각도 8 이상")
+    reasons = l3_reasons(severity, symbol, industry)
     return {**base, "severity": severity, "characteristic_id": char_id, "characteristic_symbol": symbol,
             "repeat_signal": repeat, "analysis_level": level, "needs_approval": level == "L3",
             "approval_reasons": reasons if level == "L3" else [], "provisional": False,
@@ -134,9 +133,9 @@ def review_note(candidates, checks, triage_result):
     have = ", ".join(s.split(" (")[0] for s in check["satisfied"])
     if check["missing"]:
         need = ", ".join(m.split(" (")[0] for m in check["missing"])
-        note = f"1순위 후보 {top['cause_name']}은(는) {have} 근거가 있으나, {need}이(가) 없어 확정 전 확인이 필요합니다."
+        note = f"1순위 후보 {josa(top['cause_name'], '은')} {have} 근거가 있으나, {josa(need, '이')} 없어 확정 전 확인이 필요합니다."
     else:
-        note = f"1순위 후보 {top['cause_name']}은(는) 확정에 필요한 근거({have})를 갖췄습니다."
+        note = f"1순위 후보 {josa(top['cause_name'], '은')} 확정에 필요한 근거({have})를 갖췄습니다."
     if triage_result["needs_approval"]:
         reasons = ", ".join(triage_result["approval_reasons"]) or triage_result["analysis_level"]
         note += f" {reasons} 건으로 사람 승인을 요청합니다."
@@ -198,7 +197,7 @@ def _recurrence_check(masters, store, claim, lot_trace, candidates, review):
     # the sign of a sporadic cause is a leading candidate with no machine or material pinned down.
     if not top.get("equipment_id") and top.get("cause_category") != "MATERIAL":
         return {"status": "NOT_APPLICABLE", "corrective_action": None, "checks": None, "_why": "sporadic",
-                "reason": f"1순위 원인 {top['cause_name']}은(는) 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다."}
+                "reason": f"1순위 원인 {josa(top['cause_name'], '은')} 특정 설비·자재로 좁혀지지 않는 단발성 원인이라 재발 판정 대상이 아닙니다."}
     # only actions aimed at a machine or material lot are tracked for recurrence (quarterly "local" fixes are not)
     actions = [a for a in store.occurrence_actions(top["cause_code"])
                if a["implemented_at"] and (a["scope"].get("equipment") or a["scope"].get("material_lots"))]
@@ -244,7 +243,7 @@ def _recurrence_check(masters, store, claim, lot_trace, candidates, review):
                            or ("EQUIPMENT_EVENT" in types and in_scope is False))
     if after and symptom_known and not production_evidence:
         status = "PENDING_CAUSE_REVIEW"
-        reason = (f"Lot {lot_id}은(는) 같은 원인의 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐지만, 이 Lot에서 "
+        reason = (f"Lot {josa(lot_id, '은')} 같은 원인의 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐지만, 이 Lot에서 "
                   f"{top['cause_name']}의 근거(원인 공정의 조건 이탈, 조치하지 않은 설비의 이상, 자재)가 없어 원인부터 다시 확인해야 합니다.")
     elif not symptom_known:
         status = "PENDING_CAUSE_REVIEW"
@@ -252,14 +251,14 @@ def _recurrence_check(masters, store, claim, lot_trace, candidates, review):
                   "고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.")
     elif after:
         status = "RECURRENCE"
-        reason = f"Lot {lot_id}은(는) 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐고 원인이 같습니다."
+        reason = f"Lot {josa(lot_id, '은')} 조치 {action['corrective_action_id']}({day} 시행) 이후에 생산됐고 원인이 같습니다."
         if in_scope is False and scope_text:
             reason += f" 조치 범위({scope_text}) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다."
         elif in_scope:
             reason += " 조치가 적용된 범위 안에서 다시 발생해, 조치 효과를 다시 확인해야 합니다."
     else:
         status = "PRE_ACTION_PRODUCT"
-        reason = (f"Lot {lot_id}은(는) 조치 {action['corrective_action_id']}({day} 시행) 전에 생산된 제품입니다. "
+        reason = (f"Lot {josa(lot_id, '은')} 조치 {action['corrective_action_id']}({day} 시행) 전에 생산된 제품입니다. "
                   "재발이 아니라 조치 전 생산품의 반품입니다.")
     return {"status": status, "corrective_action": public_action, "checks": checks, "reason": reason}
 

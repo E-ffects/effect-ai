@@ -21,7 +21,7 @@ from . import llm
 
 from ..asof import process_token
 from ..tools.inspection import tested_at
-from ..tools.names import certainty_name, event_name, item_name
+from ..tools.names import certainty_name, event_name, item_name, josa
 
 RECENT_DAYS = 60
 W_VOTE, W_RECENT, W_SIGNAL = 0.40, 0.35, 0.25
@@ -111,7 +111,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3, ranker=...):
                                         f"{last.equipment_id or '장비 특정 불가'}, {certainty_name(last.certainty)}",
                              "ref_table": "rma_claim", "ref_id": last.rma_id, "occurred_at": last.opened_at})
             sentences.append(f"같은 제품({claim.get('spec_id')})의 {minor} 반품이 최근 {RECENT_DAYS}일 동안 "
-                             f"{len(recent)}건 {cause_name}(으)로 확정됐습니다.")
+                             f"{len(recent)}건 {josa(cause_name, '으로')} 확정됐습니다.")
         evidence.append({"type": "SIMILAR_CASE",
                          "summary": f"과거 {minor} 반품 {len(cases)}건 중 {len(group)}건이 {cause_name}",
                          "ref_table": "cause_assessment", "ref_id": code, "occurred_at": None})
@@ -127,7 +127,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3, ranker=...):
                     evidence.append({"type": "MATERIAL",
                                      "summary": f"자재 Lot {m} ({lot_materials[m]['material_type']}): 과거 {cause_name} 확정 사례와 같은 Lot",
                                      "ref_table": "material_lot", "ref_id": m, "occurred_at": lot_materials[m]["issued_at"]})
-                sentences.append(f"이 Lot에 쓰인 자재 Lot {', '.join(shared)}이(가) 과거 확정 사례와 같습니다.")
+                sentences.append(f"이 Lot에 쓰인 자재 Lot {josa(', '.join(shared), '이')} 과거 확정 사례와 같습니다.")
             elif past_lots and sum(1 for c in group if c.material_lot_ids) / len(group) >= SYSTEMIC_SHARE:
                 fit = 1 - PENALTY_NO_MATCH  # past cases name problem material lots; this lot used none of them
                 # Same supplier and material type, other lot: shown for QA (a supplier problem can spread over its
@@ -143,7 +143,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3, ranker=...):
                                      "ref_table": "material_lot", "ref_id": m, "occurred_at": row["issued_at"]})
                 if same_source:
                     suppliers = ", ".join(sorted({lot_materials[m]["supplier_id"] for m in same_source}))
-                    sentences.append(f"과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았지만, 자재 Lot {', '.join(same_source)}은(는) "
+                    sentences.append(f"과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았지만, 자재 Lot {josa(', '.join(same_source), '은')} "
                                      f"같은 공급사({suppliers})의 다른 Lot입니다.")
                 else:
                     sentences.append("과거 사례의 문제 자재 Lot을 이 Lot은 쓰지 않았습니다.")

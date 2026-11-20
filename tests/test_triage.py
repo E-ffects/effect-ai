@@ -41,3 +41,14 @@ def test_errors(kwargs, code):
     with pytest.raises(RmaAgentError) as e:
         triage(**kwargs)
     assert e.value.code == code
+
+
+def test_analysis_approval_reasons_match_the_triage():
+    """Approval reasons are the L3 conditions only (repeat and SC are L2 conditions), in triage and in analysis."""
+    from rma_agent import run_analysis, triage
+    out = run_analysis("RMA-08927")
+    review, proposal = out["result"]["qa_review"], triage("RMA-08927")
+    assert review["approval_reasons"] == proposal["approval_reasons"] == ["차량 고객 + 심각도 8 이상"]
+    assert proposal["repeat_signal"] == 1 and "3건째" in proposal["rationale"]
+    l2 = run_analysis("RMA-08218")["result"]["qa_review"]
+    assert l2["analysis_level"] == "L2" and l2["approval_reasons"] == [] and not l2["needs_approval"]

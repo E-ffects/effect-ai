@@ -21,6 +21,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 import jwt
@@ -205,7 +206,18 @@ def create_app(secret=..., runner=None):
     runner: analysis function (tests pass a fake); default rma_agent.run_analysis."""
     secret = _secret_from_env() if secret is ... else secret
     jobs = Jobs(runner or rma_agent.run_analysis)
-    app = FastAPI(title="E!ffect RMA AI", version=VERSION)
+    @asynccontextmanager
+    async def lifespan(app):
+        # Load the DB, case library and intake index before the first request (first classify was ~2.9 s cold).
+        try:
+            rma_agent.refresh_cases()
+            from rma_agent.agents.classifier import get_classifier
+            get_classifier()
+        except Exception:  # still start; /health shows db down and calls return SERVICE_UNAVAILABLE
+            log.exception("warm-up failed")
+        yield
+
+    app = FastAPI(title="E!ffect RMA AI", version=VERSION, lifespan=lifespan)
     app.state.jobs = jobs
     auth = [Depends(_auth_dependency(secret))]
 

@@ -298,7 +298,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
       "characteristic_symbol": null,
       "analysis_level": "L3",
       "needs_approval": true,
-      "approval_reasons": ["차량 고객 + 심각도 8 이상", "동일 고객·불량 형태 30일 내 3건 이상 반복"],
+      "approval_reasons": ["차량 고객 + 심각도 8 이상"],
       "candidate_checks": [
         {"rank": 1, "cause_code": "OL_ETCH_RESIDUE", "evidence_status": "PARTIAL",
          "satisfied": ["생산 기록 근거 (OLE-02 조건 이탈, 노즐 막힘 기록)", "같은 원인 확정 사례"],
@@ -742,7 +742,7 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 - 규칙은 `analysis_level_rule`과 같다. L3: 심각도 9 이상, CC 특별특성, 차량 고객 + 심각도 8 이상. L2: 심각도 6 이상, SC 특별특성, 같은 고객·같은 증상 30일 안 3건째 이상. 그 밖은 L1.
 - 심각도·특별특성은 소분류 정의(`symptom_definition`, `special_characteristic`), 업종은 `customer`, 반복은 그 고객의 같은 증상 접수(분석 시점까지 재분류된 것은 확인된 증상으로)에서 계산한다.
 - 소분류가 정보 부족·분류 불가면 `provisional: true`, 임시 L2다. 차량 고객이면 QA가 당일 직접 확인한다는 문구가 붙는다.
-- `needs_approval`은 L3이면 `true`. `approval_reasons`는 그 이유다.
+- `needs_approval`은 L3이면 `true`. `approval_reasons`는 그 이유(L3 조건만, L2 이하는 빈 배열)다. 반복·SC 같은 L2 조건은 `rationale`에만 적는다. 분석 결과의 `qa_review.approval_reasons`도 같은 값이다.
 - 대조 (v5): 저장된 `qa_triage` 10,210건과 분석 수준 99.8%, 모든 필드 99.6% 일치(`scripts/eval_triage.py`).
 - 오류: 없는 접수 `CLAIM_NOT_FOUND`(404), 접수 분류가 아직 없거나 `as_of`가 그 전이면 `AS_OF_INVALID`(422).
 

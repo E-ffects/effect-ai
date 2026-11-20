@@ -84,6 +84,7 @@ RMA_AUTH=off uvicorn server.app:create_app --factory --port 8080   # 로컬 전�
 - **서비스 토큰:** Spring `JwtProvider`처럼 `jwt.secret`의 UTF-8 바이트로 HMAC 검증한다(비밀값 길이에 따라 HS256/384/512). `role = "SYSTEM"`, `exp` 필수, `type`이 있으면 `ACCESS`. 아니면 401(서명·만료) 또는 403(역할). 비밀값이 없으면 서버가 시작하지 않는다.
 - **분석 작업:** 메모리에 두고 스레드 4개로 돈다. 같은 `rma_id`·`as_of`·`mode`가 실행 중이면 그 `analysis_id`를 돌려준다(202). 없는 접수·QA 판정 전은 등록 때 바로 404/422(`rma_agent.analysis_as_of`). B 30초, A 90초를 넘으면 `FAILED` + `ANALYSIS_TIMEOUT`이고 늦게 끝난 결과는 버린다. 재시작하면 작업이 사라지고 조회는 404 `ANALYSIS_NOT_FOUND`(Spring은 `ANALYSIS_LOST`로 처리).
 - **오류 본문**은 모두 `{"detail", "code"}`다. 요청 형식 오류도 400 `INVALID_INPUT`으로 바꾼다(FastAPI 기본 422 아님, Spring의 422는 `AS_OF_INVALID`만).
+- **시연 리허설:** 서버를 띄운 뒤 `python3 scripts/demo_flow.py`가 Spring 순서대로 샘플 6건을 불러 시간·문구를 보여 준다(`--out results/...md`로 저장). 2026-11-20 결과 `results/20261120_demo_flow_v5.md`.
 - **검증:** `tests/test_server.py`가 Spring 흐름(분류 → 판정 → 분석 등록·폴링 → 유사 사례 → 갱신), 토큰, 오류 형식, 중복 실행, 시간 초과를 확인한다. `tests/test_contract.py`는 `samples/*.json`이 실제 출력과 같은 모양인지(판정은 값까지) 확인한다. 샘플이 어긋나면 `python3 scripts/make_samples.py`로 다시 만든다.
 
 ### 바로 해 볼 값

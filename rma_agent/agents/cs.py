@@ -5,6 +5,7 @@ from langsmith import traceable
 from pydantic import BaseModel
 
 from . import llm
+from ..tools.names import josa
 from .classifier import DEFAULT_QUESTION, NOT_CLASSIFIED
 
 UNCLASSIFIED_REQUEST = ("보내 주신 현상을 당사 QA가 반송 시료로 직접 확인하겠습니다. 불량 부위 사진과 발생 조건"
@@ -48,7 +49,7 @@ def reply_draft(masters, claim, classification_result, candidates, qa_review):
     if candidates:
         top = candidates[0]
         where = f"{top['process_name']} 공정의 " if top["process_id"] not in ("MATERIAL", "NONE") else ""
-        text += f"현재 {where}{top['cause_name']}을(를) 유력 원인으로 보고 확인 중입니다. "
+        text += f"현재 {where}{josa(top['cause_name'], '을')} 유력 원인으로 보고 확인 중입니다. "
         missing = qa_review["candidate_checks"][0]["missing"] if qa_review["candidate_checks"] else []
         if any("반송품" in m for m in missing):
             text += "회송해 주시는 시료로 분석을 진행합니다. "
@@ -64,7 +65,8 @@ class _Reply(BaseModel):
 
 REPLY = """고객사 품질 담당자에게 보낼 회신 초안을 3~5문장으로 써라.
 - 접수 확인(제품, Lot, 불량 형태), 현재 유력 원인(확정 아님), 시료 분석 계획, 동일 Lot 재고 조치(출하 보류·선별 검토), 결과 회신 약속.
-- 내부 장비 번호, σ, 검출률, 점수 같은 내부 정보는 쓰지 않는다.
+- 내부 장비 번호, σ, 검출률, 점수, 내부 시험 항목(보관 시료, 골든 샘플, 출처 확인 등) 같은 내부 정보는 쓰지 않는다.
+- '회송 시료 분석'이 참이면 회송해 주시는 시료로 분석한다고 쓰고, 거짓이면 시료 분석을 언급하지 않는다.
 - 원인 후보가 없으면 조사 중이라고만 쓴다.
 - 고객 재질의가 있으면 원인은 쓰지 말고, 재질의 내용을 빠짐없이 넣는다."""
 
@@ -76,8 +78,10 @@ def reply_with_llm(template, claim, classification_result, candidates, qa_review
              "Lot": claim.get("lot_id"), "불량 형태": None if question else classification_result.get("minor_name"),
              "투입 수량": claim.get("input_qty"), "불량 수량": claim.get("claimed_defect_qty"),
              "유력 원인": {"원인": top["cause_name"], "공정": top["process_name"]} if top else None,
-             "확정 전 필요한 확인": (qa_review["candidate_checks"][0]["missing"]
-                                   if qa_review["candidate_checks"] and not question else []),
+             # QA's internal check list (sourced return test, retained samples, ...) is not for the customer;
+             # only whether the returned samples will be analysed.
+             "회송 시료 분석": bool(top and qa_review["candidate_checks"] and
+                                any("반송품" in m for m in qa_review["candidate_checks"][0]["missing"])),
              "고객 재질의": question,
              "템플릿 초안": template}
     result = llm.write("customer_reply", REPLY, facts, _Reply, lambda r: [r["customer_reply"]], outcome)
