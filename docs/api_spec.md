@@ -94,6 +94,8 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | `pattern_priority(as_of=None, weights=None, limit=None)` | `GET /priority/patterns` | 3-8 응답의 dict (패턴별 품질 조치 우선순위) |
 | `response_priority(as_of=None, weights=None, limit=None)` | `GET /priority/responses` | 3-8 응답의 dict (반품별 고객 응대 우선순위) |
 
+- `analysis_as_of(rma_id, as_of=None)`: `run_analysis`와 같은 검사(접수 존재, QA 판정 여부, `as_of` 형식)만 하고 쓸 `as_of`를 돌려준다. `POST /analyses` 등록 때 404/422를 바로 주는 데 쓴다.
+- 참고 서버: effect-ai `server/app.py`가 이 장의 경로를 모두 구현해 두었다(서비스 토큰 검증, 분석 작업 관리 포함). 실행법은 `docs/integration_guide.md` 3장.
 - 작업 등록·상태 저장·시간 초과 처리는 FastAPI가 한다. `run_analysis`는 동기 함수이며 끝나면 결과를 돌려준다.
 - LangSmith 추적은 `rma_agent` 안에서 남긴다. 환경 변수(`LANGSMITH_API_KEY`, `LANGSMITH_PROJECT`)만 서비스에 넣으면 된다.
 

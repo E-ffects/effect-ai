@@ -13,7 +13,7 @@ git checkout feature/ai-baseline
 pip install -r requirements.txt
 cp .env.example .env
 ```
-- **데이터:** 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v5.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v4_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
+- **데이터:** 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v5.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v5_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
 - **확인:** `python3 -m pytest -q`가 모두 통과하면 준비 끝이다(LLM은 부르지 않는다).
 
 ## 2. `.env` 설정
@@ -71,64 +71,18 @@ AI 서버(FastAPI)는 `rma_agent`의 아래 함수만 부른다. 에이전트 �
 
 `ANALYSIS_NOT_FOUND`, `ANALYSIS_IN_PROGRESS`, `ANALYSIS_TIMEOUT`은 작업 관리 쪽이라 FastAPI가 만든다.
 
-### 예시 (뼈대)
-```python
-import uuid
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import asynccontextmanager
-from datetime import datetime
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-import rma_agent
-from rma_agent.errors import RmaAgentError
-
-@asynccontextmanager
-async def lifespan(app):
-    rma_agent.refresh_cases()  # load DB and case library once at start
-    yield
-
-
-app = FastAPI(lifespan=lifespan)
-pool = ThreadPoolExecutor(max_workers=4)
-jobs = {}  # analysis_id -> dict (실서비스에서는 Redis 등)
-
-
-@app.exception_handler(RmaAgentError)
-def agent_error(request, exc):
-    return JSONResponse(status_code=exc.http_status, content=exc.body())
-
-
-@app.post("/ai/v1/analyses", status_code=202)
-def create_analysis(body: dict):
-    analysis_id = f"ana-{uuid.uuid4().hex[:12]}"
-    options = body.get("options", {})
-    job = jobs[analysis_id] = {"analysis_id": analysis_id, "rma_id": body["rma_id"], "status": "QUEUED", "result": None,
-                               "created_at": datetime.now().astimezone().isoformat(timespec="seconds")}
-
-    def progress(agent, done, total):
-        job.update(status="RUNNING", progress={"current_agent": agent, "steps_done": done, "steps_total": total})
-
-    def work():
-        try:
-            job.update(rma_agent.run_analysis(body["rma_id"], as_of=body.get("as_of"), mode=options.get("mode", "B"),
-                                              top_k=options.get("top_k", 3), on_progress=progress))
-        except RmaAgentError as exc:
-            job.update(status="FAILED", error=exc.body())
-        except Exception as exc:
-            job.update(status="FAILED", error={"detail": "분석 중 오류가 발생했습니다", "code": "INTERNAL_ERROR"})
-
-    pool.submit(work)
-    return {k: job[k] for k in ("analysis_id", "rma_id", "status", "created_at")} | {"poll_after_ms": 1000}
-
-
-@app.get("/ai/v1/analyses/{analysis_id}")
-def get_analysis(analysis_id: str):
-    if analysis_id not in jobs:
-        return JSONResponse(status_code=404, content={"detail": "분석을 찾을 수 없습니다. 다시 요청하세요", "code": "ANALYSIS_NOT_FOUND"})
-    return jobs[analysis_id]
+### 참고 서버 `server/app.py` (바로 실행 가능)
+명세 3장의 모든 경로를 `rma_agent` 함수에 연결한 FastAPI 앱이다. 그대로 써도 되고, 경로를 구태우 님 앱으로 옮겨도 된다. 경로마다 `rma_agent` 함수 하나만 부르므로 AI 쪽이 바뀌어도 이 파일은 바뀌지 않는다.
+```bash
+pip install -r requirements.txt
+RMA_SERVICE_JWT_SECRET=<Spring jwt.secret과 같은 값> uvicorn server.app:create_app --factory --port 8080
+RMA_AUTH=off uvicorn server.app:create_app --factory --port 8080   # 로컬 전용, 토큰 검사 안 함
 ```
-- `POST /analyses`의 입력 검증(없는 접수 등)을 등록 시점에 하고 싶으면 `rma_agent.similar_cases(rma_id, as_of, limit=1)`을 먼저 불러 보면 된다. 같은 검사를 하고 0.1초면 끝난다.
+- **기본 주소** `http://127.0.0.1:8080/ai/v1`. `GET /health`만 토큰 없이 부를 수 있다.
+- **서비스 토큰:** Spring `JwtProvider`처럼 `jwt.secret`의 UTF-8 바이트로 HMAC 검증한다(비밀값 길이에 따라 HS256/384/512). `role = "SYSTEM"`, `exp` 필수, `type`이 있으면 `ACCESS`. 아니면 401(서명·만료) 또는 403(역할). 비밀값이 없으면 서버가 시작하지 않는다.
+- **분석 작업:** 메모리에 두고 스레드 4개로 돈다. 같은 `rma_id`·`as_of`·`mode`가 실행 중이면 그 `analysis_id`를 돌려준다(202). 없는 접수·QA 판정 전은 등록 때 바로 404/422(`rma_agent.analysis_as_of`). B 30초, A 90초를 넘으면 `FAILED` + `ANALYSIS_TIMEOUT`이고 늦게 끝난 결과는 버린다. 재시작하면 작업이 사라지고 조회는 404 `ANALYSIS_NOT_FOUND`(Spring은 `ANALYSIS_LOST`로 처리).
+- **오류 본문**은 모두 `{"detail", "code"}`다. 요청 형식 오류도 400 `INVALID_INPUT`으로 바꾼다(FastAPI 기본 422 아님, Spring의 422는 `AS_OF_INVALID`만).
+- **검증:** `tests/test_server.py`가 Spring 흐름(분류 → 판정 → 분석 등록·폴링 → 유사 사례 → 갱신), 토큰, 오류 형식, 중복 실행, 시간 초과를 확인한다. `tests/test_contract.py`는 `samples/*.json`이 실제 출력과 같은 모양인지(판정은 값까지) 확인한다. 샘플이 어긋나면 `python3 scripts/make_samples.py`로 다시 만든다.
 
 ### 바로 해 볼 값
 | rma_id | 내용 |
@@ -141,6 +95,7 @@ def get_analysis(analysis_id: str):
 ## 4. Spring 연결 (윤서정)
 Spring이 AI 서버를 부르는 순서·저장·오류 처리는 `Spring_API_v4.md`(4~6장)가 기준이다. AI 쪽에서 알아 둘 점만 적는다.
 
+- **실제 서버로 붙여 보기:** `server/app.py`를 띄우고(3장) `ai.mode=http`, `ai.base-url=http://127.0.0.1:8080/ai/v1`로 바꾸면 된다. 서버의 `RMA_SERVICE_JWT_SECRET`은 Spring `jwt.secret`과 같은 값이다.
 - **목업부터:** AI 서버가 없을 때는 `MockAiClient`가 `samples/*.json`을 돌려준다. 샘플마다 `classify`, `triage`(QA 판정안), `analysis`(분석 결과, 분류 불가 샘플은 없음)가 실제 에이전트 응답 그대로 들어 있다.
 - **새 접수가 분석되려면 DB에 이 행이 있어야 한다:** `rma_claim`, `rma_item`(`lot_id`가 있어야 Lot 추적), `symptom_assessment`(분류 결과), `qa_triage`(QA 판정, `decided_at`). 접수가 없으면 `CLAIM_NOT_FOUND`(404), 분류나 QA 판정이 아직 없으면 `AS_OF_INVALID`(422)를 준다.
 - **원인 판정을 저장할 때 (`cause_assessment` 새 행):** `cause_category`(`cause_master`에서), `assessed_at`은 DB 필수다. 채택한 원인 후보의 `process_id`, `equipment_id`도 채워야 다음 분석에서 그 사례가 장비 근거로 쓰인다. `claim_cause.decided_at`과 `cause_assessment.approved_at`이 둘 다 있어야 사례로 잡힌다.
@@ -167,7 +122,7 @@ rma_analysis RMA-08927            태그: mode:B, pcb-v5 / 메타데이터: rma_
 └─ cs_reply ─ reply_draft, llm_customer_reply
 ```
 - 응답의 `langsmith_run_id`가 이 트레이스의 ID다. 화면이나 로그에서 LangSmith 링크를 만들 때 쓴다(키가 없으면 `null`).
-- 필터 예: 메타데이터 `rma_id = RMA-08743`, 태그 `mode:B`.
+- 필터 예: 메타데이터 `rma_id = RMA-08927`, 태그 `mode:B`.
 - 전송이 실패해도 분석은 그대로 끝난다(로그에 경고만 남는다).
 
 **확인해 줄 것**

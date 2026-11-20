@@ -13,7 +13,8 @@ pip install -r requirements.txt
 |---|---|
 | `rma_agent/db.py` | DB 연결 (읽기 전용) |
 | `rma_agent/asof.py` | **시점 통제.** `AsOfStore(conn, as_of)`는 `as_of` 이전에 알 수 있던 데이터만 돌려준다 |
-| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `classify`, `run_analysis`, `similar_cases`, `refresh_cases` |
+| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `classify`, `triage`, `run_analysis`, `analysis_as_of`, `similar_cases`, `refresh_cases`, `pattern_priority`, `response_priority` |
+| `server/app.py` | 참고 AI 서버(FastAPI, `/ai/v1`, 서비스 토큰 검증). 실행법은 `docs/integration_guide.md` 3장 |
 | `rma_agent/agents/graph.py` | LangGraph 그래프(B안 흐름), 실행 기록·진행률, LangSmith 연결 |
 | `rma_agent/agents/cs.py` · `qa.py` · `manufacturing.py` · `cause_analysis.py` | 에이전트별 로직 |
 | `rma_agent/agents/classifier.py` | CS 접수 분류: 과거 접수 검색 + LLM(소분류 정의·예시) |
@@ -23,7 +24,7 @@ pip install -r requirements.txt
 | `rma_agent/truth.py` | 평가용 정답. **예측기에서 import 금지** |
 | `rma_agent/evaluate_classify.py` | CS 분류 정확도 평가 (`python3 -m rma_agent.evaluate_classify --llm 114`) |
 | `rma_agent/evaluate.py` | 접수 건을 시간 순서대로 넣고 원인·공정·장비 적중률을 계산 |
-| `tests/` | 미래 데이터가 새지 않는지(`test_asof.py`), 그래프 출력이 명세대로인지(`test_agents.py`) |
+| `tests/` | 미래 데이터가 새지 않는지(`test_asof.py`), 그래프 출력이 명세대로인지(`test_agents.py`), 샘플이 실제 출력과 같은지(`test_contract.py`), 서버가 Spring 흐름대로 도는지(`test_server.py`) |
 | `results/` | 평가 결과 기록 (날짜별 md, json) |
 
 ## 규칙
@@ -38,7 +39,7 @@ python3 -m pytest -q tests
 ```
 ```python
 from rma_agent import run_analysis
-out = run_analysis("RMA-08743")   # as_of 생략 시 분석 시작 시각. 반환 형식은 docs/api_spec.md 3-3
+out = run_analysis("RMA-08927")   # as_of 생략 시 분석 시작 시각. 반환 형식은 docs/api_spec.md 3-3
 ```
 ```bash
 python3 -m rma_agent.evaluate -p A B

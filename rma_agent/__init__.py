@@ -6,6 +6,15 @@ def run_analysis(rma_id, as_of=None, mode="B", top_k=3, on_progress=None):
     return run(rma_id, as_of=as_of, mode=mode, top_k=top_k, on_progress=on_progress)
 
 
+def analysis_as_of(rma_id, as_of=None):
+    """Check that rma_id can be analysed at as_of (same checks as run_analysis) and return the as_of it would use.
+
+    Lets the server answer POST /analyses with 404/422 right away instead of a FAILED job.
+    """
+    from .agents.graph import _resolve, _runtime
+    return _resolve(_runtime(), rma_id, as_of)
+
+
 def similar_cases(rma_id, as_of=None, limit=5):
     from .agents.graph import similar_cases as find
     return find(rma_id, as_of=as_of, limit=limit)
