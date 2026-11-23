@@ -1,0 +1,13 @@
+.git
+.env
+.venv
+**/__pycache__
+data
+datagen
+db
+docs
+eval
+results
+samples
+scripts
+tests
