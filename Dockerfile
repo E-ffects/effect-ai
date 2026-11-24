@@ -18,5 +18,4 @@ RUN useradd --system --uid 10001 --no-create-home app
 USER 10001
 
 EXPOSE 8080
-# 분석 작업을 프로세스 메모리에 두므로 워커는 1개로 실행한다
 CMD ["uvicorn", "server.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8080"]
