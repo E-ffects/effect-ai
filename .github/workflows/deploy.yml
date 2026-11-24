@@ -1,0 +1,82 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_ROLE: arn:aws:iam::430986759212:role/gha-u1-2
+  AWS_REGION: ap-northeast-2
+  CLUSTER: skala-us
+  NAMESPACE: u1-2
+  ECR_REPO: teams/u1-2/app
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, campus]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build & push
+        shell: bash
+        run: |
+          set -o pipefail
+          IMAGE=${{ steps.ecr.outputs.registry }}/${ECR_REPO}:ai-${GITHUB_SHA}
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "이미 있는 이미지라 빌드를 건너뜀: $IMAGE"
+          elif ! docker buildx build --platform linux/amd64 --push -t "$IMAGE" . 2>&1 | tee build.log; then
+            grep -q "tag is immutable" build.log || exit 1
+            echo "이미 있는 이미지를 그대로 사용: $IMAGE"
+          fi
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: E-ffects/effect-deployment
+          token: ${{ secrets.DEPLOYMENT_REPO_TOKEN }}
+          path: deployment
+
+      - name: Update image tag
+        working-directory: deployment/k8s
+        run: |
+          perl -0pi -e 's/(- name: ai\n\s+newName: \S+\n\s+newTag:).*/$1 ai-$ENV{GITHUB_SHA}/' kustomization.yaml
+          grep -q "newTag: ai-${GITHUB_SHA}" kustomization.yaml
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy: ai ${GITHUB_SHA::7}"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase
+          done
+          exit 1
+
+      - name: Deploy
+        run: |
+          aws eks update-kubeconfig --name "$CLUSTER" --region "$AWS_REGION"
+          kubectl -n "$NAMESPACE" apply -k deployment/k8s
+          kubectl -n "$NAMESPACE" rollout status deployment/ai --timeout=480s
+
+      - name: Diagnose
+        if: failure()
+        run: |
+          kubectl -n "$NAMESPACE" get deploy,pods -o wide || true
+          kubectl -n "$NAMESPACE" get events --field-selector involvedObject.kind=Pod --sort-by=.lastTimestamp | grep ai- | tail -n 20 || true
+          echo "앱 로그: effect-deployment → Actions → Ops (target=ai, action=logs-previous)"
