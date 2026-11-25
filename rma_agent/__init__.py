@@ -15,6 +15,12 @@ def analysis_as_of(rma_id, as_of=None):
     return _resolve(_runtime(), rma_id, as_of)
 
 
+def run_follow_up(rma_id, cause_code, as_of=None):
+    """2차 회신 초안(후속 그래프): QA가 승인한 cause_code로 고객 문안과 처리방안을 만든다."""
+    from .agents.graph import run_follow_up as run
+    return run(rma_id, cause_code, as_of=as_of)
+
+
 def similar_cases(rma_id, as_of=None, limit=5):
     from .agents.graph import similar_cases as find
     return find(rma_id, as_of=as_of, limit=limit)

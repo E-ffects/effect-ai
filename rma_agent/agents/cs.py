@@ -36,6 +36,17 @@ def classification(masters, store, claim):
             "minor_name": symptom.get("minor_name"), "evidence_spans": spans}
 
 
+# 1차 회신은 원인 이름·공정명을 쓰지 않고 범주만 알린다 (공개 범위 문구표, QA와 확정 필요).
+# 값이 없는 범주(UNDETERMINED 등)는 원인 언급 없이 "조사 중"으로 쓴다.
+DISCLOSURE = {"PROCESS": "제조 공정 쪽 요인", "MATERIAL": "자재 쪽 요인", "INSPECTION": "검사 단계 쪽 요인"}
+
+
+def leaks(text, candidates):
+    """Specific cause/process names of the candidates found in a customer text (must not reach the customer)."""
+    names = {c.get(k) for c in candidates or [] for k in ("cause_name", "process_name")}
+    return [n for n in names if n and n not in ("MATERIAL", "NONE") and n in (text or "")]
+
+
 @traceable(name="reply_draft", run_type="tool", process_inputs=_hide)
 def reply_draft(masters, claim, classification_result, candidates, qa_review):
     who = f"{claim['customer_id']} 품질 담당자님"
@@ -47,9 +58,8 @@ def reply_draft(masters, claim, classification_result, candidates, qa_review):
     symptom = classification_result.get("minor_name") or "불량"
     text = f"{who}, {what} {symptom} 불량 통보 확인했습니다. "
     if candidates:
-        top = candidates[0]
-        where = f"{top['process_name']} 공정의 " if top["process_id"] not in ("MATERIAL", "NONE") else ""
-        text += f"현재 {where}{josa(top['cause_name'], '을')} 유력 원인으로 보고 확인 중입니다. "
+        area = DISCLOSURE.get(candidates[0].get("cause_category"))
+        text += (f"현재 {josa(area, '을')} 중심으로 원인을 확인 중입니다. " if area else "현재 원인을 조사 중입니다. ")
         missing = qa_review["candidate_checks"][0]["missing"] if qa_review["candidate_checks"] else []
         if any("반송품" in m for m in missing):
             text += "회송해 주시는 시료로 분석을 진행합니다. "
@@ -64,10 +74,10 @@ class _Reply(BaseModel):
 
 
 REPLY = """고객사 품질 담당자에게 보낼 회신 초안을 3~5문장으로 써라.
-- 접수 확인(제품, Lot, 불량 형태), 현재 유력 원인(확정 아님), 시료 분석 계획, 동일 Lot 재고 조치(출하 보류·선별 검토), 결과 회신 약속.
+- 접수 확인(제품, Lot, 불량 형태), 원인 범주(확정 아님, 범주 표현 그대로만 쓰고 구체적인 원인·공정·자재·설비 이름은 쓰지 않는다), 시료 분석 계획, 동일 Lot 재고 조치(출하 보류·선별 검토), 결과 회신 약속.
 - 내부 장비 번호, σ, 검출률, 점수, 내부 시험 항목(보관 시료, 골든 샘플, 출처 확인 등) 같은 내부 정보는 쓰지 않는다.
 - '회송 시료 분석'이 참이면 회송해 주시는 시료로 분석한다고 쓰고, 거짓이면 시료 분석을 언급하지 않는다.
-- 원인 후보가 없으면 조사 중이라고만 쓴다.
+- 원인 범주가 없으면 조사 중이라고만 쓴다.
 - 고객 재질의가 있으면 원인은 쓰지 말고, 재질의 내용을 빠짐없이 넣는다."""
 
 
@@ -77,7 +87,7 @@ def reply_with_llm(template, claim, classification_result, candidates, qa_review
     facts = {"고객": claim["customer_id"], "제품": claim.get("reported_part_no") or claim.get("spec_id"),
              "Lot": claim.get("lot_id"), "불량 형태": None if question else classification_result.get("minor_name"),
              "투입 수량": claim.get("input_qty"), "불량 수량": claim.get("claimed_defect_qty"),
-             "유력 원인": {"원인": top["cause_name"], "공정": top["process_name"]} if top else None,
+             "원인 범주": DISCLOSURE.get(top.get("cause_category")) if top else None,
              # QA's internal check list (sourced return test, retained samples, ...) is not for the customer;
              # only whether the returned samples will be analysed.
              "회송 시료 분석": bool(top and qa_review["candidate_checks"] and
@@ -85,7 +95,12 @@ def reply_with_llm(template, claim, classification_result, candidates, qa_review
              "고객 재질의": question,
              "템플릿 초안": template}
     result = llm.write("customer_reply", REPLY, facts, _Reply, lambda r: [r["customer_reply"]], outcome)
-    return result["customer_reply"] if result else template
+    if not result:
+        return template
+    if leaks(result["customer_reply"], candidates):  # 구체적 원인이 새면 템플릿으로
+        outcome.rejected = True
+        return template
+    return result["customer_reply"]
 
 
 ACTION_NAMES = {"REPLACEMENT_SHIPMENT": "대체품 출하", "CREDIT_NOTE": "대금 공제",
@@ -134,3 +149,44 @@ def service_action(store, claim, candidates, similar, mode="similar"):
             "expected_days_basis": f"{days_basis} 처리 결정→실행 {len(days)}건의 중앙값" if days else None,
             "alternatives": [{"action_type": k, "action_name": ACTION_NAMES.get(k, k), "count": v}
                              for k, v in sorted(counts.items(), key=lambda x: -x[1]) if k != action]}
+
+
+# ---------- 2차 회신: QA가 원인을 승인·확인한 뒤 CS가 쓴다 (후속 그래프, agents/graph.py run_follow_up)
+# 원인은 1차와 같은 범주 문구표(DISCLOSURE)로만 알린다. 처리방안은 한글명으로만 쓰고 코드명은 쓰지 않는다.
+
+def follow_up_draft(claim, cause, proposal):
+    who = f"{claim['customer_id']} 품질 담당자님"
+    what = f"{claim.get('reported_part_no') or claim.get('spec_id')} (Lot {claim.get('lot_id') or '미기재'})"
+    area = DISCLOSURE.get(cause.get("cause_category"))
+    text = f"{who}, {what} 불량 건의 원인 분석이 끝났습니다. "
+    text += (f"{josa(area, '이')} 원인으로 확인되었습니다. " if area else "원인 확인을 마쳤습니다. ")
+    if proposal:
+        text += f"처리는 {proposal['action_name']}로 진행하려 합니다. "
+        if proposal.get("expected_days"):
+            text += f"예상 소요 기간은 약 {proposal['expected_days']}일입니다. "
+    else:
+        text += "처리 방안은 확정되는 대로 안내드리겠습니다. "
+    return text + "동일 원인이 다시 발생하지 않도록 개선 조치를 진행하고, 진행 상황을 회신드리겠습니다."
+
+
+FOLLOW_UP = """고객사 품질 담당자에게 보낼 2차 회신 초안을 3~5문장으로 써라. 원인 분석이 끝난 뒤의 회신이다.
+- 접수 건 확인(제품, Lot), 원인 확인 사실(원인 범주 표현 그대로), 처리 계획(처리방안 이름 그대로), 예상 일정, 재발 방지 조치 약속.
+- 구체적인 원인·공정·자재·설비 이름, 내부 코드, σ, 검출률, 점수, 손실 금액은 쓰지 않는다.
+- 원인 범주가 없으면 원인 확인을 마쳤다고만 쓴다. 처리방안이 없으면 확정되는 대로 안내한다고 쓴다.
+- 예상 일정은 facts의 값만 쓰고 다른 숫자를 만들지 않는다."""
+
+
+def follow_up_with_llm(template, claim, cause, proposal, candidates, outcome):
+    facts = {"고객": claim["customer_id"], "제품": claim.get("reported_part_no") or claim.get("spec_id"),
+             "Lot": claim.get("lot_id"), "원인 범주": DISCLOSURE.get(cause.get("cause_category")),
+             "처리방안": proposal["action_name"] if proposal else None,
+             "예상 소요 일수": proposal.get("expected_days") if proposal else None,
+             "템플릿 초안": template}
+    result = llm.write("follow_up_reply", FOLLOW_UP, facts, _Reply, lambda r: [r["customer_reply"]], outcome)
+    if not result:
+        return template
+    text = result["customer_reply"]
+    if leaks(text, candidates) or any(code in text for code in ACTION_NAMES):
+        outcome.rejected = True
+        return template
+    return text

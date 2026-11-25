@@ -176,6 +176,85 @@ def build_graph():
 GRAPH = build_graph()
 
 
+# ---------- 후속 그래프: QA 승인 뒤 2차 회신 (오케스트레이터 -> CS). 에이전트는 케이스 파일(state)로만 주고받는다
+class FollowUpState(TypedDict, total=False):
+    rma_id: str
+    as_of: str
+    cause_code: str
+    claim: dict
+    cause: dict
+    candidates: list
+    customer_reply: str
+    service_action: dict | None
+    trace: Annotated[list, operator.add]
+
+
+@_agent(1, "ORCHESTRATOR")
+def fu_orchestrator(state, rt, store, outcome):
+    claim = store.claim(state["rma_id"])
+    master = rt.masters["causes"].get(state["cause_code"])
+    if master is None:
+        raise InvalidInput(f"알 수 없는 원인 코드입니다: {state['cause_code']!r}")
+    cause = {"cause_code": state["cause_code"], "cause_name": master["cause_name"],
+             "cause_category": master["cause_category"]}
+    return ({"claim": claim, "cause": cause, "candidates": [{**cause, "process_name": None}]},
+            f"승인된 원인 {state['cause_code']}({cause['cause_category']}) 수신, 공개 범위 규칙표 적용", ["claim", "cause_master"])
+
+
+@_agent(2, "CS")
+def fu_cs(state, rt, store, outcome):
+    claim = {**state["claim"]}
+    similar = cause_analysis.similar_case_items(rt.masters, store, claim)  # 같은 원인 사례가 모자랄 때의 대체
+    proposal = cs.service_action(store, claim, state["candidates"], similar, mode="cause")
+    template = cs.follow_up_draft(claim, state["cause"], proposal)
+    before = outcome.n_used
+    text = cs.follow_up_with_llm(template, claim, state["cause"], proposal, state["candidates"], outcome)
+    return ({"customer_reply": text, "service_action": proposal},
+            "원인 확정 기반 2차 회신 초안 작성" + (f", 처리방안 {proposal['action_name']}" if proposal else ""),
+            ["service_actions", "reply_template"], outcome.n_used > before)
+
+
+def build_follow_up_graph():
+    g = StateGraph(FollowUpState)
+    g.add_node("orchestrator", fu_orchestrator)
+    g.add_node("cs_follow_up", fu_cs)
+    g.add_edge(START, "orchestrator")
+    g.add_edge("orchestrator", "cs_follow_up")
+    g.add_edge("cs_follow_up", END)
+    return g.compile()
+
+
+FOLLOW_UP_GRAPH = build_follow_up_graph()
+
+
+def run_follow_up(rma_id, cause_code, as_of=None):
+    """2차 회신 초안: QA가 승인·확인한 원인(cause_code)을 받아 고객용 문안과 처리방안을 만든다.
+
+    as_of 기본값은 분석 시작 시각(처리방안의 과거 사례는 그 이전 것만 쓴다). AI는 Spring DB를 읽지 않고 승인 결과는 요청으로 받는다.
+    """
+    if not cause_code or not isinstance(cause_code, str):
+        raise InvalidInput("cause_code가 비어 있습니다")
+    rt = _runtime()
+    as_of = _resolve(rt, rma_id, as_of)
+    outcome = llm.Outcome()
+    run_id = uuid.uuid4()
+    started = time.perf_counter()
+    state = FOLLOW_UP_GRAPH.invoke(
+        {"rma_id": rma_id, "as_of": as_of, "cause_code": cause_code, "trace": []},
+        config={"configurable": {"runtime": rt, "llm": outcome}, "run_id": run_id,
+                "run_name": f"rma_follow_up {rma_id}", "tags": ["follow_up", RULES_VERSION],
+                "metadata": {"rma_id": rma_id, "cause_code": cause_code}})
+    warnings = (["LLM_UNAVAILABLE"] if outcome.failed else []) + (["LLM_OUTPUT_REJECTED"] if outcome.rejected else [])
+    trace = sorted(state["trace"], key=lambda e: e["order"])
+    return {"rma_id": rma_id, "as_of": as_of, "cause_code": cause_code,
+            "status": "PARTIAL" if outcome.failed else "SUCCEEDED",
+            "result": {"customer_reply": state["customer_reply"], "service_action": state["service_action"]},
+            "trace": [{"step": i, **{k: v for k, v in e.items() if k != "order"}} for i, e in enumerate(trace, 1)],
+            "warnings": warnings,
+            "model_versions": {"llm": llm.model_name(), "prompt": PROMPT_VERSION, "rules": RULES_VERSION},
+            "elapsed_ms": round((time.perf_counter() - started) * 1000)}
+
+
 def _tracing_on():
     if os.environ.get("LANGSMITH_API_KEY") and "LANGSMITH_TRACING" not in os.environ:
         os.environ["LANGSMITH_TRACING"] = "true"
