@@ -81,6 +81,12 @@ class TriageRequest(BaseModel):
     as_of: str | None = None
 
 
+class FollowUpRequest(BaseModel):
+    rma_id: str
+    cause_code: str                     # QA가 승인·확인한 원인 (Spring이 보낸다)
+    as_of: str | None = None
+
+
 class RefreshRequest(BaseModel):
     rma_id: str | None = None
     analysis_id: str | None = None
@@ -271,6 +277,11 @@ def create_app(secret=..., runner=None):
         if view is None:
             raise ApiError(404, "ANALYSIS_NOT_FOUND", f"분석 {analysis_id}을(를) 찾을 수 없습니다")
         return view
+
+    @app.post(f"{BASE}/followups", dependencies=auth)
+    def follow_up(req: FollowUpRequest):
+        # 버튼 호출: 작업 목록 없이 바로 응답한다 (그래프는 2노드, LLM 1회)
+        return rma_agent.run_follow_up(req.rma_id, req.cause_code, as_of=req.as_of)
 
     @app.get(f"{BASE}/claims/{{rma_id}}/similar", dependencies=auth)
     def similar(rma_id: str, as_of: str | None = None, limit: int = 5):

@@ -125,9 +125,11 @@ def test_reply_asks_the_customer_when_symptom_is_not_classified():
     assert "SYMPTOM_NOT_CONFIRMED" in out["warnings"]
 
 
-def test_reply_names_the_leading_cause_when_classified(example):
+def test_reply_names_only_the_cause_category_when_classified(example):
     out, _ = example
-    assert out["result"]["cause_candidates"][0]["cause_name"] in out["result"]["drafts"]["customer_reply"]
+    reply = out["result"]["drafts"]["customer_reply"]
+    assert not any(c["cause_name"] in reply or c["process_name"] in reply for c in out["result"]["cause_candidates"])
+    assert any(area in reply for area in ("공정 쪽 요인", "자재 쪽 요인", "검사 단계 쪽 요인", "조사 중"))
     assert "SYMPTOM_NOT_CONFIRMED" not in out["warnings"]
 
 
@@ -199,3 +201,14 @@ def test_service_action_from_similar_cases_known_by_as_of(example):
     assert p["board_qty"] == (0 if p["action_type"] == "NO_CHARGE_SAMPLE_RETURN" else qty)
     assert all(c["cause_name"] not in p["basis"] for c in res["cause_candidates"])
     assert isinstance(p["expected_days"], int) and p["expected_days"] > 0
+
+
+def test_follow_up_reply_uses_category_and_korean_action_name():
+    from rma_agent import run_follow_up
+    from rma_agent.agents import cs
+    rid = sample_claims()[0]
+    out = run_follow_up(rid, "CCL_RESIN_VOID")
+    reply = out["result"]["customer_reply"]
+    assert "자재 쪽 요인" in reply and "CCL_RESIN_VOID" not in reply
+    assert not any(code in reply for code in cs.ACTION_NAMES)
+    assert [t["agent"] for t in out["trace"]] == ["ORCHESTRATOR", "CS"]
