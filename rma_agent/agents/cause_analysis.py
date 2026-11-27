@@ -29,7 +29,7 @@ SIGNAL_SCORE = {"strong": 1.0, "medium": 0.5, "none": 0.0}
 # Systemic causes (past cases usually name an equipment, or a material lot) should show up in this lot's record.
 # Without a signal at that process the score is cut, more when the lot did not pass any equipment seen in past cases.
 SYSTEMIC_SHARE = 0.5
-PENALTY_NO_MATCH = 0.8          # tuned on 2025-07~09, checked on 2025-10~ (results/)
+PENALTY_NO_MATCH = 0.8          # tuned on 2026-07~09, checked on 2026-10~ (results/)
 PENALTY_MATCH_NO_SIGNAL = 0.5
 
 _hide = lambda inputs: {k: v for k, v in inputs.items() if k not in ("masters", "store")}
@@ -131,7 +131,7 @@ def rank_causes(masters, store, claim, lot_trace, top_k=3, ranker=...):
             elif past_lots and sum(1 for c in group if c.material_lot_ids) / len(group) >= SYSTEMIC_SHARE:
                 fit = 1 - PENALTY_NO_MATCH  # past cases name problem material lots; this lot used none of them
                 # Same supplier and material type, other lot: shown for QA (a supplier problem can spread over its
-                # lots) but not scored. Scoring it at x0.5 did not help on 2025-07~09 (results/v5_material_supplier.md).
+                # lots) but not scored. Scoring it at x0.5 did not help on 2026-07~09 (results/v5_material_supplier.md).
                 past_sources = set(store.material_lot_sources(past_lots).values())
                 same_source = [m for m, row in lot_materials.items()
                                if (row["supplier_id"], row["material_type"]) in past_sources]
@@ -224,7 +224,7 @@ def similar_case_items(masters, store, claim, limit=5):
     """Past approved cases for the screen: the same intake label first, ranked by text similarity (character-bigram
     Jaccard of the whole intake text), most recent first on ties. Without a symptom label every past case is a
     candidate. Filtering by label keeps boilerplate (greetings, requests, "Lot unknown") from pulling in cases of
-    another symptom: same cause and label in the top 5 rose from 85.5% to 91.9% on 2025-10~ (chosen on 2025-08~09,
+    another symptom: same cause and label in the top 5 rose from 85.5% to 91.9% on 2026-10~ (chosen on 2026-08~09,
     results/20261119_similar_cases_method.md)."""
     label = claim.get("intake_label")
     labelled = label and label not in ("INSUFFICIENT_INFO", "UNCLASSIFIED")

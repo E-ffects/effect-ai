@@ -19,8 +19,8 @@ def test_matches_the_stored_triage():
 
 def test_works_before_qa_triage_exists():
     """Between the intake label (11:46) and the QA triage (12:41) there is no qa_triage yet: like a new intake."""
-    p = triage("RMA-08927", as_of="2025-11-20T12:00:00+09:00")
-    assert p["analysis_level"] == "L3" and p["as_of"] == "2025-11-20T12:00:00+09:00"
+    p = triage("RMA-08927", as_of="2026-11-20T12:00:00+09:00")
+    assert p["analysis_level"] == "L3" and p["as_of"] == "2026-11-20T12:00:00+09:00"
 
 
 def test_unconfirmed_symptom_gets_provisional_l2():
@@ -33,8 +33,8 @@ def test_unconfirmed_symptom_gets_provisional_l2():
 
 @pytest.mark.parametrize("kwargs,code", [
     ({"rma_id": "RMA-99999"}, "CLAIM_NOT_FOUND"),
-    ({"rma_id": "RMA-08927", "as_of": "2025-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),   # opened, label not saved yet
-    ({"rma_id": "RMA-08927", "as_of": "2025-11-20 12:00"}, "AS_OF_INVALID"),
+    ({"rma_id": "RMA-08927", "as_of": "2026-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),   # opened, label not saved yet
+    ({"rma_id": "RMA-08927", "as_of": "2026-11-20 12:00"}, "AS_OF_INVALID"),
     ({"rma_id": ""}, "INVALID_INPUT"),
 ])
 def test_errors(kwargs, code):

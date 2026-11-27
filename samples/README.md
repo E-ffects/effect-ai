@@ -1,6 +1,6 @@
 # samples
 
-실제 `classify()`·`triage()`·`run_analysis()` 응답(LLM gpt-5.4-mini, **v5 데이터**). 백엔드 목업과 화면 개발에 쓴다.
+실제 `classify()`·`triage()`·`run_analysis()` 응답(LLM gpt-5.4-mini, **v6 데이터**). 백엔드 목업과 화면 개발에 쓴다.
 다시 만들기: `python3 scripts/make_samples.py`
 
 | 파일 | 경우 |

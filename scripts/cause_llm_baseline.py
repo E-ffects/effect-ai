@@ -3,7 +3,7 @@
     python scripts/cause_llm_baseline.py [--n 60] [--out results/x.md]
 
 Needs scripts/cause_ranker.py to have run once (it caches the candidate rows in $TMPDIR). Uses the test period
-(2025-10~), a sample stratified by incident group (seed 11). The LLM sees, per candidate: cause name/category/mechanism,
+(2026-10~), a sample stratified by incident group (seed 11). The LLM sees, per candidate: cause name/category/mechanism,
 how many past approved returns with the same intake label had it, how many in the last 60 days on the same product,
 and which lot evidence exists (process signal, equipment event, material, supplier) - the same facts the scores use,
 in shuffled order and without any score or rank. Compared with C and the logistic ranker (top-3 reorder) on the same
@@ -51,8 +51,8 @@ def main():
     master = {r[0]: {"이름": r[1], "분류": r[2], "메커니즘": r[3]}
               for r in conn.execute("select cause_code, cause_name, cause_category, mechanism from cause_master")}
     claims = {r[0]: {"원문": r[1], "검출 단계": r[2]} for r in conn.execute("select rma_id, raw_text, detection_stage from rma_claim")}
-    tr = [g for g in groups if g["opened"] < "2025-09-01"]
-    te = [g for g in groups if g["opened"] >= "2025-10-01"]
+    tr = [g for g in groups if g["opened"] < "2026-09-01"]
+    te = [g for g in groups if g["opened"] >= "2026-10-01"]
     Xtr, ytr = cr.matrix(tr)
     scaler = cr.StandardScaler().fit(Xtr)
     model = cr.LogisticRegression(C=0.1, max_iter=3000).fit(scaler.transform(Xtr), ytr)
@@ -93,7 +93,7 @@ def main():
         res["LLM 단독"].append(codes)
     dt = (time.time() - t0) / len(sample)
     lines = [f"# 원인 후보: LLM 단독 기준선 (WBS 4.12): {Path(a.db).name}", "",
-             f"- 평가 구간(2025-10~)에서 사건 유형별로 뽑은 {len(sample)}건 (seed 11). 모델 {llm.model_name()}, 응답 {used}건, 실패 {failed}건, 1건당 {dt:.1f}초",
+             f"- 평가 구간(2026-10~)에서 사건 유형별로 뽑은 {len(sample)}건 (seed 11). 모델 {llm.model_name()}, 응답 {used}건, 실패 {failed}건, 1건당 {dt:.1f}초",
              "- LLM에는 지금 점수가 쓰는 사실(과거 건수, 최근 건수, Lot 근거)을 후보 순서를 섞어서 주고 점수·순위는 주지 않았다", "",
              "| 방식 | 원인@1 | 원인@3 |", "|---|---:|---:|"]
     for name, orders in res.items():

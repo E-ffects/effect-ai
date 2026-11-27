@@ -18,8 +18,8 @@ from pathlib import Path
 
 KST = datetime.timezone(datetime.timedelta(hours=9))
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
-DEFAULT_DB = next((DATA_DIR / f"pcb_rma_{v}.sqlite" for v in ("v5", "v4") if (DATA_DIR / f"pcb_rma_{v}.sqlite").exists()),
-                  DATA_DIR / "pcb_rma_v5.sqlite")
+DEFAULT_DB = next((DATA_DIR / f"pcb_rma_{v}.sqlite" for v in ("v6", "v5", "v4") if (DATA_DIR / f"pcb_rma_{v}.sqlite").exists()),
+                  DATA_DIR / "pcb_rma_v6.sqlite")
 
 
 def connect(path=None, threads=False):

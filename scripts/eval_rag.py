@@ -4,7 +4,7 @@
 
 Query: a new return's intake text at its analysis start. Pool: approved cases known then (same intake symptom, as the
 agent does; also without the symptom filter). Hit: a case with the same confirmed cause and the same symptom in the
-top 5 (top 1). Weights picked on 2025-08~09, then checked once on 2025-10~12.
+top 5 (top 1). Weights picked on 2026-08~09, then checked once on 2026-10~12.
 """
 import argparse
 import os
@@ -90,8 +90,8 @@ def main():
     started = time.time()
     rt, idx, truth = get_runtime(), rag.get_index(), GroundTruth(get_runtime().conn)
     assert idx.matrix is not None, "embeddings unavailable"
-    val, _ = known_queries(rt.conn, queries(rt.conn, "2025-08-01", "2025-10-01"), truth)
-    test, _ = known_queries(rt.conn, queries(rt.conn, "2025-10-01"), truth)
+    val, _ = known_queries(rt.conn, queries(rt.conn, "2026-08-01", "2026-10-01"), truth)
+    test, _ = known_queries(rt.conn, queries(rt.conn, "2026-10-01"), truth)
     n_val, r_val = run(rt, idx, val, truth)
     best = max(WEIGHTS, key=lambda w: (r_val[w][1], r_val[w][0]))
     n_test, r_test = run(rt, idx, test, truth)
@@ -101,7 +101,7 @@ def main():
         ("글자만 (같은 계산)" if k == 0 else "임베딩만" if k == 1 else f"혼합 (임베딩 {k:.0%})")
     lines = [f"# RAG 검색 비교: {rag.EMBED_MODEL} {rag.EMBED_DIM}차원 vs 글자 유사도", "",
              "- 질의: 새 반품의 접수 원문(분석 시작 시점). 후보: 그때까지 승인된 사례. 정답: 같은 원인 + 같은 증상",
-             f"- 가중치 선택 2025-08~09 ({n_val:,}건) → 확인 2025-10~ ({n_test:,}건)", "",
+             f"- 가중치 선택 2026-08~09 ({n_val:,}건) → 확인 2026-10~ ({n_test:,}건)", "",
              "| 방식 | 검증 Hit@1 | 검증 Hit@5 | 평가 Hit@1 | 평가 Hit@5 | 증상 필터 없이 평가 Hit@5 |", "|---|---:|---:|---:|---:|---:|"]
     for k in ["today"] + WEIGHTS:
         mark = " **(채택)**" if k == best else ""

@@ -67,7 +67,7 @@ def report(name, s):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--start", default="2025-10-01")
+    parser.add_argument("--start", default="2026-10-01")
     parser.add_argument("--end")
     parser.add_argument("--llm", type=int, default=0, help="also run the LLM on a stratified sample of this size")
     parser.add_argument("--no-save", action="store_true")

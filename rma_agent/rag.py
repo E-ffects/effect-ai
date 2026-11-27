@@ -52,7 +52,7 @@ class Doc:
     intake_label: str | None = None
 
 
-_IDENT = re.compile(r"[A-Za-z]{2,}[A-Za-z0-9_]*-[A-Za-z0-9-]+")   # OLE-02, LT-01603, RMA-08927, INV-25-0020
+_IDENT = re.compile(r"[A-Za-z]{2,}[A-Za-z0-9_]*-[A-Za-z0-9-]+")   # OLE-02, LT-01603, RMA-08927, INV-26-0020
 
 
 def _idents(text):

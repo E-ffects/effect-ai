@@ -35,13 +35,13 @@ class ServiceUnavailable(RmaAgentError):
 
 
 def check_as_of(as_of):
-    """as_of must be ISO-8601 with a time zone, e.g. 2025-11-20T14:40:46+09:00. Returns it normalised."""
+    """as_of must be ISO-8601 with a time zone, e.g. 2026-11-20T14:40:46+09:00. Returns it normalised."""
     if as_of is None:
         return None
     try:
         parsed = datetime.fromisoformat(as_of)
     except (TypeError, ValueError):
-        raise AsOfInvalid(f"as_of 형식 오류: {as_of!r} (예: 2025-11-20T14:40:46+09:00)")
+        raise AsOfInvalid(f"as_of 형식 오류: {as_of!r} (예: 2026-11-20T14:40:46+09:00)")
     if parsed.tzinfo is None:
         raise AsOfInvalid(f"as_of에 시간대가 없습니다: {as_of!r} (예: +09:00)")
     return parsed.isoformat(timespec="seconds")

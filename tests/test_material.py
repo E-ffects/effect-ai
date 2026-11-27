@@ -19,7 +19,7 @@ def test_same_supplier_lot_is_evidence_not_score():
     conn = connect(V5)
     agent = CauseAgentC()
     agent._load(conn)
-    rma_id = "RMA-09315"  # P09R: PSR ink from the same supplier as INV-25-0011, another lot
+    rma_id = "RMA-09315"  # P09R: PSR ink from the same supplier as INV-26-0011, another lot
     store = AsOfStore(conn, analysis_start(conn, rma_id), CaseLibrary(conn), subject=rma_id)
     claim = store.claim(rma_id)
     ink = next(c for c in rank_causes(agent.masters, store, claim, trace(agent.masters, store, agent.baseline, claim), top_k=8)

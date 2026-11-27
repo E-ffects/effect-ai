@@ -50,7 +50,7 @@ def main():
     # is a false alarm the table above cannot show
     others = Counter()
     for (item, rma_id) in conn.execute("""select i.rma_item_id, i.rma_id from rma_item i join rma_claim r using(rma_id)
-                                          where r.opened_at >= '2025-07-01' order by r.opened_at""").fetchall():
+                                          where r.opened_at >= '2026-07-01' order by r.opened_at""").fetchall():
         if item in reviews:
             continue
         store = AsOfStore(conn, analysis_start(conn, rma_id), lib, subject=rma_id)
@@ -78,7 +78,7 @@ def main():
     if said:
         lines.append(f"\n- **RECURRENCE 정밀도** (검토 대상이 아닌 반품까지 포함): {pairs[('RECURRENCE', 'RECURRENCE')] / said:.1%} "
                      f"({pairs[('RECURRENCE', 'RECURRENCE')]:,} / {said:,})")
-    lines += ["", f"검토 대상이 아닌 반품({m:,}건, 2025-07 이후 접수): " +
+    lines += ["", f"검토 대상이 아닌 반품({m:,}건, 2026-07 이후 접수): " +
               ", ".join(f"{k} {v:,}" for k, v in others.most_common()) +
               f". NOT_APPLICABLE이 아닌 판정(잘못 붙인 판정) {1 - others['NOT_APPLICABLE'] / m:.1%}" if m else ""]
     text = "\n".join(lines) + "\n"

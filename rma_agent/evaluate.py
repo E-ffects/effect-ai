@@ -1,7 +1,7 @@
 """Replay returns in time order and score predictors on cause / process / equipment.
 
-    python -m rma_agent.evaluate -p A B                 # baselines, test period (2025-10-01 ~)
-    python -m rma_agent.evaluate -p B --start 2025-07-01 --limit 300
+    python -m rma_agent.evaluate -p A B                 # baselines, test period (2026-10-01 ~)
+    python -m rma_agent.evaluate -p B --start 2026-07-01 --limit 300
 
 Each return is analysed at its analysis start (QA triage done, intake label available); the predictor only
 sees data known at that time through AsOfStore. Ground truth comes from truth.GroundTruth.
@@ -139,7 +139,7 @@ def report(results, args, elapsed):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-p", "--predictors", nargs="+", default=["A", "B"], choices=sorted(PREDICTORS))
-    parser.add_argument("--start", default="2025-10-01")
+    parser.add_argument("--start", default="2026-10-01")
     parser.add_argument("--end")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--db")

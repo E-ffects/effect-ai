@@ -5,7 +5,7 @@ from rma_agent import classify
 from rma_agent.agents import llm
 from rma_agent.errors import RmaAgentError
 
-AS_OF = "2025-11-20T14:40:46+09:00"
+AS_OF = "2026-11-20T14:40:46+09:00"
 SHORT = ("A01 수입검사 담당입니다. P/N PCB-ECU6-A1 (Lot LT-01603) SMT 리플로 공정에서 미세 패턴 사이 브리지 형태의 쇼트가 "
          "보입니다. 투입 1,750pcs 중 26pcs 불량입니다.")
 VAGUE = "A03 품질팀입니다. P/N PCB-BMS4H-C2 ICT·기능검사에서 기능 검사에서 NG가 납니다. 투입 500pcs 중 7pcs 불량입니다."
@@ -26,7 +26,7 @@ def test_insufficient_asks_again():
 
 
 @pytest.mark.parametrize("kwargs, code", [({"raw_text": "  "}, "INVALID_INPUT"),
-                                          ({"raw_text": SHORT, "as_of": "2025-11-20"}, "AS_OF_INVALID")])
+                                          ({"raw_text": SHORT, "as_of": "2026-11-20"}, "AS_OF_INVALID")])
 def test_invalid_input(kwargs, code):
     with pytest.raises(RmaAgentError) as info:
         classify(**kwargs)

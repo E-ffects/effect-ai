@@ -13,7 +13,7 @@ git checkout feature/ai-baseline
 pip install -r requirements.txt
 cp .env.example .env
 ```
-- **데이터:** 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v5.sqlite`가 있어야 한다. git에 없으니 유희범에게 `PCB_RMA_dataset_v5_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
+- **데이터:** 팀 PostgreSQL을 쓰면 `RMA_DATABASE_URL`만 넣는다(SQLite와 결과가 같음을 확인했다). 로컬에서는 `data/pcb_rma_v6.sqlite`가 있어야 한다(v5의 모든 날짜를 +1년 한 팀 공식 데이터, Spring과 같은 2026년 기준). git에 없으니 팀 드라이브의 `PCB_RMA_dataset_v6_full.zip`을 받아 안의 `pcb_rma.sqlite`를 이 이름으로 둔다. 다른 위치면 `.env`에 `RMA_DB=경로`.
 - **확인:** `python3 -m pytest -q`가 모두 통과하면 준비 끝이다(LLM은 부르지 않는다).
 
 ## 2. `.env` 설정
@@ -27,10 +27,10 @@ cp .env.example .env
 | `LANGSMITH_PROJECT` | 선택 | `effect-ai` | 이상윤 |
 | `RMA_DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
 | `RMA_DB_SCHEMA` | 팀 DB면 필수 | PCB 테이블이 있는 스키마. 팀 DB는 `pcb` | 윤서정 |
-| `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v5.sqlite`) | — |
+| `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v6.sqlite`, 없으면 v5) | — |
 | `RMA_RAG_CACHE` | 배포 | 임베딩 캐시 폴더(쓰기 가능한 볼륨). 기본 `data/rag` | 이상윤 |
 | `RMA_RAG_EMBEDDING` | 선택 | `off`면 chat 검색을 글자 검색만으로 (임베딩 API 안 부름). 기본은 `OPENAI_API_KEY`로 임베딩 사용 | — |
-| `RMA_CAUSE_RANKER` | 선택 | 원인 후보 학습 재정렬. `models/cause_ranker_v5.json`이면 켬, 비우거나 `off`면 끔(기본). 응답 모양은 같다 | 팀 결정 |
+| `RMA_CAUSE_RANKER` | 선택 | 원인 후보 학습 재정렬. `models/cause_ranker_v6.json`이면 켬, 비우거나 `off`면 끔(기본). 응답 모양은 같다 | 팀 결정 |
 | `RMA_SERVICE_JWT_SECRET` | AI 서버 | Spring `jwt.secret`과 같은 값(3장 참고 서버). 로컬에서만 `RMA_AUTH=off` | 윤서정·구태우 |
 
 - **사용 금지 모델:** gpt-6-astra, gpt-6.1-sol, gpt-6-sol, gpt-5.5-pro. 설정해도 쓰지 않고 템플릿으로 동작한다.
@@ -71,7 +71,7 @@ AI 서버(FastAPI)는 `rma_agent`의 아래 함수만 부른다. 에이전트 �
 |---|---|---|---|
 | `InvalidInput` | `INVALID_INPUT` | 400 | `raw_text`·`rma_id` 비어 있음, `mode`가 A/B가 아님, `top_k`·`limit` 범위 밖 |
 | `ClaimNotFound` | `CLAIM_NOT_FOUND` | 404 | 없는 접수, `as_of`보다 늦게 접수된 건 |
-| `AsOfInvalid` | `AS_OF_INVALID` | 422 | `as_of` 형식 오류(시간대 필수, 예 `2025-11-20T14:40:46+09:00`), QA 판정 전이라 아직 분석 불가 |
+| `AsOfInvalid` | `AS_OF_INVALID` | 422 | `as_of` 형식 오류(시간대 필수, 예 `2026-11-20T14:40:46+09:00`), QA 판정 전이라 아직 분석 불가 |
 | `ServiceUnavailable` | `SERVICE_UNAVAILABLE` | 503 | DB 파일을 열 수 없음 |
 
 `ANALYSIS_NOT_FOUND`, `ANALYSIS_IN_PROGRESS`, `ANALYSIS_TIMEOUT`은 작업 관리 쪽이라 FastAPI가 만든다.
@@ -94,10 +94,10 @@ RMA_AUTH=off uvicorn server.app:create_app --factory --port 8080   # 로컬 전�
 ### 바로 해 볼 값
 | rma_id | 내용 |
 |---|---|
-| `RMA-08927` | 명세 3-3의 예시(v5). 차량 고객 L3, 1순위 외층 에칭 잔동(OLE-02), 유출 ET-02 |
+| `RMA-08927` | 명세 3-3의 예시(v6). 차량 고객 L3, 1순위 외층 에칭 잔동(OLE-02), 유출 ET-02 |
 | `RMA-08218` | 재발 판정 `RECURRENCE` (디스미어 부족, 조치 범위 밖 DSM-01) |
 | `RMA-99999` | 없는 접수 → `CLAIM_NOT_FOUND` |
-| `RMA-08927` + `as_of="2025-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
+| `RMA-08927` + `as_of="2026-11-20T10:00:00+09:00"` | QA 판정 전 → `AS_OF_INVALID` |
 
 ## 4. Spring 연결 (윤서정)
 Spring이 AI 서버를 부르는 순서·저장·오류 처리는 `Spring_API_v4.md`(4~6장)가 기준이다. AI 쪽에서 알아 둘 점만 적는다.
@@ -119,7 +119,7 @@ Spring이 AI 서버를 부르는 순서·저장·오류 처리는 `Spring_API_v4
 
 **트레이스 구조** (분석 1건 = 트레이스 1개)
 ```
-rma_analysis RMA-08927            태그: mode:B, pcb-v5 / 메타데이터: rma_id, as_of, mode
+rma_analysis RMA-08927            태그: mode:B, pcb-v6 / 메타데이터: rma_id, as_of, mode
 ├─ orchestrator
 ├─ qa_triage ─ triage_rules
 ├─ mfg_trace ─ lot_trace

@@ -237,7 +237,7 @@ def _recurrence_check(masters, store, claim, lot_trace, candidates, review):
     day, scope_text = action["implemented_at"][:10], _scope_text(scope)
     # Evidence that the leading cause really hit this lot: a condition drift at its process, a material cause, or an
     # equipment event on a machine the earlier fix did not cover. An event alone on the machine that was fixed is
-    # usually routine (chosen on 2025-07~09: precision 36% -> 66%; on 2025-10~: 72% -> 75% with no true recurrence lost).
+    # usually routine (chosen on 2026-07~09: precision 36% -> 66%; on 2026-10~: 72% -> 75% with no true recurrence lost).
     types = {e["type"] for e in top.get("evidence", [])}
     production_evidence = ("PROCESS_SIGNAL" in types or top.get("cause_category") == "MATERIAL"
                            or ("EQUIPMENT_EVENT" in types and in_scope is False))

@@ -114,7 +114,7 @@ def service_action(store, claim, candidates, similar, mode="similar"):
 
     Pool: the similar cases shown on screen (mode "similar", default), or the most recent past returns whose approved
     cause is the leading candidate (mode "cause"). Matched the action actually taken in 68.0% vs 67.2% of returns
-    opened 2025-10~ (scripts/eval_service_action.py). The proposal is the pool's most common action (ties: the most
+    opened 2026-10~ (scripts/eval_service_action.py). The proposal is the pool's most common action (ties: the most
     recent); board_qty is this return's claimed defect qty (0 for a sample return); expected_days is the median days
     from decision to execution for that action in the pool (if none was executed by as_of: all past actions of that
     type). The basis names no cause or equipment (the CS screen shows it). None when no past handling is known.

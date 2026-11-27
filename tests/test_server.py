@@ -60,7 +60,7 @@ def test_longer_spring_secrets_use_hs512():
 
 def test_health(client):
     body = client.get(f"{B}/health").json()
-    assert body["status"] == "ok" and body["db"] == "ok" and body["rules"] == "pcb-v5"
+    assert body["status"] == "ok" and body["db"] == "ok" and body["rules"] == "pcb-v6"
 
 
 def test_spring_flow_classify_triage_analysis_refresh(client):
@@ -92,7 +92,7 @@ def test_spring_flow_classify_triage_analysis_refresh(client):
     assert len(similar["items"]) == 3
     refreshed = client.post(f"{B}/cases/refresh", headers=bearer(), json={
         "rma_id": "RMA-08927", "analysis_id": started["analysis_id"], "decision": "APPROVED",
-        "decided_at": "2025-11-21T10:12:00+09:00"}).json()
+        "decided_at": "2026-11-21T10:12:00+09:00"}).json()
     assert refreshed["indexed"] is True and refreshed["case_count"] > 0
 
 
@@ -102,7 +102,7 @@ def test_errors_use_the_spec_format(client):
     assert res.status_code == 404 and res.json()["code"] == "CLAIM_NOT_FOUND" and res.json()["detail"]
     res = client.post(f"{B}/analyses", headers=h, json={"rma_id": "RMA-99999"})
     assert res.status_code == 404 and res.json()["code"] == "CLAIM_NOT_FOUND"  # right away, not a FAILED job
-    res = client.post(f"{B}/analyses", headers=h, json={"rma_id": "RMA-08927", "as_of": "2025-11-20"})
+    res = client.post(f"{B}/analyses", headers=h, json={"rma_id": "RMA-08927", "as_of": "2026-11-20"})
     assert res.status_code == 422 and res.json()["code"] == "AS_OF_INVALID"
     res = client.post(f"{B}/analyses", headers=h, json={"rma_id": "RMA-08927", "options": {"mode": "C"}})
     assert res.status_code == 400 and res.json()["code"] == "INVALID_INPUT"
@@ -119,7 +119,7 @@ def test_errors_use_the_spec_format(client):
 def test_priority_routes(client):
     h = bearer()
     res = client.get(f"{B}/priority/patterns", headers=h,
-                     params={"as_of": "2025-12-31T18:56:13+09:00", "limit": 3, "weights": '{"loss": 1}'})
+                     params={"as_of": "2026-12-31T18:56:13+09:00", "limit": 3, "weights": '{"loss": 1}'})
     assert res.status_code == 200
     items = res.json()["items"]
     assert len(items) == 3 and items[0]["rank"] == 1

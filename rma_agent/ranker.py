@@ -2,11 +2,11 @@
 
 What it does: rank_causes() ranks candidates with the hand-set score (C). With a ranker on, the first HEAD (3)
 candidates of C are reordered by a logistic regression; candidates below are untouched. C's top-3 set is kept, so
-"answer in top 3" cannot drop, only the order inside it changes (test 2025-10~: cause@1 78.2% -> 85.0%, cause@3 97.8%).
+"answer in top 3" cannot drop, only the order inside it changes (test 2026-10~: cause@1 78.2% -> 85.0%, cause@3 97.8%).
 
-Turn on:   RMA_CAUSE_RANKER=models/cause_ranker_v5.json   (path relative to effect-ai, or absolute; unset/off = C only)
-Train:     python3 -m rma_agent.ranker train [--until 2025-09-01] [--out models/cause_ranker_v5.json]
-Check:     python3 -m rma_agent.ranker check models/cause_ranker_v5.json [--start 2025-10-01]
+Turn on:   RMA_CAUSE_RANKER=models/cause_ranker_v6.json   (path relative to effect-ai, or absolute; unset/off = C only)
+Train:     python3 -m rma_agent.ranker train [--until 2026-09-01] [--out models/cause_ranker_v6.json]
+Check:     python3 -m rma_agent.ranker check models/cause_ranker_v6.json [--start 2026-10-01]
 
 The model file is JSON (feature names, scaler mean/scale, coefficients), so serving needs no scikit-learn; training
 does. Every feature is computed from what was known at the analysis's as_of (AsOfStore), in training and in serving
@@ -125,8 +125,8 @@ def _examples(conn, start, end):
     return out
 
 
-def train(conn, until="2025-09-01", start="2025-03-01", C=0.1):
-    """Fit on returns opened in [start, until). C=0.1 was the best setting on 2025-09 (results/20261120_cause_ranker_v5.md)."""
+def train(conn, until="2026-09-01", start="2026-03-01", C=0.1):
+    """Fit on returns opened in [start, until). C=0.1 was the best setting on 2026-09 (results/20261120_cause_ranker_v5.md)."""
     import numpy as np
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
@@ -141,7 +141,7 @@ def train(conn, until="2025-09-01", start="2025-03-01", C=0.1):
             "n_rows": int(len(y))}
 
 
-def check(conn, ranker, start="2025-10-01", end=None):
+def check(conn, ranker, start="2026-10-01", end=None):
     """cause@1/@3 with and without the ranker, through rank_causes() itself (the serving path)."""
     from .agents import cause_analysis, manufacturing
     from .agents.runtime import load_masters
@@ -173,12 +173,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     t = sub.add_parser("train")
-    t.add_argument("--until", default="2025-09-01")
-    t.add_argument("--out", default="models/cause_ranker_v5.json")
+    t.add_argument("--until", default="2026-09-01")
+    t.add_argument("--out", default="models/cause_ranker_v6.json")
     t.add_argument("--db")
     c = sub.add_parser("check")
     c.add_argument("model")
-    c.add_argument("--start", default="2025-10-01")
+    c.add_argument("--start", default="2026-10-01")
     c.add_argument("--end")
     c.add_argument("--db")
     a = ap.parse_args(argv)

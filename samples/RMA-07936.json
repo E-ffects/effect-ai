@@ -6,8 +6,8 @@
   "customer_id": "A03",
   "customer_name": "고객사 A03(차량 전장 Tier1)",
   "industry": "AUTOMOTIVE",
-  "opened_at": "2025-10-18T08:35:41+09:00",
-  "raw_text": "[불량 통보] A03 P/N PCB-BMS4H-C2 (D/C 2535, 라벨 훼손으로 Lot 번호 확인 불가) ICT·기능검사에서 외관 NG가 발생했습니다. 투입 500pcs 중 1pcs 불량입니다. 불량 샘플 1pcs 회송 예정입니다. 분석 결과 회신 부탁드립니다.",
+  "opened_at": "2026-10-18T08:35:41+09:00",
+  "raw_text": "[불량 통보] A03 P/N PCB-BMS4H-C2 (D/C 2635, 라벨 훼손으로 Lot 번호 확인 불가) ICT·기능검사에서 외관 NG가 발생했습니다. 투입 500pcs 중 1pcs 불량입니다. 불량 샘플 1pcs 회송 예정입니다. 분석 결과 회신 부탁드립니다.",
   "reported_part_no": "PCB-BMS4H-C2",
   "reported_lot_no": null,
   "detection_stage": "ICT_FUNCTION",
@@ -20,7 +20,7 @@
   "major_name": null,
   "minor_code": null,
   "minor_name": null,
-  "confidence": 0.66,
+  "confidence": 0.95,
   "evidence_spans": [
    "ICT·기능검사에서 외관 NG가 발생했습니다."
   ],
@@ -28,20 +28,20 @@
   "characteristic_symbol": null,
   "alternatives": [
    {
-    "minor_code": "APPR03",
-    "minor_name": "이물·오염·변색",
-    "confidence": 0.12
+    "minor_code": "ELEC01",
+    "minor_name": "오픈(단선)",
+    "confidence": 0.03
    },
    {
-    "minor_code": "ELEC02",
-    "minor_name": "쇼트",
-    "confidence": 0.08
+    "minor_code": "APPR03",
+    "minor_name": "이물·오염·변색",
+    "confidence": 0.02
    }
   ],
   "follow_up_questions": [
-   "불량 현상이 외관 이상인지, 전기적 불량인지 구체적으로 알려주시고, 발생 위치와 재현 조건도 함께 부탁드립니다."
+   "불량 현상이 구체적으로 무엇인지 알려주시겠습니까? 외관 NG의 형태, 발생 위치, 재현 조건이 있으면 함께 부탁드립니다."
   ],
-  "elapsed_ms": 1528,
+  "elapsed_ms": 1057,
   "model_version": "cs-classifier-0.1+llm",
   "warnings": []
  },
@@ -58,6 +58,6 @@
   "approval_reasons": [],
   "provisional": true,
   "rationale": "소분류 미확정(정보 부족) 임시 판정, 고객 AUTOMOTIVE, 차량 고객은 QA가 당일 직접 확인 → L2",
-  "as_of": "2025-10-18T13:50:42+09:00"
+  "as_of": "2026-10-18T13:50:42+09:00"
  }
 }

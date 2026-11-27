@@ -10,7 +10,7 @@ Sporadic causes are grouped by quarter in the data, so for them (and for no-defe
 Hit@5: at least one of the top 5 results is grade >= 1. Strict Hit@5 (incidents only): at least one grade 2.
 WBS target: Hit@5 on 16 or more of the 20 queries.
 
-The 20 queries come from the test period (opened from 2025-10-01) and mix the situations the screen must handle:
+The 20 queries come from the test period (opened from 2026-10-01) and mix the situations the screen must handle:
 9 incidents (one per incident, recurrence included); an incident once per group and a cause at most twice, 5 sporadic causes, 1 customer TDR notice that ended as no defect
 found, 3 claims whose label's most common past cause is a different cause, and 2 claims without a Lot number.
 Selection is deterministic (seed 52). A person still reviews every query and its answers before the set is final.
@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 from rma_agent.asof import CaseLibrary, analysis_start  # noqa: E402
 
 SEED = 52
-START = "2025-10-01"
+START = "2026-10-01"
 
 
 def kinds(conn):

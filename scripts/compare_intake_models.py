@@ -10,7 +10,7 @@ Models (all see only the train split):
   knn+llm   today's full classify() (retrieval examples + subcategory definitions -> LLM), on a stratified sample
             of the test split (--llm N per label; costs API calls)
 Settings (k, threshold, C) are picked on validation by macro-F1; test is scored once.
-Also reported on the official time split (train < 2025-08 <= validation < 2025-10 <= test) for reference.
+Also reported on the official time split (train < 2026-08 <= validation < 2026-10 <= test) for reference.
 """
 import argparse
 import json
@@ -46,7 +46,7 @@ def load(db, split_file):
     messy = {r[0]: r[1] for r in conn.execute("select rma_id, variant from claim_text_variant")} \
         if conn.execute("select 1 from sqlite_master where name='claim_text_variant'").fetchone() else {}
     phrase = json.loads(Path(split_file).read_text())["split"]
-    time_split = {r[0]: ("train" if r[3] < "2025-08-01" else "validation" if r[3] < "2025-10-01" else "test") for r in rows}
+    time_split = {r[0]: ("train" if r[3] < "2026-08-01" else "validation" if r[3] < "2026-10-01" else "test") for r in rows}
     return rows, messy, {"구절 분할": phrase, "시간 분할": time_split}
 
 

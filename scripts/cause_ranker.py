@@ -10,7 +10,7 @@ Features: today's score parts (vote, recent same product, lot signal, penalty, .
   stage_share    share of this cause among past returns with the same label and detection stage
   spec_share     share of this cause among past returns with the same label and product
   customer_n     past approved returns of the same customer with this cause
-Split by opened_at: train < 2025-09-01 <= validation < 2025-10-01 <= test. Settings picked on validation; test once.
+Split by opened_at: train < 2026-09-01 <= validation < 2026-10-01 <= test. Settings picked on validation; test once.
 """
 import argparse
 import os
@@ -47,7 +47,7 @@ def build(db, cache):
         return pickle.loads(cache.read_bytes())
     conn = connect(db)
     masters, lib, base, truth = load_masters(conn), CaseLibrary(conn), ProcessBaseline(conn), GroundTruth(conn)
-    in_scope, _ = known_queries(conn, queries(conn, "2025-03-01"), truth)
+    in_scope, _ = known_queries(conn, queries(conn, "2026-03-01"), truth)
     opened = dict(conn.execute("select rma_id, opened_at from rma_claim"))
     groups = []
     for rma_id, as_of, group in in_scope:
@@ -117,9 +117,9 @@ def main():
     started = time.time()
     cache = Path(os.environ.get("TMPDIR", "/tmp")) / f"cause_ranker_{Path(a.db).stem}.pkl"
     groups = build(a.db, cache)
-    tr = [g for g in groups if g["opened"] < "2025-09-01"]
-    va = [g for g in groups if "2025-09-01" <= g["opened"] < "2025-10-01"]
-    te = [g for g in groups if g["opened"] >= "2025-10-01"]
+    tr = [g for g in groups if g["opened"] < "2026-09-01"]
+    va = [g for g in groups if "2026-09-01" <= g["opened"] < "2026-10-01"]
+    te = [g for g in groups if g["opened"] >= "2026-10-01"]
     (Xtr, ytr), (Xva, _), (Xte, _) = matrix(tr), matrix(va), matrix(te)
     base = {name: hits(gs, [g["rows"] for g in gs]) for name, gs in (("va", va), ("te", te))}
     scaler = StandardScaler().fit(Xtr)
@@ -156,7 +156,7 @@ def main():
     old_test = hits(te, ranked(te, m_old.predict_proba(sc_old.transform(Xte[:, keep]))[:, 1]))
     pct = lambda v: "-" if v is None else f"{v:.1%}"
     lines = [f"# 원인 후보 순위 모델 비교 (WBS 4.12): {Path(a.db).name}", "",
-             f"- 학습 ~2025-08 ({len(tr):,}건), 설정 선택 2025-09 ({len(va):,}건), 평가 2025-10~ ({len(te):,}건). 알려진 원인 반품만",
+             f"- 학습 ~2026-08 ({len(tr):,}건), 설정 선택 2026-09 ({len(va):,}건), 평가 2026-10~ ({len(te):,}건). 알려진 원인 반품만",
              "- 후보는 지금 방식과 같다(같은 소분류의 과거 확정 원인). 바뀌는 건 순위뿐이다", "",
              "## 검증 구간(9월) 원인@1", "", "| 모델 | 원인@1 |", "|---|---:|",
              f"| 지금 방식 C (손으로 정한 가중치) | {pct(base['va']['cause@1'])} |"]

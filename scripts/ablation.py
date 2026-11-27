@@ -4,7 +4,7 @@
 
 Score = (0.40 x vote + 0.35 x recent same product + 0.25 x lot signal) x penalty (cause_analysis.py).
 Each variant changes the module constants for one run; nothing else changes. Both periods are reported: the weights
-were set on 2025-07~09 (tuning) and only checked on 2025-10~ (test).
+were set on 2026-07~09 (tuning) and only checked on 2026-10~ (test).
 """
 import argparse
 import os
@@ -28,7 +28,7 @@ VARIANTS = [  # name, (vote, recent, signal), penalties on, recent days
     ("최근 범위 30일", (0.40, 0.35, 0.25), True, 30),
     ("최근 범위 90일", (0.40, 0.35, 0.25), True, 90),
 ]
-PERIODS = [("튜닝 2025-07~09", "2025-07-01", "2025-10-01"), ("평가 2025-10~", "2025-10-01", None)]
+PERIODS = [("튜닝 2026-07~09", "2026-07-01", "2026-10-01"), ("평가 2026-10~", "2026-10-01", None)]
 
 
 def one(args):

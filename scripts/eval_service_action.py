@@ -1,6 +1,6 @@
 """Service action proposal (drafts.service_action, Spring_API_v4 4-7): how often does it match what was actually done?
 
-    python scripts/eval_service_action.py [--start 2025-10-01] [--out results/x.md]
+    python scripts/eval_service_action.py [--start 2026-10-01] [--out results/x.md]
 
 For every return opened from --start that has a recorded service action, run the proposal at the return's analysis
 start (as_of, time-controlled) with the agent's own cause ranking and similar cases, and compare with the action
@@ -27,7 +27,7 @@ from rma_agent.tools.process import ProcessBaseline  # noqa: E402
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=str(ROOT / "data" / "pcb_rma_v5.sqlite"))
-    ap.add_argument("--start", default="2025-10-01")
+    ap.add_argument("--start", default="2026-10-01")
     ap.add_argument("--out")
     a = ap.parse_args()
     t0 = time.time()

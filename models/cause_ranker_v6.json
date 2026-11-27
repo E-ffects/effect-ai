@@ -1,5 +1,5 @@
 {
- "name": "cause-lr-2025-09-01",
+ "name": "cause-lr-2026-09-01",
  "features": [
   "vote",
   "recent",
@@ -103,7 +103,7 @@
  "intercept": -1.3175570698053647,
  "C": 0.1,
  "head": 3,
- "trained_on": "2025-03-01 <= opened_at < 2025-09-01",
+ "trained_on": "2026-03-01 <= opened_at < 2026-09-01",
  "n_returns": 3226,
  "n_rows": 8442
 }

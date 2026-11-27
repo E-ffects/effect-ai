@@ -5,8 +5,8 @@ from rma_agent import pattern_priority, response_priority
 from rma_agent.agents.runtime import get_runtime
 from rma_agent.errors import RmaAgentError
 
-END = "2025-12-31T18:56:13+09:00"
-SEP = "2025-09-30T23:59:59+09:00"
+END = "2026-12-31T18:56:13+09:00"
+SEP = "2026-09-30T23:59:59+09:00"
 
 
 def test_pattern_score_is_the_weighted_sum_of_parts():
@@ -27,14 +27,14 @@ def test_pattern_uses_only_what_was_known_at_as_of():
     conn = get_runtime().conn
     res = pattern_priority(as_of=SEP)
     ids = {i["investigation_id"] for i in res["items"]}
-    assert "INV-25-0020" not in ids  # opened later
-    assert "INV-25-0014" in ids  # closed later, open at SEP
+    assert "INV-26-0020" not in ids  # opened later
+    assert "INV-26-0014" in ids  # closed later, open at SEP
     for it in res["items"]:
         n = conn.execute("""select count(*) from investigation_claim l join rma_claim r using(rma_id)
                             where l.investigation_id=? and l.linked_at <= ? and r.opened_at <= ?""",
                          (it["investigation_id"], SEP, SEP)).fetchone()[0]
         assert it["total_claim_count"] == n and it["claim_count"] <= n
-    closed_later = next(i for i in res["items"] if i["investigation_id"] == "INV-25-0014")
+    closed_later = next(i for i in res["items"] if i["investigation_id"] == "INV-26-0014")
     assert closed_later["status"] is None and closed_later["status_name"] == "진행 중"
 
 

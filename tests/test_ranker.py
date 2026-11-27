@@ -7,7 +7,7 @@ from rma_agent import ranker, run_analysis
 from rma_agent.agents import cause_analysis, manufacturing
 from rma_agent.agents.runtime import get_runtime
 
-MODEL = ranker.ROOT / "models" / "cause_ranker_v5.json"
+MODEL = ranker.ROOT / "models" / "cause_ranker_v6.json"
 
 
 def ranked(rma_id, use, top_k=10):
@@ -28,7 +28,7 @@ def model():
 def claims_with_choice(n=40):
     conn = get_runtime().conn
     return [r[0] for r in conn.execute(
-        "select rma_id from rma_claim where opened_at>='2025-10-01' order by rma_id limit ?", (n,))]
+        "select rma_id from rma_claim where opened_at>='2026-10-01' order by rma_id limit ?", (n,))]
 
 
 def test_off_by_default(monkeypatch):
@@ -43,7 +43,7 @@ def test_off_by_default(monkeypatch):
 def test_model_file_matches_the_code(model):
     raw = json.loads(MODEL.read_text(encoding="utf-8"))
     assert raw["features"] == ranker.NAMES and raw["head"] == ranker.HEAD
-    assert raw["trained_on"].endswith("< 2025-09-01")  # test period 2025-10~ stays unseen
+    assert raw["trained_on"].endswith("< 2026-09-01")  # test period 2026-10~ stays unseen
     with pytest.raises(ValueError):
         ranker.Ranker({**raw, "features": raw["features"][:-1]})
 
@@ -72,7 +72,7 @@ def test_features_use_only_cases_known_at_as_of(model):
     rt = get_runtime()
     rma_id = "RMA-08927"
     late = analysis_start(rt.conn, rma_id)
-    early = rt.store("2025-06-01T00:00:00+09:00", rma_id)
+    early = rt.store("2026-06-01T00:00:00+09:00", rma_id)
     store = rt.store(late, rma_id)
     claim = store.claim(rma_id)
     now, before = ranker.Context(store, claim), ranker.Context(early, claim)
@@ -85,7 +85,7 @@ def test_features_use_only_cases_known_at_as_of(model):
 def test_analysis_reports_the_ranker(monkeypatch):
     monkeypatch.setenv("RMA_CAUSE_RANKER", str(MODEL))
     out = run_analysis("RMA-08927")
-    assert out["model_versions"]["cause_ranker"] == "cause-lr-2025-09-01"
+    assert out["model_versions"]["cause_ranker"] == "cause-lr-2026-09-01"
     cause_step = next(t for t in out["trace"] if t["agent"] == "CAUSE_ANALYSIS")
-    assert "학습 모델(cause-lr-2025-09-01)로 재정렬" in cause_step["action"]
+    assert "학습 모델(cause-lr-2026-09-01)로 재정렬" in cause_step["action"]
     assert out["result"]["cause_candidates"][0]["cause_code"] == "OL_ETCH_RESIDUE"

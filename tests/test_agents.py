@@ -11,7 +11,7 @@ AGENT_ORDER = ["ORCHESTRATOR", "QA", "MANUFACTURING", "CAUSE_ANALYSIS", "QA", "M
 
 def sample_claims(n=25, seed=11):
     conn = get_runtime().conn
-    ids = [r[0] for r in conn.execute("select rma_id from rma_claim where opened_at>='2025-06-01' order by rma_id")]
+    ids = [r[0] for r in conn.execute("select rma_id from rma_claim where opened_at>='2026-06-01' order by rma_id")]
     return random.Random(seed).sample(ids, n)
 
 
@@ -24,7 +24,7 @@ def example():
 
 def test_response_fields(example):
     out, _ = example
-    assert out["status"] == "SUCCEEDED" and out["as_of"] == "2025-11-20T12:41:37+09:00"
+    assert out["status"] == "SUCCEEDED" and out["as_of"] == "2026-11-20T12:41:37+09:00"
     result = out["result"]
     assert set(result) == {"classification", "qa_review", "trace_summary", "cause_candidates",
                            "escape_candidates", "candidate_lots", "recurrence_check", "similar_cases", "drafts"}
@@ -82,9 +82,9 @@ def test_similar_cases_known_before_as_of():
 
 @pytest.mark.parametrize("kwargs, error", [
     ({"rma_id": "RMA-99999"}, "CLAIM_NOT_FOUND"),
-    ({"rma_id": "RMA-08927", "as_of": "2025-11-01T00:00:00+09:00"}, "CLAIM_NOT_FOUND"),   # before it was opened
-    ({"rma_id": "RMA-08927", "as_of": "2025-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),     # opened 08:56, triaged 12:41
-    ({"rma_id": "RMA-08927", "as_of": "2025-11-20 14:40"}, "AS_OF_INVALID"),              # no time zone
+    ({"rma_id": "RMA-08927", "as_of": "2026-11-01T00:00:00+09:00"}, "CLAIM_NOT_FOUND"),   # before it was opened
+    ({"rma_id": "RMA-08927", "as_of": "2026-11-20T10:00:00+09:00"}, "AS_OF_INVALID"),     # opened 08:56, triaged 12:41
+    ({"rma_id": "RMA-08927", "as_of": "2026-11-20 14:40"}, "AS_OF_INVALID"),              # no time zone
     ({"rma_id": "RMA-08927", "as_of": "yesterday"}, "AS_OF_INVALID"),
     ({"rma_id": "RMA-08927", "mode": "C"}, "INVALID_INPUT"),
     ({"rma_id": "", "top_k": 3}, "INVALID_INPUT"),

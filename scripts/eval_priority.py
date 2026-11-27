@@ -2,7 +2,7 @@
 
     python scripts/eval_priority.py [--out results/x.md]
 
-At each month end 2025-03..2025-11 (as_of), score the open patterns, then look 60 days ahead (data the score did not
+At each month end 2026-03..2026-11 (as_of), score the open patterns, then look 60 days ahead (data the score did not
 see): new returns linked to each pattern and new loss booked to it. Report, per weighting, how often the top-ranked
 pattern is the one with the most future loss, and the rank correlation (Spearman) between score and future loss.
 Only patterns with at least one return at as_of. Weightings: the FR-03 default with different look-back windows for count/loss, and single-part baselines.
@@ -62,7 +62,7 @@ def main():
                               f"| {best['investigation_id']} {best['title'].split(' —')[0]} | {fut_loss.get(items[0]['investigation_id'], 0) / 1e8:.2f}억 / {max(fl) / 1e8:.2f}억 "
                               f"| {fut_n.get(items[0]['investigation_id'], 0)} |")
     lines = [f"# 패턴 우선순위 점검 (WBS 4.3): {Path(a.db).name}", "",
-             f"매월 말(2025-03~11, 9개 시점)에 열린 패턴(조사)을 점수로 줄 세우고, 그 뒤 {AHEAD}일 동안 실제로 생긴 손실과 비교했다. "
+             f"매월 말(2026-03~11, 9개 시점)에 열린 패턴(조사)을 점수로 줄 세우고, 그 뒤 {AHEAD}일 동안 실제로 생긴 손실과 비교했다. "
              "점수는 그 시점까지의 데이터만 쓴다. 반품이 하나도 연결되지 않은 조사는 뺐다.", "",
              "| 가중치 | 1위 패턴이 이후 손실 1위인 비율 | 점수와 이후 손실의 순위상관 (평균) |", "|---|---:|---:|"]
     for name, s in stats.items():

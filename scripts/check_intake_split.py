@@ -57,13 +57,13 @@ def main():
         p(f"| {s} | {len(rs):,} | {len(rs) / len(rows):.1%} | {min(r['opened_at'] for r in rs)[:10]} ~ {max(r['opened_at'] for r in rs)[:10]} "
           f"| {c['INSUFFICIENT_INFO']} | {c['UNCLASSIFIED']} |")
     p(f"| 합계 | {len(rows):,} | | | | |\n")
-    rule = {"train": lambda d: d < "2025-08-01", "validation": lambda d: "2025-08-01" <= d < "2025-10-01",
-            "test": lambda d: d >= "2025-10-01"}
+    rule = {"train": lambda d: d < "2026-08-01", "validation": lambda d: "2026-08-01" <= d < "2026-10-01",
+            "test": lambda d: d >= "2026-10-01"}
     bad_rule = sum(not rule[s](r["opened_at"]) for s in SPLITS for r in data[s])
     ids = [r["rma_id"] for r in rows]
     overlap = len(ids) - len(set(ids))
     total_db = db.execute("select count(*) from rma_claim").fetchone()[0]
-    p(f"- 기준: 접수일(`opened_at`) train < 2025-08-01 ≤ validation < 2025-10-01 ≤ test. 미래 데이터로 과거를 맞히지 않도록 시간으로 나눈다.")
+    p(f"- 기준: 접수일(`opened_at`) train < 2026-08-01 ≤ validation < 2026-10-01 ≤ test. 미래 데이터로 과거를 맞히지 않도록 시간으로 나눈다.")
     p(f"- 기준을 어긴 행: {bad_rule}건 · 분할 사이에 겹치는 반품: {overlap}건 · 입력과 정답 행 수 불일치: "
       f"{sum(len(data[s]) != n_labels[s] for s in SPLITS)}개 분할 · DB 반품 {total_db:,}건 중 누락 {total_db - len(set(ids))}건")
     if bad_rule or overlap or total_db != len(set(ids)):

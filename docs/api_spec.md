@@ -2,7 +2,7 @@
 
 - 작성: 2026-11-18 (AI/DATA 유희범)
 - 대상: 백엔드(Spring Boot), 프론트(Vue), 인프라
-- 데이터: PCB RMA v5 (기준 시점 2025-12-31. 2026-11-19부터 팀 공식, 이전은 v4)
+- 데이터: PCB RMA v5 (기준 시점 2026-12-31. 2026-11-19부터 팀 공식, 이전은 v4)
 - 상태: **초안.** 3장 API와 5장 저장 책임을 팀이 확인하면 v1.0으로 확정한다.
 
 ## 요약
@@ -191,7 +191,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   "detection_stage": "SMT_REFLOW",
   "reported_part_no": "PCB-ECU6-A1",
   "customer_id": "A01",
-  "as_of": "2025-11-20T12:41:37+09:00"
+  "as_of": "2026-11-20T12:41:37+09:00"
 }
 ```
 `rma_id`는 선택이다. 접수 등록 전 미리보기에서는 원문만 보내도 된다.
@@ -253,7 +253,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 ```json
 {
   "rma_id": "RMA-08927",
-  "as_of": "2025-11-20T12:41:37+09:00",
+  "as_of": "2026-11-20T12:41:37+09:00",
   "options": {"top_k": 3, "include_drafts": true, "mode": "B"}
 }
 ```
@@ -266,13 +266,13 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   "analysis_id": "ana-20251120-08743-01",
   "rma_id": "RMA-08927",
   "status": "QUEUED",
-  "created_at": "2025-11-20T14:40:47+09:00",
+  "created_at": "2026-11-20T14:40:47+09:00",
   "poll_after_ms": 1000
 }
 ```
 
 ### 3-3. `GET /analyses/{analysis_id}`
-> 예시는 v5 데이터의 RMA-08927(차량 고객 A01, Lot LT-01603, 쇼트, 외층 에칭 잔동)이다. 점수·문장 같은 값은 설명용이고, 실제 응답 전체는 effect-ai `samples/RMA-08927.json`에 있다.
+> 예시는 v6 데이터의 RMA-08927(차량 고객 A01, Lot LT-01603, 쇼트, 외층 에칭 잔동)이다. 점수·문장 같은 값은 설명용이고, 실제 응답 전체는 effect-ai `samples/RMA-08927.json`에 있다.
 
 **응답 200: 실행 중**
 ```json
@@ -285,12 +285,12 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 }
 ```
 
-**응답 200: 완료** (B안, v5 데이터 기준 예시)
+**응답 200: 완료** (B안, v6 데이터 기준 예시)
 ```json
 {
   "analysis_id": "ana-20251120-08743-01",
   "rma_id": "RMA-08927",
-  "as_of": "2025-11-20T12:41:37+09:00",
+  "as_of": "2026-11-20T12:41:37+09:00",
   "mode": "B",
   "status": "SUCCEEDED",
   "result": {
@@ -325,11 +325,11 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
         "process_name": "외층 에칭",
         "equipment_id": "OLE-02",
         "score": 0.86,
-        "explanation": "같은 제품(PCB-ECU6-A1)의 쇼트 반품이 최근 OLE-02 외층 에칭 잔동으로 확정된 사례가 있고, 이 Lot도 2025-10-21 OLE-02에서 에칭됐으며 그때 스프레이 압력이 평소보다 3.3σ 낮았습니다. 10-31 노즐 7개 막힘 기록이 있습니다.",
+        "explanation": "같은 제품(PCB-ECU6-A1)의 쇼트 반품이 최근 OLE-02 외층 에칭 잔동으로 확정된 사례가 있고, 이 Lot도 2026-10-21 OLE-02에서 에칭됐으며 그때 스프레이 압력이 평소보다 3.3σ 낮았습니다. 10-31 노즐 7개 막힘 기록이 있습니다.",
         "evidence": [
-          {"type": "SIMILAR_CASE", "summary": "RMA-08576 (2025-11-13, 같은 P/N, 쇼트·잔동 의심) → 외층 에칭 잔동, OLE-02, 확정", "ref_table": "rma_claim", "ref_id": "RMA-08576", "occurred_at": "2025-11-13T00:00:00+09:00"},
-          {"type": "PROCESS_SIGNAL", "summary": "OL_ETCH · OLE-02 스프레이 압력 -3.3σ (직전 90일 대비)", "ref_table": "process_run", "ref_id": "LT-01603/OL_ETCH", "occurred_at": "2025-10-21T02:20:29+09:00"},
-          {"type": "EQUIPMENT_EVENT", "summary": "OLE-02 노즐 점검: 스프레이 노즐 7개 막힘 확인·교체", "ref_table": "equipment_event", "ref_id": "NOZZLE_CHECK@OLE-02", "occurred_at": "2025-10-31T19:58:59+09:00"}
+          {"type": "SIMILAR_CASE", "summary": "RMA-08576 (2026-11-13, 같은 P/N, 쇼트·잔동 의심) → 외층 에칭 잔동, OLE-02, 확정", "ref_table": "rma_claim", "ref_id": "RMA-08576", "occurred_at": "2026-11-13T00:00:00+09:00"},
+          {"type": "PROCESS_SIGNAL", "summary": "OL_ETCH · OLE-02 스프레이 압력 -3.3σ (직전 90일 대비)", "ref_table": "process_run", "ref_id": "LT-01603/OL_ETCH", "occurred_at": "2026-10-21T02:20:29+09:00"},
+          {"type": "EQUIPMENT_EVENT", "summary": "OLE-02 노즐 점검: 스프레이 노즐 7개 막힘 확인·교체", "ref_table": "equipment_event", "ref_id": "NOZZLE_CHECK@OLE-02", "occurred_at": "2026-10-31T19:58:59+09:00"}
         ]
       },
       {
@@ -373,17 +373,17 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
         "equipment_id": "ET-02",
         "summary": "이 Lot은 ET-02에서 검사됐고, ET-02의 쇼트 검출률이 최근 1.84%로 다른 장비(ET-01 4.16%, FP-01 4.56%)보다 낮습니다. 10-31 픽스처 핀 38개 마모 기록이 있습니다.",
         "evidence": [
-          {"type": "INSPECTION", "summary": "ET_SHORT 검출률 ET-02 1.84% (162/8,823), ET-01 4.16%, FP-01 4.56% (2025-10-13 ~ 분석 시각)", "ref_table": "test_run", "ref_id": "ET_SHORT@ET-02", "occurred_at": "2025-10-23T13:48:56+09:00"},
-          {"type": "EQUIPMENT_EVENT", "summary": "ET-02 픽스처 점검: 핀 38개 마모 확인", "ref_table": "equipment_event", "ref_id": "FIXTURE_CHECK@ET-02", "occurred_at": "2025-10-31T15:47:38+09:00"}
+          {"type": "INSPECTION", "summary": "ET_SHORT 검출률 ET-02 1.84% (162/8,823), ET-01 4.16%, FP-01 4.56% (2026-10-13 ~ 분석 시각)", "ref_table": "test_run", "ref_id": "ET_SHORT@ET-02", "occurred_at": "2026-10-23T13:48:56+09:00"},
+          {"type": "EQUIPMENT_EVENT", "summary": "ET-02 픽스처 점검: 핀 38개 마모 확인", "ref_table": "equipment_event", "ref_id": "FIXTURE_CHECK@ET-02", "occurred_at": "2026-10-31T15:47:38+09:00"}
         ]
       }
     ],
-    "candidate_lots": {"window_hours": 24, "total": 62, "items": [{"lot_id": "LT-01602", "spec_id": "SEMI-SSD8H", "started_at": "2025-10-16T10:15:45+09:00", "completed_at": "2025-10-24T07:52:46+09:00", "shared": [{"type": "EQUIPMENT", "process_id": "OL_ETCH", "process_name": "외층 에칭", "equipment_id": "OLE-02", "this_lot_at": "2025-10-21T02:20:29+09:00", "other_lot_at": "2025-10-20T07:19:59+09:00", "gap_hours": 19.0}], "shared_count": 16, "matches_top_cause": true, "shipped": true, "first_shipped_at": "2025-10-25T08:45:59+09:00", "shipped_boards": 4278, "known_returns": 0}]},
+    "candidate_lots": {"window_hours": 24, "total": 62, "items": [{"lot_id": "LT-01602", "spec_id": "SEMI-SSD8H", "started_at": "2026-10-16T10:15:45+09:00", "completed_at": "2026-10-24T07:52:46+09:00", "shared": [{"type": "EQUIPMENT", "process_id": "OL_ETCH", "process_name": "외층 에칭", "equipment_id": "OLE-02", "this_lot_at": "2026-10-21T02:20:29+09:00", "other_lot_at": "2026-10-20T07:19:59+09:00", "gap_hours": 19.0}], "shared_count": 16, "matches_top_cause": true, "shipped": true, "first_shipped_at": "2026-10-25T08:45:59+09:00", "shipped_boards": 4278, "known_returns": 0}]},
     "recurrence_check": {"status": "NOT_APPLICABLE", "corrective_action": null, "checks": null, "reason": "1순위 원인 외층 에칭 잔동에 대해 분석 시점까지 시행된 발생 원인 조치가 없습니다.", "suggestion": "신규"},
     "similar_cases": [
-      {"rma_id": "RMA-08486", "opened_at": "2025-11-05T10:32:14+09:00", "claim_date": "2025-11-05", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.68, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 14, "snippet": "[불량 통보] A01 P/N PCB-ECU6-A1 (Lot LT-01603) ICT·기능검사에서 인접 패턴 …", "corrective_actions": []},
-      {"rma_id": "RMA-00300", "opened_at": "2025-01-24T08:59:29+09:00", "claim_date": "2025-01-24", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "FOREIGN_MATERIAL", "cause_name": "공정 이물 혼입", "process_id": "SM", "equipment_id": null, "certainty": "PROBABLE", "similarity": 0.63, "basis": "같은 증상+같은 제품+문장 유사", "past_action": "인쇄실 청정도 관리 강화", "recurrence": false, "days_to_resolve": 72, "snippet": "긴급 품질 이슈 공유드립니다(A04). P/N PCB-ECU6-A1 (Lot LT-00170, D/C 245…", "corrective_actions": [{"category": "PROCESS_LOCAL", "description": "인쇄실 청정도 관리 강화", "implemented_at": "2025-04-14T08:41:16+09:00"}]},
-      {"rma_id": "RMA-08504", "opened_at": "2025-11-06T08:40:49+09:00", "claim_date": "2025-11-06", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.62, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 13, "snippet": "A01 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-ECU6-A1 (Lot LT-01603,…", "corrective_actions": []}
+      {"rma_id": "RMA-08486", "opened_at": "2026-11-05T10:32:14+09:00", "claim_date": "2026-11-05", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.68, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 14, "snippet": "[불량 통보] A01 P/N PCB-ECU6-A1 (Lot LT-01603) ICT·기능검사에서 인접 패턴 …", "corrective_actions": []},
+      {"rma_id": "RMA-00300", "opened_at": "2026-01-24T08:59:29+09:00", "claim_date": "2026-01-24", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "FOREIGN_MATERIAL", "cause_name": "공정 이물 혼입", "process_id": "SM", "equipment_id": null, "certainty": "PROBABLE", "similarity": 0.63, "basis": "같은 증상+같은 제품+문장 유사", "past_action": "인쇄실 청정도 관리 강화", "recurrence": false, "days_to_resolve": 72, "snippet": "긴급 품질 이슈 공유드립니다(A04). P/N PCB-ECU6-A1 (Lot LT-00170, D/C 245…", "corrective_actions": [{"category": "PROCESS_LOCAL", "description": "인쇄실 청정도 관리 강화", "implemented_at": "2026-04-14T08:41:16+09:00"}]},
+      {"rma_id": "RMA-08504", "opened_at": "2026-11-06T08:40:49+09:00", "claim_date": "2026-11-06", "minor_code": "ELEC02", "minor_name": "쇼트", "cause_code": "OL_ETCH_RESIDUE", "cause_name": "외층 에칭 잔동", "process_id": "OL_ETCH", "equipment_id": "OLE-02", "certainty": "CONFIRMED", "similarity": 0.62, "basis": "같은 증상+같은 제품+같은 Lot+같은 고객+문장 유사", "past_action": null, "recurrence": false, "days_to_resolve": 13, "snippet": "A01 품질보증팀입니다. 불량 발생 건 통보드립니다. P/N PCB-ECU6-A1 (Lot LT-01603,…", "corrective_actions": []}
     ],
     "drafts": {
       "customer_reply": "A01 품질 담당자님, PCB-ECU6-A1 (Lot LT-01603) 쇼트 불량 통보 확인했습니다. 현재 외층 에칭 공정의 잔동을 유력 원인으로 보고 회수 시료 4pcs 분석을 진행합니다. 동일 Lot 재고는 출하 보류 후 E-Test 100% 재검 선별을 진행하며, 결과를 회신드리겠습니다.",
@@ -411,7 +411,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   ],
   "warnings": [],
   "langsmith_run_id": "run-3f6e1c",
-  "model_versions": {"llm": "설정값", "prompt": "agents-0.4", "rules": "pcb-v5", "cause_ranker": null},
+  "model_versions": {"llm": "설정값", "prompt": "agents-0.4", "rules": "pcb-v6", "cause_ranker": null},
   "elapsed_ms": 8040
 }
 ```
@@ -425,7 +425,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   - `expected_days`: 그 처리의 결정→실행 일수 중앙값. 유사 사례 중 실행된 것이 없으면 과거 같은 처리 전체로 계산한다(`expected_days_basis`에 어느 쪽인지 적음)
   - `alternatives`: 유사 사례에서 나온 다른 처리와 건수
   - 과거 처리 기록이 하나도 없으면 `null`이다
-  - 점검: 2025-10월 이후 처리 기록이 있는 반품 3,319건에서 실제 처리와 68.0% 일치(같은 유력 원인의 과거 반품 기준은 67.2%, `scripts/eval_service_action.py`). 제안이며, 처리 결정은 CS가 한다
+  - 점검: 2026-10월 이후 처리 기록이 있는 반품 3,319건에서 실제 처리와 68.0% 일치(같은 유력 원인의 과거 반품 기준은 67.2%, `scripts/eval_service_action.py`). 제안이며, 처리 결정은 CS가 한다
 - `cause_candidates[].score`: 0~1. 같은 응답 안의 순위 비교용이며, 확률이 아니다.
 - `model_versions.cause_ranker`: 원인 후보 학습 재정렬(WBS 4.12) 모델 이름, 꺼져 있으면 `null`(기본). 켜면 손으로 정한 점수의 상위 3개 안에서만 순서를 바꾸고, 그 3개의 `score`는 모델 확률이 된다. 필드와 모양은 같다(결과 `results/20261120_cause_ranker_agent_v5.md`).
 - `qa_review`: QA 에이전트의 판정(분석 전: 분석 수준·승인 필요 여부)과 검토(원인분석 후: 후보별 근거) 결과. `candidate_checks[].evidence_status`는 `SUFFICIENT`(확정에 필요한 근거 충분), `PARTIAL`(일부 있음, 예: 반송품 시험 대기), `INSUFFICIENT`(근거 부족). 기준은 원인별 필요 근거 규칙(`qa_causal_requirement`)이다.
@@ -467,16 +467,16 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
     {
       "lot_id": "LT-01602",
       "spec_id": "SEMI-SSD8H",
-      "started_at": "2025-10-16T10:15:45+09:00",
-      "completed_at": "2025-10-24T07:52:46+09:00",
+      "started_at": "2026-10-16T10:15:45+09:00",
+      "completed_at": "2026-10-24T07:52:46+09:00",
       "shared": [
         {
           "type": "EQUIPMENT",
           "process_id": "OL_ETCH",
           "process_name": "외층 에칭",
           "equipment_id": "OLE-02",
-          "this_lot_at": "2025-10-21T02:20:29+09:00",
-          "other_lot_at": "2025-10-20T07:19:59+09:00",
+          "this_lot_at": "2026-10-21T02:20:29+09:00",
+          "other_lot_at": "2026-10-20T07:19:59+09:00",
           "gap_hours": 19.0
         },
         {
@@ -484,31 +484,31 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
           "process_id": "IL_ETCH",
           "process_name": "내층 에칭·박리",
           "equipment_id": "ILE-01",
-          "this_lot_at": "2025-10-17T21:05:37+09:00",
-          "other_lot_at": "2025-10-17T05:45:14+09:00",
+          "this_lot_at": "2026-10-17T21:05:37+09:00",
+          "other_lot_at": "2026-10-17T05:45:14+09:00",
           "gap_hours": 15.3
         }
       ],
       "shared_count": 16,
       "matches_top_cause": true,
       "shipped": true,
-      "first_shipped_at": "2025-10-25T08:45:59+09:00",
+      "first_shipped_at": "2026-10-25T08:45:59+09:00",
       "shipped_boards": 4278,
       "known_returns": 0
     },
     {
       "lot_id": "LT-01599",
       "spec_id": "AUTO-ECU6",
-      "started_at": "2025-10-16T15:31:18+09:00",
-      "completed_at": "2025-10-25T06:00:15+09:00",
+      "started_at": "2026-10-16T15:31:18+09:00",
+      "completed_at": "2026-10-25T06:00:15+09:00",
       "shared": [
         {
           "type": "EQUIPMENT",
           "process_id": "OL_ETCH",
           "process_name": "외층 에칭",
           "equipment_id": "OLE-02",
-          "this_lot_at": "2025-10-21T02:20:29+09:00",
-          "other_lot_at": "2025-10-21T03:44:43+09:00",
+          "this_lot_at": "2026-10-21T02:20:29+09:00",
+          "other_lot_at": "2026-10-21T03:44:43+09:00",
           "gap_hours": 1.4
         },
         {
@@ -516,15 +516,15 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
           "process_id": "IL_IMG",
           "process_name": "내층 D/F 라미·노광·현상",
           "equipment_id": "ILI-01",
-          "this_lot_at": "2025-10-17T12:31:00+09:00",
-          "other_lot_at": "2025-10-16T20:46:12+09:00",
+          "this_lot_at": "2026-10-17T12:31:00+09:00",
+          "other_lot_at": "2026-10-16T20:46:12+09:00",
           "gap_hours": 15.7
         }
       ],
       "shared_count": 15,
       "matches_top_cause": true,
       "shipped": true,
-      "first_shipped_at": "2025-10-27T09:42:44+09:00",
+      "first_shipped_at": "2026-10-27T09:42:44+09:00",
       "shipped_boards": 2257,
       "known_returns": 5
     }
@@ -563,9 +563,9 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   "status": "RECURRENCE",
   "corrective_action": {
     "corrective_action_id": "CA-000023",
-    "investigation_id": "INV-25-0009",
+    "investigation_id": "INV-26-0009",
     "description": "DSM-02 과망간산 용액 교체 기준(처리 면적 1,500㎡) 적용",
-    "implemented_at": "2025-07-30T02:35:44+09:00",
+    "implemented_at": "2026-07-30T02:35:44+09:00",
     "scope": {
       "equipment": [
         "DSM-02"
@@ -578,11 +578,11 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
     "cause_match": true,
     "symptom_confirmed": true,
     "lot_id": "LT-01550",
-    "lot_started_at": "2025-10-04T19:43:28+09:00",
+    "lot_started_at": "2026-10-04T19:43:28+09:00",
     "produced_after_action": true,
     "in_action_scope": false
   },
-  "reason": "Lot LT-01550은(는) 조치 CA-000023(2025-07-30 시행) 이후에 생산됐고 원인이 같습니다. 조치 범위(설비 DSM-02) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다.",
+  "reason": "Lot LT-01550은(는) 조치 CA-000023(2026-07-30 시행) 이후에 생산됐고 원인이 같습니다. 조치 범위(설비 DSM-02) 밖에서 다시 발생해, 조치가 다른 설비·자재로 수평 전개되지 않은 것으로 보입니다.",
   "suggestion": "확산형 재발"
 }
 // PRE_ACTION_PRODUCT: RMA-07085 (드릴 비트, 조치 전에 생산된 Lot)
@@ -590,9 +590,9 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   "status": "PRE_ACTION_PRODUCT",
   "corrective_action": {
     "corrective_action_id": "CA-000001",
-    "investigation_id": "INV-25-0001",
+    "investigation_id": "INV-26-0001",
     "description": "DRL-03 비트 수명 카운터 인터록 적용 및 카운터 리셋 로직 수정",
-    "implemented_at": "2025-04-16T07:51:15+09:00",
+    "implemented_at": "2026-04-16T07:51:15+09:00",
     "scope": {
       "equipment": [
         "DRL-03"
@@ -605,11 +605,11 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
     "cause_match": true,
     "symptom_confirmed": true,
     "lot_id": "LT-00545",
-    "lot_started_at": "2025-03-03T19:18:57+09:00",
+    "lot_started_at": "2026-03-03T19:18:57+09:00",
     "produced_after_action": false,
     "in_action_scope": true
   },
-  "reason": "Lot LT-00545은(는) 조치 CA-000001(2025-04-16 시행) 전에 생산된 제품입니다. 재발이 아니라 조치 전 생산품의 반품입니다.",
+  "reason": "Lot LT-00545은(는) 조치 CA-000001(2026-04-16 시행) 전에 생산된 제품입니다. 재발이 아니라 조치 전 생산품의 반품입니다.",
   "suggestion": "조치 전 생산품"
 }
 // PENDING_CAUSE_REVIEW: RMA-07936 (정보 부족 접수)
@@ -617,9 +617,9 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
   "status": "PENDING_CAUSE_REVIEW",
   "corrective_action": {
     "corrective_action_id": "CA-000038",
-    "investigation_id": "INV-25-0015",
+    "investigation_id": "INV-26-0015",
     "description": "보전 후 원점 확인 체크리스트 및 초품 승인 필수화",
-    "implemented_at": "2025-10-07T02:35:27+09:00",
+    "implemented_at": "2026-10-07T02:35:27+09:00",
     "scope": {
       "equipment": [
         "RTR-02"
@@ -633,11 +633,11 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
     "cause_match": true,
     "symptom_confirmed": false,
     "lot_id": "LT-01345",
-    "lot_started_at": "2025-08-22T19:56:01+09:00",
+    "lot_started_at": "2026-08-22T19:56:01+09:00",
     "produced_after_action": false,
     "in_action_scope": true
   },
-  "reason": "과거 조치(CA-000038, 2025-10-07 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.",
+  "reason": "과거 조치(CA-000038, 2026-10-07 시행)와 원인이 같아 보이지만, 접수 증상이 아직 확인되지 않아 고객 회신으로 원인을 먼저 확인해야 재발 여부를 정할 수 있습니다.",
   "suggestion": null
 }
 // NOT_APPLICABLE (신규): RMA-08927 (외층 에칭 잔동, 분석 시점까지 시행된 조치 없음)
@@ -655,12 +655,12 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 ```json
 {
   "rma_id": "RMA-08927",
-  "as_of": "2025-11-20T12:41:37+09:00",
+  "as_of": "2026-11-20T12:41:37+09:00",
   "items": [
     {
       "rma_id": "RMA-08486",
-      "opened_at": "2025-11-05T10:32:14+09:00",
-      "claim_date": "2025-11-05",
+      "opened_at": "2026-11-05T10:32:14+09:00",
+      "claim_date": "2026-11-05",
       "minor_code": "ELEC02",
       "minor_name": "쇼트",
       "cause_code": "OL_ETCH_RESIDUE",
@@ -697,7 +697,7 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 
 **요청**
 ```json
-{"rma_id": "RMA-08927", "analysis_id": "ana-20251120-08743-01", "decision": "APPROVED", "decided_at": "2025-11-21T10:12:00+09:00"}
+{"rma_id": "RMA-08927", "analysis_id": "ana-20251120-08743-01", "decision": "APPROVED", "decided_at": "2026-11-21T10:12:00+09:00"}
 ```
 **응답 200**
 ```json
@@ -706,7 +706,7 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
 
 ### 3-6. `GET /health`
 ```json
-{"status": "ok", "db": "ok", "llm": "ok", "version": "0.1.0", "rules": "pcb-v5"}
+{"status": "ok", "db": "ok", "llm": "ok", "version": "0.1.0", "rules": "pcb-v6"}
 ```
 `llm`이 `"down"`이면 분석 결과가 `PARTIAL`로 나온다.
 
@@ -738,14 +738,14 @@ Spring이 승인·확정 결과를 DB에 저장한 **뒤에** 호출한다. AI�
   ],
   "provisional": false,
   "rationale": "불량 형태 쇼트, 심각도 8, 고객 AUTOMOTIVE, 동일 고객·불량 형태 30일 내 3건째 이상 → L3",
-  "as_of": "2025-11-20T12:00:00+09:00"
+  "as_of": "2026-11-20T12:00:00+09:00"
 }
 ```
 - 규칙은 `analysis_level_rule`과 같다. L3: 심각도 9 이상, CC 특별특성, 차량 고객 + 심각도 8 이상. L2: 심각도 6 이상, SC 특별특성, 같은 고객·같은 증상 30일 안 3건째 이상. 그 밖은 L1.
 - 심각도·특별특성은 소분류 정의(`symptom_definition`, `special_characteristic`), 업종은 `customer`, 반복은 그 고객의 같은 증상 접수(분석 시점까지 재분류된 것은 확인된 증상으로)에서 계산한다.
 - 소분류가 정보 부족·분류 불가면 `provisional: true`, 임시 L2다. 차량 고객이면 QA가 당일 직접 확인한다는 문구가 붙는다.
 - `needs_approval`은 L3이면 `true`. `approval_reasons`는 그 이유(L3 조건만, L2 이하는 빈 배열)다. 반복·SC 같은 L2 조건은 `rationale`에만 적는다. 분석 결과의 `qa_review.approval_reasons`도 같은 값이다.
-- 대조 (v5): 저장된 `qa_triage` 10,210건과 분석 수준 99.8%, 모든 필드 99.6% 일치(`scripts/eval_triage.py`).
+- 대조 (v5, v6 동일): 저장된 `qa_triage` 10,210건과 분석 수준 99.8%, 모든 필드 99.6% 일치(`scripts/eval_triage.py`).
 - 오류: 없는 접수 `CLAIM_NOT_FOUND`(404), 접수 분류가 아직 없거나 `as_of`가 그 전이면 `AS_OF_INVALID`(422).
 
 ---
@@ -772,12 +772,12 @@ LLM 없이 DB 값으로 계산하는 점수다(0~100). 점수마다 항목별 �
 
 ```json
 {
-  "as_of": "2025-12-31T18:56:13+09:00",
+  "as_of": "2026-12-31T18:56:13+09:00",
   "weights": {"count": 0.3, "loss": 0.3, "severity": 0.2, "trend": 0.2},
   "items": [
     {
-      "rank": 1, "investigation_id": "INV-25-0023", "title": "오픈(단선) — 공통점 추적", "analysis_level": "L3",
-      "status": "MONITORING", "status_name": "효과 확인 중", "opened_at": "2025-11-17T10:18:22+09:00",
+      "rank": 1, "investigation_id": "INV-26-0023", "title": "오픈(단선) — 공통점 추적", "analysis_level": "L3",
+      "status": "MONITORING", "status_name": "효과 확인 중", "opened_at": "2026-11-17T10:18:22+09:00",
       "main_symptom": "ELEC01", "claim_count": 218, "total_claim_count": 258, "defect_qty": 10551, "loss_krw": 1076025493,
       "score": 88.9,
       "reason": "발생 건수·수량 30.0점 · 손실 금액 27.9점 · 심각도 16.0점 · 증가 추세 15.0점",
@@ -809,11 +809,11 @@ LLM 없이 DB 값으로 계산하는 점수다(0~100). 점수마다 항목별 �
 
 ```json
 {
-  "as_of": "2025-12-31T18:56:13+09:00",
+  "as_of": "2026-12-31T18:56:13+09:00",
   "weights": {"severity": 0.3, "elapsed": 0.25, "importance": 0.25, "qty": 0.2},
   "items": [
     {
-      "rank": 1, "rma_id": "RMA-09816", "customer_id": "A04", "opened_at": "2025-12-09T13:46:20+09:00",
+      "rank": 1, "rma_id": "RMA-09816", "customer_id": "A04", "opened_at": "2026-12-09T13:46:20+09:00",
       "cs_status": "RESPONDED", "part_no": "PCB-ECU6-A1", "pinned": true, "score": 83.1,
       "reason": "안전 특성(CC) 반품이라 맨 위 고정 · 심각도 27.0점 · 제품 중요도 25.0점 · 처리 경과일 18.5점 · 클레임 수량 12.6점",
       "parts": {
