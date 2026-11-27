@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from . import llm
 from .. import rag
+from ..domain_profile import get_profile
 from ..errors import InvalidInput
 from ..tools.names import josa
 
@@ -45,9 +46,11 @@ INTENT_WORDS = [
     ("SUMMARY", ("요약", "정리", "한눈에", "보고", "브리핑", "알려줘", "설명")),
 ]
 NEEDS_ANALYSIS = {"CAUSE", "EVIDENCE", "SIMILAR", "LOT", "RECURRENCE", "ACTION", "REPLY"}
-DOMAIN_WORDS = ("rma", "반품", "불량", "접수", "고객", "pcb", "기판", "품질", "qa", "cs", "분석", "증상", "패턴",
-                "검사", "lot", "로트", "원인", "회신", "처리", "조치", "재발", "설비", "공정", "쇼트", "오픈", "이 건",
-                "이건", "이거", "여기", "지금")
+DOMAIN_WORDS = tuple(get_profile()["chat_domain_words"])
+
+
+def domain_words():
+    return tuple(get_profile()["chat_domain_words"])
 STATE_NAMES = {"OPEN": "회신 전", "RESPONDED": "1차 회신 완료", "CLOSED": "종료", "RECEIVED": "접수", "TRIAGED": "QA 판정 완료",
                "ANALYZING": "분석 중", "CAUSE_DECIDED": "원인 확정", "NOT_REQUESTED": "분석 전", "QUEUED": "분석 대기",
                "RUNNING": "분석 중", "SUCCEEDED": "분석 완료", "PARTIAL": "분석 완료(설명 일부 생략)", "FAILED": "분석 실패",
@@ -369,7 +372,7 @@ def chat(request):
         template = _pattern_template(intent, facts)
         reply["evidence"] = _pattern_evidence(facts)
 
-    off_topic = intent == "OTHER" and not history and not any(w in message.lower() for w in DOMAIN_WORDS)
+    off_topic = intent == "OTHER" and not history and not any(w in message.lower() for w in domain_words())
     if not off_topic:
         hint = ((context.get("rma") or {}).get("symptom") or {}).get("minor_name") if scope["type"] == "RMA" else \
             (context.get("pattern") or {}).get("title")

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from . import llm
 from ..tools.names import josa
-from .classifier import DEFAULT_QUESTION, NOT_CLASSIFIED
+from .classifier import NOT_CLASSIFIED, default_question
 
 UNCLASSIFIED_REQUEST = ("보내 주신 현상을 당사 QA가 반송 시료로 직접 확인하겠습니다. 불량 부위 사진과 발생 조건"
                         "(검출 단계, 상온 상시 또는 온도·진동 후)을 함께 보내 주시면 확인이 빨라집니다.")
@@ -16,7 +16,7 @@ def follow_up(classification_result):
     """What to ask the customer when the symptom is not classified yet (None when it is)."""
     code = classification_result.get("minor_code")
     if code == "INSUFFICIENT_INFO":
-        return DEFAULT_QUESTION
+        return default_question()
     if code == "UNCLASSIFIED":
         return UNCLASSIFIED_REQUEST
     return None

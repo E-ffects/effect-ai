@@ -23,11 +23,16 @@ from . import cause_analysis, cs, llm, manufacturing, qa
 from .runtime import get_runtime
 from .. import ranker
 from ..asof import analysis_start
+from ..domain_profile import get_profile
 from ..errors import AsOfInvalid, ClaimNotFound, InvalidInput, ServiceUnavailable, check_as_of
 
 PROMPT_VERSION = "agents-0.4"
-RULES_VERSION = "pcb-v6"
+RULES_VERSION = get_profile()["rules_version"]
 STEPS_TOTAL = 7
+
+
+def rules_version():
+    return get_profile()["rules_version"]
 
 
 class AnalysisState(TypedDict, total=False):

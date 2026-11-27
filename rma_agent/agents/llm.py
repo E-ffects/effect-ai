@@ -19,6 +19,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from ..domain_profile import get_profile
+
 log = logging.getLogger(__name__)
 DEFAULT_MODEL = "openai:gpt-5.4-mini"
 BLOCKED_MODELS = {"gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-5.5-pro"}  # not allowed for this project
@@ -26,13 +28,11 @@ KEY_VARIABLE = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "g
 TIMEOUT_S = 30
 TASK_TIMEOUT_S = {"chat": 12}   # Spring waits 20 s for a chat answer (HttpAiClient.CHAT_TIMEOUT); no retry there
 
-SYSTEM = """너는 PCB 제조사 품질(QA) 조직의 RMA(반품) 분석 보조다.
-규칙:
-- 주어진 사실(JSON)만 쓴다. 사실에 없는 원인, 수치, 날짜, 장비, 조치를 만들지 않는다.
-- 수치는 사실에 적힌 그대로 옮긴다. 계산하거나 반올림하지 않는다.
-- 확정되지 않은 원인은 '유력', '의심', '후보'로 쓰고 단정하지 않는다.
-- 한국어 존댓말, 짧고 구체적인 문장으로 쓴다. 코드값(예: OL_ETCH_RESIDUE)은 쓰지 말고 이름으로 쓴다.
-- '사실', 'JSON', '입력' 같은 말을 쓰지 않는다. 근거가 없으면 '확인된 기록이 없습니다'처럼 쓴다."""
+SYSTEM = get_profile()["llm_system_prompt"]
+
+
+def system_prompt():
+    return get_profile()["llm_system_prompt"]
 
 _dotenv_loaded = False
 _lock = threading.Lock()
@@ -85,7 +85,7 @@ def generate(task, instruction, facts, schema):
     timeout = TASK_TIMEOUT_S.get(task)
     model = (_chat_model(model_name(), timeout, 0) if timeout else _chat_model(model_name())).with_structured_output(schema)
     prompt = f"{instruction}\n\n사실(JSON):\n{json.dumps(facts, ensure_ascii=False, indent=1)}"
-    result = model.invoke([("system", SYSTEM), ("user", prompt)], config={"run_name": f"llm_{task}"})
+    result = model.invoke([("system", system_prompt()), ("user", prompt)], config={"run_name": f"llm_{task}"})
     return result.model_dump() if isinstance(result, BaseModel) else result
 
 
