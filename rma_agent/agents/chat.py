@@ -27,7 +27,7 @@ from ..tools.names import josa
 log = logging.getLogger(__name__)
 CHAT_VERSION = "chat-0.1"
 AUDIENCES = ("QUALITY", "CS")
-SCOPES = ("RMA", "PATTERN")
+SCOPES = ("RMA", "PATTERN", "GENERAL")
 MAX_MESSAGE = 1000
 HISTORY_TURNS = 6
 EVIDENCE_LIMIT = 5
@@ -336,9 +336,10 @@ def chat(request):
         raise InvalidInput(f"message는 {MAX_MESSAGE}자 이하입니다")
     if audience not in AUDIENCES:
         raise InvalidInput(f"audience는 QUALITY 또는 CS입니다: {audience!r}")
-    if scope.get("type") not in SCOPES or not scope.get("id"):
-        raise InvalidInput(f"scope는 {{type: RMA|PATTERN, id}}입니다: {scope!r}")
-    if scope["type"] == "PATTERN" and audience != "QUALITY":
+    scope_type = scope.get("type")
+    if scope_type not in SCOPES or (scope_type != "GENERAL" and not scope.get("id")):
+        raise InvalidInput(f"scope는 {{type: RMA|PATTERN|GENERAL, id?}}입니다: {scope!r}")
+    if scope_type == "PATTERN" and audience != "QUALITY":
         raise InvalidInput("불량 패턴 채팅은 품질관리자(QUALITY)만 쓸 수 있습니다")
     cs = audience == "CS"
     context = request.get("context") or {}
@@ -354,7 +355,7 @@ def chat(request):
                 break
 
     reply = {"intent": intent, "evidence": [], "suggestions": [], "warnings": []}
-    if scope["type"] == "RMA":
+    if scope_type == "RMA":
         rma, analysis = context.get("rma") or {}, context.get("analysis")
         if not analysis and intent in NEEDS_ANALYSIS:
             return {**reply, "status": "NEED_ANALYSIS", "intent": "STATUS",
@@ -367,26 +368,32 @@ def chat(request):
         facts = _rma_facts(intent, rma, analysis, cs, scope["id"], extra)
         template = _rma_template(intent, facts, cs)
         reply["evidence"] = _rma_evidence(intent, facts, scope["id"], cs)
-    else:
+    elif scope_type == "PATTERN":
         facts = _pattern_facts(intent, context)
         template = _pattern_template(intent, facts)
         reply["evidence"] = _pattern_evidence(facts)
+    else:
+        facts = {"범위": "범용 RMA 어시스턴스 (사내 품질·CS 기준 및 과거 사례 기반)"}
+        template = "사내 PCB 품질·CS 기준과 과거 사례를 바탕으로 안내드립니다."
 
     off_topic = intent == "OTHER" and not history and not any(w in message.lower() for w in domain_words())
     if not off_topic:
-        hint = ((context.get("rma") or {}).get("symptom") or {}).get("minor_name") if scope["type"] == "RMA" else \
-            (context.get("pattern") or {}).get("title")
-        hits, rag_warnings = retrieve(intent, f"{message} {hint or ''}".strip(), _as_of_of(scope["type"], context),
-                                      audience, scope["id"] if scope["type"] == "RMA" else None)
+        hint = ((context.get("rma") or {}).get("symptom") or {}).get("minor_name") if scope_type == "RMA" else \
+            (context.get("pattern") or {}).get("title") if scope_type == "PATTERN" else None
+        rag_intent = intent if (scope_type != "GENERAL" or intent in RETRIEVE) else "OTHER"
+        hits, rag_warnings = retrieve(rag_intent, f"{message} {hint or ''}".strip(), _as_of_of(scope_type, context),
+                                      audience, scope["id"] if scope_type == "RMA" else None)
         if hits:
             facts["검색 자료"] = _hit_facts(hits)
             known = {e["rma_id"] for e in reply["evidence"] if e["rma_id"]}
             reply["evidence"] = (reply["evidence"] + [e for e in _hit_evidence(hits)
                                                       if not e["rma_id"] or e["rma_id"] not in known])[:EVIDENCE_LIMIT]
             template += _hit_template(hits)
+        elif scope_type == "GENERAL":
+            template = "현재 질문과 직접 일치하는 사내 기준·사례가 검색되지 않았습니다. 구체적인 불량 유형이나 RMA 번호를 함께 알려주시면 더 정확히 안내해 드립니다."
         reply["warnings"] += rag_warnings
     if off_topic and llm.model_name() is None:
-        return {**reply, "status": "OUT_OF_SCOPE", "evidence": [], "answer": _out_of_scope(scope["type"]),
+        return {**reply, "status": "OUT_OF_SCOPE", "evidence": [], "answer": _out_of_scope(scope_type),
                 "model_version": CHAT_VERSION, "elapsed_ms": _ms(started)}
 
     if cs and intent in ("CAUSE", "EVIDENCE", "LOT", "RECURRENCE"):
@@ -395,8 +402,11 @@ def chat(request):
                 "answer": CS_CAUSE_ANSWER, "model_version": CHAT_VERSION, "elapsed_ms": _ms(started)}
 
     outcome = llm.Outcome()
+    screen_label = (f"RMA 상세 {scope['id']}" if scope_type == "RMA" else
+                    f"불량 패턴 {scope['id']}" if scope_type == "PATTERN" else
+                    "범용 RMA 어시스턴스")
     llm_facts = {"사용자 역할": "고객대응관리자(CS)" if cs else "품질관리자(QUALITY)",
-                 "화면": f"{'RMA 상세' if scope['type'] == 'RMA' else '불량 패턴'} {scope['id']}",
+                 "화면": screen_label,
                  "질문": message, "이전 대화": history, "데이터": facts}
     result = llm.write("chat", INSTRUCTION, llm_facts, _Answer, lambda r: [r["answer"]], outcome)
     if result is None:
@@ -404,13 +414,15 @@ def chat(request):
         return {**reply, "status": "FALLBACK", "answer": template, "model_version": CHAT_VERSION,
                 "elapsed_ms": _ms(started)}
     if not result["in_scope"]:
-        return {**reply, "status": "OUT_OF_SCOPE", "evidence": [], "answer": result["answer"].strip() or _out_of_scope(scope["type"]),
+        return {**reply, "status": "OUT_OF_SCOPE", "evidence": [], "answer": result["answer"].strip() or _out_of_scope(scope_type),
                 "model_version": f"{CHAT_VERSION}+{llm.model_name()}", "elapsed_ms": _ms(started)}
     return {**reply, "status": "ANSWERED", "answer": result["answer"].strip(),
             "model_version": f"{CHAT_VERSION}+{llm.model_name()}", "elapsed_ms": _ms(started)}
 
 
 def _out_of_scope(scope_type):
+    if scope_type == "GENERAL":
+        return "이 어시스턴트에서는 PCB 반품(RMA)·불량 원인 기준·재발 판정·처리 절차·고객 응대 기준에 대해 답할 수 있습니다."
     what = "이 반품의 원인 후보·근거·유사 사례·처리방안·회신 초안" if scope_type == "RMA" else "이 불량 패턴의 원인·Lot·설비·대책"
     return f"이 패널에서는 {what}에 대해 답할 수 있습니다."
 
