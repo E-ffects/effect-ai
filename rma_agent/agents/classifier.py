@@ -20,14 +20,18 @@ from collections import Counter, defaultdict
 from pydantic import BaseModel
 
 from . import llm
+from ..domain_profile import get_profile
 from ..errors import InvalidInput, check_as_of
 
 MODEL_VERSION = "cs-classifier-0.1"
 K = 15
 MIN_CONFIDENCE = 0.45          # retrieval-only: below this the text is treated as insufficient
 NOT_CLASSIFIED = ("INSUFFICIENT_INFO", "UNCLASSIFIED")
-DEFAULT_QUESTION = ("증상 확인을 위해 문의드립니다. 불량 현상(오픈·쇼트·간헐·외관·실장 등), 발생 위치, "
-                    "재현 조건(상온 상시 또는 온도·진동 후)을 알려 주십시오.")
+DEFAULT_QUESTION = get_profile()["classifier_default_question"]
+
+
+def default_question():
+    return get_profile()["classifier_default_question"]
 
 _CODE = re.compile(r"\S*\d\S*")  # tokens with digits: P/N, Lot, D/C, quantities
 
@@ -150,7 +154,7 @@ class Classifier:
                 spans += [s for s in item["spans"] if s in raw_text]
         alternatives = [{"minor_code": c, "confidence": round(p, 2)} for c, p in votes if c != top and c not in NOT_CLASSIFIED][:2]
         return {"minor_code": top, "confidence": round(conf, 2), "evidence_spans": list(dict.fromkeys(spans))[:2],
-                "alternatives": alternatives, "follow_up_question": DEFAULT_QUESTION if top == "INSUFFICIENT_INFO" else None}
+                "alternatives": alternatives, "follow_up_question": default_question() if top == "INSUFFICIENT_INFO" else None}
 
     def _llm_decision(self, raw_text, detection_stage, neighbours, votes, outcome):
         examples = []
@@ -169,7 +173,7 @@ class Classifier:
         result["alternatives"] = [a for a in result["alternatives"]
                                   if a["minor_code"] in self.symptoms and a["minor_code"] != result["minor_code"]][:2]
         if result["minor_code"] == "INSUFFICIENT_INFO" and not result.get("follow_up_question"):
-            result["follow_up_question"] = DEFAULT_QUESTION
+            result["follow_up_question"] = default_question()
         return result
 
     # ---------- response (docs/api_spec.md 3-1)
