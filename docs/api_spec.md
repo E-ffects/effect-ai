@@ -93,6 +93,8 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | `triage(rma_id, as_of=None)` | `POST /triage` | 3-7 응답의 dict (새 접수의 QA 판정안) |
 | `pattern_priority(as_of=None, weights=None, limit=None)` | `GET /priority/patterns` | 3-8 응답의 dict (패턴별 품질 조치 우선순위) |
 | `response_priority(as_of=None, weights=None, limit=None)` | `GET /priority/responses` | 3-8 응답의 dict (반품별 고객 응대 우선순위) |
+| `run_follow_up(rma_id, cause_code, as_of=None)` | `POST /followups` | 2차 회신 초안·처리방안 (승인된 원인 기준) |
+| `chat(request)` | `POST /chat` | 3-9 응답의 dict (에이전트 패널 질문 답변) |
 
 - `analysis_as_of(rma_id, as_of=None)`: `run_analysis`와 같은 검사(접수 존재, QA 판정 여부, `as_of` 형식)만 하고 쓸 `as_of`를 돌려준다. `POST /analyses` 등록 때 404/422를 바로 주는 데 쓴다.
 - 참고 서버: effect-ai `server/app.py`가 이 장의 경로를 모두 구현해 두었다(서비스 토큰 검증, 분석 작업 관리 포함). 실행법은 `docs/integration_guide.md` 3장.
@@ -157,7 +159,7 @@ AI 서버(FastAPI)는 아래 함수만 호출한다. 에이전트 내부(LangGra
 | 6 | `GET /health` | 바로 응답 | — | 상태 확인 (LLM 연결 포함) |
 | 7 | `POST /triage` | 바로 응답 | 0.5초 이내 | 새 접수의 QA 판정안(분석 수준). Spring이 바로 `qa_triage`에 저장(임시 판정만 품질관리자 확인 후) |
 
-챗봇(`POST /chat`)은 2차 범위로, 4번 유사 사례를 근거로 쓰는 형태로 추가한다.
+| 8 | `POST /chat` | 바로 응답 | 3초 이내 (LLM 12초 제한) | 에이전트 패널 질문 (3-9) |
 
 ### 3-0. 호출 경로 (Spring_API_v4, 2026-11-20 확정)
 ```
@@ -825,6 +827,44 @@ LLM 없이 DB 값으로 계산하는 점수다(0~100). 점수마다 항목별 �
 }
 ```
 - 오류: `as_of` 형식 오류 `AS_OF_INVALID`(422), 모르는 가중치 이름이나 음수 가중치 `INVALID_INPUT`(400).
+
+---
+
+### 3-9. `POST /chat` (에이전트 패널 질문, Spring `AiClient.chat`)
+AI 서버는 대화를 저장하지 않는다. Spring이 질문, 최근 대화(최대 10개), 화면 문맥(역할별 필터 적용 후)을 보내고, 답을 `app.chat_message`에 저장한다.
+
+**요청**
+```json
+{"thread_id": "6f1c...", "audience": "QUALITY", "scope": {"type": "RMA", "id": "RMA-08927"},
+ "message": "왜 1순위가 외층 에칭 잔동이야?",
+ "history": [{"role": "user", "text": "원인 알려줘"}, {"role": "assistant", "text": "1순위는 ..."}],
+ "context": {"rma": {"rma_id": "RMA-08927", "...": "접수 상세(RmaDetailResponse)"},
+             "analysis": {"analysis_id": "...", "as_of": "...", "result": {"...": "3-3 result"}, "cause_decision": null}}}
+```
+- `audience`: `QUALITY` / `CS`. `scope.type`: `RMA`(상세 화면) / `PATTERN`(불량 패턴, QUALITY만). PATTERN의 `context`는 `{period, pattern, report}`(패턴 상세·보고서 응답).
+- 분석 전 RMA는 `context.analysis = null`.
+
+**응답 200**
+```json
+{"status": "ANSWERED", "intent": "EVIDENCE",
+ "answer": "1순위가 외층 에칭 잔동인 이유는 같은 제품의 최근 사례 RMA-08668에서 확정됐고, 이 Lot에서도 OLE-02 스프레이 압력 -4.0σ와 노즐 7개 막힘·교체가 확인됐기 때문입니다. 다만 반송품 시험 결과가 대기 중이라 최종 확정은 아닙니다.",
+ "evidence": [{"type": "CAUSE_CANDIDATE", "rma_id": "RMA-08927", "label": "1순위 외층 에칭 잔동 (OLE-02)"}],
+ "suggestions": [], "warnings": [], "model_version": "chat-0.1+openai:gpt-5.4-mini", "elapsed_ms": 2300}
+```
+| `status` | 뜻 |
+|---|---|
+| `ANSWERED` | LLM이 문맥의 사실만으로 답함 |
+| `NEED_ANALYSIS` | 분석이 없는 RMA에 원인·근거·사례·Lot·재발·처리방안·회신을 물음. `suggestions: [{task: "start_analysis", label: "분석 시작"}]` |
+| `OUT_OF_SCOPE` | 반품·품질과 관계없는 질문, 지시를 바꾸라는 요구. `evidence` 없음 |
+| `FALLBACK` | LLM이 꺼져 있거나 실패, 또는 근거에 없는 숫자를 씀. 같은 사실로 만든 템플릿 답변 (`warnings`: `LLM_UNAVAILABLE` / `LLM_OUTPUT_REJECTED`) |
+
+- **답을 만드는 순서:** 질문의 의도(`intent`: `CAUSE`, `EVIDENCE`, `SIMILAR`, `LOT`, `RECURRENCE`, `ACTION`, `REPLY`, `STATUS`, `SUMMARY`, `OTHER`)를 낱말로 정한다 → 그 의도에 필요한 문맥 부분만 사실로 뽑는다 → **RAG 검색**으로 과거 사례와 사내 기준 문서를 더한다(아래) → LLM이 그 사실만으로 2~4문장을 쓴다.
+- **RAG 검색 (`rma_agent/rag.py`):** 문서 약 1만 개. 승인된 과거 사례(증상·확정 원인·공정·설비·원문), 원인 기준표(메커니즘·필요 근거·QA 확정 기준·표준 조치·담당), 유출 기준표, 증상 정의(포함·제외 규칙), 대책, 조사. 점수 = 0.5 × 임베딩 유사도(OpenAI `text-embedding-3-small` 512차원) + 0.5 × 글자 점수(질문 글자쌍 포함률 + 설비·Lot 번호 일치). 문서마다 알려진 시각이 있어 `as_of`(분석 시작 시각, 패턴은 기간 끝) 이후 문서와 그 RMA 자신은 검색되지 않는다. 의도별로 찾는 문서가 다르다(근거 질문은 원인·유출 기준 + 사례, 처리방안은 대책·원인 기준, 유사 사례는 사례 + 대책). CS는 사례만, 원인·설비·Lot을 뺀 채로 받는다. 비교 결과 `results/20261127_rag_v5.md`. "그럼 2순위는?"처럼 의도가 없는 후속 질문은 직전 질문의 의도를 이어받는다.
+- **CS:** 원인·설비·공정·Lot은 문맥에 있어도 쓰지 않는다(Spring 필터에 더한 이중 차단). CS가 원인·근거·Lot·재발을 물으면 LLM 없이 정해진 안내 문구로 답한다. `evidence`는 `SIMILAR_CASE`, `RMA`만.
+- `evidence[].type`: `CAUSE_CANDIDATE`, `LOT`, `SIMILAR_CASE`(RMA 범위·검색된 과거 사례), `RMA`(패턴 근거), `KNOWLEDGE`(검색된 기준 문서, `rma_id`는 `null`, 예 `"원인 기준: 외층 에칭 잔동"`). 최대 5개. CS에는 `SIMILAR_CASE`만.
+- `warnings`에 `RAG_NOT_READY`가 있으면 서버 시작 직후 색인을 만드는 중이라 검색 없이 답한 것이다(캐시가 있으면 약 3초).
+- 시간: 문맥만으로 답하므로 LLM 1회, 실측 1~3초. LLM 호출 제한 12초(재시도 없음), Spring 제한 20초.
+- 오류: `message` 비어 있음·1,000자 초과, `audience`·`scope` 값 오류, CS의 PATTERN 질문은 400 `INVALID_INPUT`.
 
 ---
 

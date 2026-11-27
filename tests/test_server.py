@@ -175,3 +175,22 @@ def test_server_refuses_to_start_without_a_secret(monkeypatch):
         server.create_app()
     monkeypatch.setenv("RMA_AUTH", "off")
     assert server.create_app() is not None
+
+
+def test_chat_route_follows_the_spring_contract(client):
+    """Spring HttpAiClient.chat: snake_case body, answer + status in CHAT_STATUSES, else Spring treats it as an outage."""
+    from test_chat import rma_context
+    from rma_agent import rag
+    rag.get_index()
+    body = {"thread_id": "6f1c", "audience": "QUALITY", "scope": {"type": "RMA", "id": "RMA-08927"},
+            "message": "1순위 원인 근거가 뭐야?", "history": [{"role": "user", "text": "안녕"}], "context": rma_context()}
+    res = client.post(f"{B}/chat", headers=bearer(), json=body)
+    assert res.status_code == 200
+    out = res.json()
+    assert out["status"] in {"ANSWERED", "NEED_ANALYSIS", "OUT_OF_SCOPE", "FALLBACK"} and out["answer"]
+    assert {"intent", "evidence", "suggestions", "warnings", "model_version"} <= set(out)
+    assert client.post(f"{B}/chat", json=body).status_code == 401
+    bad = client.post(f"{B}/chat", headers=bearer(), json={**body, "audience": "ADMIN"})
+    assert bad.status_code == 400 and bad.json()["code"] == "INVALID_INPUT"
+    no_ctx = client.post(f"{B}/chat", headers=bearer(), json={**body, "context": {"rma": {}, "analysis": None}})
+    assert no_ctx.json()["status"] == "NEED_ANALYSIS"

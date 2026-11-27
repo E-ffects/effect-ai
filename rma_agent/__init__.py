@@ -53,3 +53,13 @@ def response_priority(as_of=None, weights=None, limit=None):
     """Customer response priority per return with an open CS reply; safety (CC) returns pinned on top."""
     from .priority import response_priority as score
     return score(as_of=as_of, weights=weights, limit=limit)
+
+
+def chat(request):
+    """Agent panel chat (Spring AiClient.chat): request {thread_id, audience, scope{type,id}, message, history, context}.
+
+    Stateless; answers only from the context Spring sends (already filtered by role) and the case library.
+    Returns {status, intent, answer, evidence[], suggestions[], warnings[], model_version} (rma_agent/agents/chat.py).
+    """
+    from .agents.chat import chat as answer
+    return answer(request)

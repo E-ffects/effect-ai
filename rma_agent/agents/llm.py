@@ -24,6 +24,7 @@ DEFAULT_MODEL = "openai:gpt-5.4-mini"
 BLOCKED_MODELS = {"gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-5.5-pro"}  # not allowed for this project
 KEY_VARIABLE = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "google_genai": "GOOGLE_API_KEY"}
 TIMEOUT_S = 30
+TASK_TIMEOUT_S = {"chat": 12}   # Spring waits 20 s for a chat answer (HttpAiClient.CHAT_TIMEOUT); no retry there
 
 SYSTEM = """너는 PCB 제조사 품질(QA) 조직의 RMA(반품) 분석 보조다.
 규칙:
@@ -70,17 +71,19 @@ def model_name():
     return name
 
 
-def _chat_model(name):
+def _chat_model(name, timeout=TIMEOUT_S, retries=1):
     with _lock:
-        if name not in _models:
+        key = (name, timeout, retries)
+        if key not in _models:
             from langchain.chat_models import init_chat_model
-            _models[name] = init_chat_model(name, temperature=0, timeout=TIMEOUT_S, max_retries=1)
-        return _models[name]
+            _models[key] = init_chat_model(name, temperature=0, timeout=timeout, max_retries=retries)
+        return _models[key]
 
 
 def generate(task, instruction, facts, schema):
     """One structured call. Raises on any failure (tests replace this function)."""
-    model = _chat_model(model_name()).with_structured_output(schema)
+    timeout = TASK_TIMEOUT_S.get(task)
+    model = (_chat_model(model_name(), timeout, 0) if timeout else _chat_model(model_name())).with_structured_output(schema)
     prompt = f"{instruction}\n\n사실(JSON):\n{json.dumps(facts, ensure_ascii=False, indent=1)}"
     result = model.invoke([("system", SYSTEM), ("user", prompt)], config={"run_name": f"llm_{task}"})
     return result.model_dump() if isinstance(result, BaseModel) else result

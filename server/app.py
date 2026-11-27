@@ -87,6 +87,26 @@ class FollowUpRequest(BaseModel):
     as_of: str | None = None
 
 
+class ChatScope(BaseModel):
+    type: str
+    id: str
+
+
+class ChatTurn(BaseModel):
+    role: str
+    text: str | None = None
+
+
+class ChatRequest(BaseModel):
+    """Spring AiClient.ChatRequest (snake_case). context: the screen's data, already filtered by role."""
+    message: str
+    audience: str
+    scope: ChatScope
+    thread_id: str | None = None
+    history: list[ChatTurn] = Field(default_factory=list)
+    context: dict | None = None
+
+
 class RefreshRequest(BaseModel):
     rma_id: str | None = None
     analysis_id: str | None = None
@@ -219,6 +239,8 @@ def create_app(secret=..., runner=None):
             rma_agent.refresh_cases()
             from rma_agent.agents.classifier import get_classifier
             get_classifier()
+            from rma_agent import rag
+            rag.build_in_background()   # chat retrieval index (about 3 s from the embedding cache, 30 s without)
         except Exception:  # still start; /health shows db down and calls return SERVICE_UNAVAILABLE
             log.exception("warm-up failed")
         yield
@@ -287,9 +309,16 @@ def create_app(secret=..., runner=None):
     def similar(rma_id: str, as_of: str | None = None, limit: int = 5):
         return rma_agent.similar_cases(rma_id, as_of=as_of, limit=limit)
 
+    @app.post(f"{BASE}/chat", dependencies=auth)
+    def chat(req: ChatRequest):
+        # Agent panel question: answered right away (one LLM call, 12 s limit; Spring waits 20 s)
+        return rma_agent.chat(req.model_dump())
+
     @app.post(f"{BASE}/cases/refresh", dependencies=auth)
     def refresh(req: RefreshRequest | None = None):
         count = rma_agent.refresh_cases()
+        from rma_agent import rag
+        rag.build_in_background()
         return {"rma_id": req.rma_id if req else None, "indexed": True, "case_count": count}
 
     def _weights(raw):
@@ -324,7 +353,8 @@ def create_app(secret=..., runner=None):
         except Exception:
             db = "down"
         llm = "ok" if model_name() else "off"   # off: no model or key configured, sentences use templates
-        return {"status": "ok" if db == "ok" else "degraded", "db": db, "llm": llm, "version": VERSION,
-                "rules": RULES_VERSION}
+        from rma_agent import rag
+        return {"status": "ok" if db == "ok" else "degraded", "db": db, "llm": llm, "rag": rag.status(),
+                "version": VERSION, "rules": RULES_VERSION}
 
     return app
