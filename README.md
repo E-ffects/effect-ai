@@ -13,7 +13,7 @@ pip install -r requirements.txt
 |---|---|
 | `rma_agent/db.py` | DB 연결 (읽기 전용) |
 | `rma_agent/asof.py` | **시점 통제.** `AsOfStore(conn, as_of)`는 `as_of` 이전에 알 수 있던 데이터만 돌려준다 |
-| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `classify`, `triage`, `run_analysis`, `analysis_as_of`, `similar_cases`, `refresh_cases`, `pattern_priority`, `response_priority` |
+| `rma_agent/__init__.py` | **FastAPI가 부르는 함수:** `classify`, `triage`, `run_analysis`, `analysis_as_of`, `similar_cases`, `refresh_cases`, `pattern_priority`, `response_priority`, `run_follow_up`, `chat` |
 | `server/app.py` | 참고 AI 서버(FastAPI, `/ai/v1`, 서비스 토큰 검증). 실행법은 `docs/integration_guide.md` 3장 |
 | `rma_agent/agents/graph.py` | LangGraph 그래프(B안 흐름), 실행 기록·진행률, LangSmith 연결 |
 | `rma_agent/agents/cs.py` · `qa.py` · `manufacturing.py` · `cause_analysis.py` | 에이전트별 로직 |

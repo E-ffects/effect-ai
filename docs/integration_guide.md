@@ -46,6 +46,7 @@ AI 서버(FastAPI)는 `rma_agent`의 아래 함수만 부른다. 에이전트 �
 | `triage(rma_id, as_of=None)` | `POST /triage` | 3-7 응답 dict (새 접수의 QA 판정안) | 0.01초 |
 | `pattern_priority(as_of=None, weights=None, limit=None)` | `GET /priority/patterns` (2단계) | 3-8 응답 dict | 0.1초 |
 | `response_priority(as_of=None, weights=None, limit=None)` | `GET /priority/responses` (2단계) | 3-8 응답 dict | 0.1초 |
+| `chat(request)` | `POST /chat` | 3-9 응답 dict (에이전트 패널 질문) | LLM 켜면 1~3초, 끄면 0.01초 |
 
 - `classify`는 과거 접수 검색(약 0.03초) 뒤 LLM이 소분류를 고른다(LLM 켜면 약 1.3초). LLM이 없거나 실패하면 검색 결과로 답한다. 처음 호출 때 접수 색인을 만든다(약 0.6초).
 - `as_of`를 주면 그 시각 이전에 분류된 접수만 예시로 쓴다. 생략하면 전체를 쓴다.
