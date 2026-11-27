@@ -199,3 +199,52 @@ def test_retrieval_for_cs_returns_cases_without_cause():
     hits = rag.get_index().search("외층 에칭 잔동 OLE-02", audience="CS", k=5)
     assert hits and all(h["type"] == "CASE" for h in hits)
     assert all(set(h["meta"]) <= {"rma_id", "접수일", "증상", "제품", "원문"} for h in hits)
+
+
+def test_general_scope_quality_without_id():
+    out = chat({
+        "thread_id": "t-gen-1",
+        "audience": "QUALITY",
+        "scope": {"type": "GENERAL", "id": None},
+        "message": "디스미어 부족은 확정하려면 어떤 시험이 필요해?",
+        "history": [],
+        "context": {},
+    })
+    assert out["status"] in ("ANSWERED", "FALLBACK")
+    assert out["answer"]
+    assert any(e["type"] == "KNOWLEDGE" for e in out["evidence"])
+
+
+def test_general_scope_cs_blocks_cause_and_answers_general():
+    blocked = chat({
+        "thread_id": "t-gen-2",
+        "audience": "CS",
+        "scope": {"type": "GENERAL", "id": None},
+        "message": "이 불량의 설비 원인이 뭐야?",
+        "history": [],
+        "context": {},
+    })
+    assert blocked["status"] == "ANSWERED"
+    assert "품질관리자" in blocked["answer"]
+
+    ok = chat({
+        "thread_id": "t-gen-3",
+        "audience": "CS",
+        "scope": {"type": "GENERAL", "id": None},
+        "message": "반품 처리 절차와 고객 안내 기준을 요약해 줘.",
+        "history": [],
+        "context": {},
+    })
+    assert ok["status"] in ("ANSWERED", "FALLBACK") and ok["answer"]
+
+
+def test_general_scope_off_topic():
+    out = chat({
+        "thread_id": "t-gen-4",
+        "audience": "QUALITY",
+        "scope": {"type": "GENERAL", "id": None},
+        "message": "오늘 점심 메뉴 추천해 줘",
+        "history": [],
+        "context": {},
+    })
+    assert out["status"] == "OUT_OF_SCOPE" and out["evidence"] == []
