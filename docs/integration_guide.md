@@ -28,6 +28,7 @@ cp .env.example .env
 | `RMA_DATABASE_URL` | 선택 | 팀 PostgreSQL을 읽을 때. 예: `postgresql://rma@db:5432/rma` (비밀번호는 `PGPASSWORD`나 `~/.pgpass`). 있으면 SQLite 대신 이걸 쓴다. 적재는 `db/postgres/README.md` | 윤서정 |
 | `RMA_DB_SCHEMA` | 팀 DB면 필수 | PCB 테이블이 있는 스키마. 팀 DB는 `pcb` | 윤서정 |
 | `RMA_DB` | 선택 | SQLite 경로 (기본 `data/pcb_rma_v5.sqlite`) | — |
+| `RMA_RAG_CACHE` | 배포 | 임베딩 캐시 폴더(쓰기 가능한 볼륨). 기본 `data/rag` | 이상윤 |
 | `RMA_RAG_EMBEDDING` | 선택 | `off`면 chat 검색을 글자 검색만으로 (임베딩 API 안 부름). 기본은 `OPENAI_API_KEY`로 임베딩 사용 | — |
 | `RMA_CAUSE_RANKER` | 선택 | 원인 후보 학습 재정렬. `models/cause_ranker_v5.json`이면 켬, 비우거나 `off`면 끔(기본). 응답 모양은 같다 | 팀 결정 |
 | `RMA_SERVICE_JWT_SECRET` | AI 서버 | Spring `jwt.secret`과 같은 값(3장 참고 서버). 로컬에서만 `RMA_AUTH=off` | 윤서정·구태우 |
@@ -85,7 +86,7 @@ RMA_AUTH=off uvicorn server.app:create_app --factory --port 8080   # 로컬 전�
 - **기본 주소** `http://127.0.0.1:8080/ai/v1`. `GET /health`만 토큰 없이 부를 수 있다.
 - **서비스 토큰:** Spring `JwtProvider`처럼 `jwt.secret`의 UTF-8 바이트로 HMAC 검증한다(비밀값 길이에 따라 HS256/384/512). `role = "SYSTEM"`, `exp` 필수, `type`이 있으면 `ACCESS`. 아니면 401(서명·만료) 또는 403(역할). 비밀값이 없으면 서버가 시작하지 않는다.
 - **분석 작업:** 메모리에 두고 스레드 4개로 돈다. 같은 `rma_id`·`as_of`·`mode`가 실행 중이면 그 `analysis_id`를 돌려준다(202). 없는 접수·QA 판정 전은 등록 때 바로 404/422(`rma_agent.analysis_as_of`). B 30초, A 90초를 넘으면 `FAILED` + `ANALYSIS_TIMEOUT`이고 늦게 끝난 결과는 버린다. 재시작하면 작업이 사라지고 조회는 404 `ANALYSIS_NOT_FOUND`(Spring은 `ANALYSIS_LOST`로 처리).
-- **chat 검색 색인(RAG):** 서버 시작 때 백그라운드로 만든다. 임베딩은 `data/rag/`에 캐시되어 다음 시작부터 약 3초, 처음에는 약 30초(문서 약 1만 개, OpenAI 비용 0.1달러 미만). 컨테이너에서는 `data/rag/`가 쓰기 가능해야 하고(볼륨이면 재시작해도 유지), `OPENAI_API_KEY`가 있어야 임베딩을 쓴다. `GET /health`의 `rag`가 `hybrid`(임베딩+글자) / `lexical`(글자만) / `building`. `POST /cases/refresh` 뒤에는 새 사례를 넣어 다시 만든다.
+- **chat 검색 색인(RAG):** 서버 시작 때 백그라운드로 만든다. 임베딩은 `data/rag/`에 캐시되어 다음 시작부터 약 3초, 처음에는 약 30초(문서 약 1만 개, OpenAI 비용 0.1달러 미만). 컨테이너는 `/app`에 쓸 수 없으므로 `RMA_RAG_CACHE`를 쓰기 가능한 볼륨 경로로 준다(없으면 캐시 없이 메모리에만 두고 시작할 때마다 약 30초 다시 임베딩). `OPENAI_API_KEY`가 있어야 임베딩을 쓴다. `GET /health`의 `rag`가 `hybrid`(임베딩+글자) / `lexical`(글자만) / `building`. `POST /cases/refresh` 뒤에는 새 사례를 넣어 다시 만든다.
 - **오류 본문**은 모두 `{"detail", "code"}`다. 요청 형식 오류도 400 `INVALID_INPUT`으로 바꾼다(FastAPI 기본 422 아님, Spring의 422는 `AS_OF_INVALID`만).
 - **시연 리허설:** 서버를 띄운 뒤 `python3 scripts/demo_flow.py`가 Spring 순서대로 샘플 6건을 불러 시간·문구를 보여 준다(`--out results/...md`로 저장). 2026-11-20 결과 `results/20261120_demo_flow_v5.md`.
 - **검증:** `tests/test_server.py`가 Spring 흐름(분류 → 판정 → 분석 등록·폴링 → 유사 사례 → 갱신), 토큰, 오류 형식, 중복 실행, 시간 초과를 확인한다. `tests/test_contract.py`는 `samples/*.json`이 실제 출력과 같은 모양인지(판정은 값까지) 확인한다. 샘플이 어긋나면 `python3 scripts/make_samples.py`로 다시 만든다.

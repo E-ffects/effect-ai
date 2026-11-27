@@ -15,7 +15,8 @@ CS: only CASE documents, returned without cause / equipment / process / Lot (the
 
 Embeddings: OpenAI text-embedding-3-small, 512 dimensions, cached in data/rag/<db>.npz by document text hash, so a
 refresh embeds only new or changed documents (about 10,000 documents: one-time cost under 0.1 USD).
-Settings: RMA_RAG_EMBEDDING=off turns embeddings off (character search only).
+Settings: RMA_RAG_EMBEDDING=off turns embeddings off (character search only). RMA_RAG_CACHE: cache folder (default
+data/rag; in the container use a writable volume, otherwise the index is re-embedded at every start).
 """
 import hashlib
 import re
@@ -35,7 +36,7 @@ BATCH = 256
 IDENT_BONUS = 0.5
 W_EMBED = 0.5   # best on both checks (results/20261127_rag_v5.md): intake -> cases 91.0% vs 90.6% Hit@5 (characters
                 # only), paraphrased questions -> master documents 68.1% vs 66.4% Hit@1. Embeddings alone were worse.
-CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "rag"
+CACHE_DIR = Path(os.environ.get("RMA_RAG_CACHE") or Path(__file__).resolve().parents[1] / "data" / "rag")
 ALWAYS = ""                          # known_at of master data: before any as_of
 CS_TYPES = {"CASE"}
 
@@ -155,10 +156,13 @@ class Embedder:
                 part = missing[i:i + BATCH]
                 for text, vec in zip(part, client.embed_documents(part)):
                     self.vectors[self.key(text)] = np.asarray(vec, dtype=np.float32)
-            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
             keys = list(self.vectors)
-            np.savez(self.cache_path, keys=np.array(keys), vectors=np.stack([self.vectors[k] for k in keys]))
-            log.info("embedded %d new documents (%d cached)", len(missing), len(keys))
+            try:
+                self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+                np.savez(self.cache_path, keys=np.array(keys), vectors=np.stack([self.vectors[k] for k in keys]))
+                log.info("embedded %d new documents (%d cached in %s)", len(missing), len(keys), self.cache_path)
+            except OSError as exc:  # read-only image: keep the vectors in memory, re-embed after a restart
+                log.warning("RAG cache not written (%s); set RMA_RAG_CACHE to a writable folder", exc)
         return np.stack([self.vectors[self.key(t)] for t in texts])
 
     def embed_query(self, text):
