@@ -239,6 +239,8 @@ def create_app(secret=..., runner=None):
             rma_agent.refresh_cases()
             from rma_agent.agents.classifier import get_classifier
             get_classifier()
+            from rma_agent import rag
+            rag.build_in_background()   # chat retrieval index (about 3 s from the embedding cache, 30 s without)
         except Exception:  # still start; /health shows db down and calls return SERVICE_UNAVAILABLE
             log.exception("warm-up failed")
         yield
@@ -315,6 +317,8 @@ def create_app(secret=..., runner=None):
     @app.post(f"{BASE}/cases/refresh", dependencies=auth)
     def refresh(req: RefreshRequest | None = None):
         count = rma_agent.refresh_cases()
+        from rma_agent import rag
+        rag.build_in_background()
         return {"rma_id": req.rma_id if req else None, "indexed": True, "case_count": count}
 
     def _weights(raw):
@@ -349,7 +353,8 @@ def create_app(secret=..., runner=None):
         except Exception:
             db = "down"
         llm = "ok" if model_name() else "off"   # off: no model or key configured, sentences use templates
-        return {"status": "ok" if db == "ok" else "degraded", "db": db, "llm": llm, "version": VERSION,
-                "rules": RULES_VERSION}
+        from rma_agent import rag
+        return {"status": "ok" if db == "ok" else "degraded", "db": db, "llm": llm, "rag": rag.status(),
+                "version": VERSION, "rules": RULES_VERSION}
 
     return app

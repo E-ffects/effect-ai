@@ -180,6 +180,8 @@ def test_server_refuses_to_start_without_a_secret(monkeypatch):
 def test_chat_route_follows_the_spring_contract(client):
     """Spring HttpAiClient.chat: snake_case body, answer + status in CHAT_STATUSES, else Spring treats it as an outage."""
     from test_chat import rma_context
+    from rma_agent import rag
+    rag.get_index()
     body = {"thread_id": "6f1c", "audience": "QUALITY", "scope": {"type": "RMA", "id": "RMA-08927"},
             "message": "1순위 원인 근거가 뭐야?", "history": [{"role": "user", "text": "안녕"}], "context": rma_context()}
     res = client.post(f"{B}/chat", headers=bearer(), json=body)

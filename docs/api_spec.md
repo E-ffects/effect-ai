@@ -858,9 +858,11 @@ AI 서버는 대화를 저장하지 않는다. Spring이 질문, 최근 대화(�
 | `OUT_OF_SCOPE` | 반품·품질과 관계없는 질문, 지시를 바꾸라는 요구. `evidence` 없음 |
 | `FALLBACK` | LLM이 꺼져 있거나 실패, 또는 근거에 없는 숫자를 씀. 같은 사실로 만든 템플릿 답변 (`warnings`: `LLM_UNAVAILABLE` / `LLM_OUTPUT_REJECTED`) |
 
-- **답을 만드는 순서:** 질문의 의도(`intent`: `CAUSE`, `EVIDENCE`, `SIMILAR`, `LOT`, `RECURRENCE`, `ACTION`, `REPLY`, `STATUS`, `SUMMARY`, `OTHER`)를 낱말로 정한다 → 그 의도에 필요한 문맥 부분만 사실로 뽑는다(유사 사례 질문인데 문맥에 사례가 없으면 사례 저장소를 `as_of` 기준으로 검색) → LLM이 그 사실만으로 2~4문장을 쓴다. "그럼 2순위는?"처럼 의도가 없는 후속 질문은 직전 질문의 의도를 이어받는다.
+- **답을 만드는 순서:** 질문의 의도(`intent`: `CAUSE`, `EVIDENCE`, `SIMILAR`, `LOT`, `RECURRENCE`, `ACTION`, `REPLY`, `STATUS`, `SUMMARY`, `OTHER`)를 낱말로 정한다 → 그 의도에 필요한 문맥 부분만 사실로 뽑는다 → **RAG 검색**으로 과거 사례와 사내 기준 문서를 더한다(아래) → LLM이 그 사실만으로 2~4문장을 쓴다.
+- **RAG 검색 (`rma_agent/rag.py`):** 문서 약 1만 개. 승인된 과거 사례(증상·확정 원인·공정·설비·원문), 원인 기준표(메커니즘·필요 근거·QA 확정 기준·표준 조치·담당), 유출 기준표, 증상 정의(포함·제외 규칙), 대책, 조사. 점수 = 0.5 × 임베딩 유사도(OpenAI `text-embedding-3-small` 512차원) + 0.5 × 글자 점수(질문 글자쌍 포함률 + 설비·Lot 번호 일치). 문서마다 알려진 시각이 있어 `as_of`(분석 시작 시각, 패턴은 기간 끝) 이후 문서와 그 RMA 자신은 검색되지 않는다. 의도별로 찾는 문서가 다르다(근거 질문은 원인·유출 기준 + 사례, 처리방안은 대책·원인 기준, 유사 사례는 사례 + 대책). CS는 사례만, 원인·설비·Lot을 뺀 채로 받는다. 비교 결과 `results/20261127_rag_v5.md`. "그럼 2순위는?"처럼 의도가 없는 후속 질문은 직전 질문의 의도를 이어받는다.
 - **CS:** 원인·설비·공정·Lot은 문맥에 있어도 쓰지 않는다(Spring 필터에 더한 이중 차단). CS가 원인·근거·Lot·재발을 물으면 LLM 없이 정해진 안내 문구로 답한다. `evidence`는 `SIMILAR_CASE`, `RMA`만.
-- `evidence[].type`: `CAUSE_CANDIDATE`, `LOT`, `SIMILAR_CASE`(RMA 범위), `RMA`(패턴 근거). 최대 5개.
+- `evidence[].type`: `CAUSE_CANDIDATE`, `LOT`, `SIMILAR_CASE`(RMA 범위·검색된 과거 사례), `RMA`(패턴 근거), `KNOWLEDGE`(검색된 기준 문서, `rma_id`는 `null`, 예 `"원인 기준: 외층 에칭 잔동"`). 최대 5개. CS에는 `SIMILAR_CASE`만.
+- `warnings`에 `RAG_NOT_READY`가 있으면 서버 시작 직후 색인을 만드는 중이라 검색 없이 답한 것이다(캐시가 있으면 약 3초).
 - 시간: 문맥만으로 답하므로 LLM 1회, 실측 1~3초. LLM 호출 제한 12초(재시도 없음), Spring 제한 20초.
 - 오류: `message` 비어 있음·1,000자 초과, `audience`·`scope` 값 오류, CS의 PATTERN 질문은 400 `INVALID_INPUT`.
 

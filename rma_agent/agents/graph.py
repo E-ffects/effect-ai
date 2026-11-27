@@ -393,6 +393,8 @@ def similar_cases(rma_id, as_of=None, limit=5):
 
 def refresh_cases():
     from . import classifier
+    from .. import rag
     count = _runtime().refresh()
     classifier._classifier = None  # rebuilt with the newly labelled intakes on next classify()
+    rag.reset()                    # chat retrieval index: rebuilt with the new cases (server: in the background)
     return count

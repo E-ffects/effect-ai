@@ -34,11 +34,17 @@ def ask(message, audience="QUALITY", context=None, history=None, scope=None):
                  "context": rma_context() if context is None else context})
 
 
+@pytest.fixture(scope="module", autouse=True)
+def rag_index():
+    from rma_agent import rag
+    return rag.get_index()  # built once (character search in tests); the server builds it at start
+
+
 def check_contract(out):
     assert out["status"] in STATUSES and out["answer"].strip()
     assert isinstance(out["evidence"], list) and isinstance(out["suggestions"], list) and out["model_version"]
     for e in out["evidence"]:
-        assert set(e) == {"type", "rma_id", "label"} and e["rma_id"]
+        assert set(e) == {"type", "rma_id", "label"} and (e["rma_id"] or e["type"] == "KNOWLEDGE")
 
 
 def test_cause_question_without_llm_is_a_grounded_template():
@@ -113,7 +119,7 @@ def test_pattern_scope():
     out = ask("이 패턴 요약해줘", context=context, scope={"type": "PATTERN", "id": "INV-26-0021"})
     check_contract(out)
     assert "디스미어 부족" in out["answer"] and "DSM-01" in out["answer"]
-    assert out["evidence"] == [{"type": "RMA", "rma_id": "RMA-08218", "label": "패턴 근거 RMA-08218 (2026-11-02)"}]
+    assert out["evidence"][0] == {"type": "RMA", "rma_id": "RMA-08218", "label": "패턴 근거 RMA-08218 (2026-11-02)"}
     with pytest.raises(RmaAgentError):
         ask("요약", audience="CS", context=context, scope={"type": "PATTERN", "id": "INV-26-0021"})
 
@@ -166,3 +172,30 @@ def test_llm_outage_falls_back(llm_on):
     llm_on.setattr(llm, "generate", boom)
     out = ask("요약해줘")
     assert out["status"] == "FALLBACK" and out["warnings"] == ["LLM_UNAVAILABLE"] and out["answer"]
+
+
+def test_retrieval_adds_master_data_and_past_cases():
+    out = ask("디스미어 부족은 확정하려면 어떤 시험이 필요해?")
+    kinds = [e["type"] for e in out["evidence"]]
+    assert "KNOWLEDGE" in kinds and any(e["label"] == "원인 기준: 디스미어 부족" for e in out["evidence"])
+    assert "참고 기준(디스미어 부족)" in out["answer"]  # template uses the retrieved rule
+
+
+def test_retrieval_uses_only_documents_known_at_as_of():
+    from rma_agent import rag
+    as_of = SAMPLE["analysis"]["as_of"]
+    idx = rag.get_index()
+    hits = idx.search("외층 에칭 잔동 쇼트 사례", as_of=as_of, types={"CASE", "ACTION", "INVESTIGATION"}, k=50,
+                      exclude_rma="RMA-08927")
+    known = {d.doc_id: d.known_at for d in idx.docs}
+    assert hits and all(known[h["doc_id"]] <= as_of for h in hits)
+    assert all(h["rma_id"] != "RMA-08927" for h in hits)
+    late = [d for d in idx.docs if d.type == "CASE" and d.known_at > as_of]
+    assert late  # later cases exist and were filtered out
+
+
+def test_retrieval_for_cs_returns_cases_without_cause():
+    from rma_agent import rag
+    hits = rag.get_index().search("외층 에칭 잔동 OLE-02", audience="CS", k=5)
+    assert hits and all(h["type"] == "CASE" for h in hits)
+    assert all(set(h["meta"]) <= {"rma_id", "접수일", "증상", "제품", "원문"} for h in hits)
